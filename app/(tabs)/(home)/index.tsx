@@ -203,8 +203,8 @@ function ManagerDashboard() {
   const loadData = useCallback(async () => {
     try {
       console.log('[ManagerDashboard] Loading shifts...');
-      const data = await apiGet<Shift[]>('/api/shifts?role=manager');
-      const shiftList = Array.isArray(data) ? data : [];
+      const data = await apiGet<{ shifts: Shift[] }>('/api/shifts?role=manager');
+      const shiftList = Array.isArray((data as any)?.shifts) ? (data as any).shifts : Array.isArray(data) ? data : [];
       setShifts(shiftList);
       const open = shiftList.filter((s) => s.status === 'open').length;
       const filled = shiftList.filter((s) => s.status === 'filled').length;
@@ -358,8 +358,9 @@ function WorkerDashboard() {
   const loadShifts = useCallback(async () => {
     try {
       console.log('[WorkerDashboard] Loading shifts...');
-      const data = await apiGet<Shift[]>('/api/shifts?status=open');
-      setShifts(Array.isArray(data) ? data : []);
+      const data = await apiGet<{ shifts: Shift[] }>('/api/shifts?status=open');
+      const list = Array.isArray((data as any)?.shifts) ? (data as any).shifts : Array.isArray(data) ? data : [];
+      setShifts(list);
     } catch (err) {
       console.error('[WorkerDashboard] Error loading shifts:', err);
     } finally {

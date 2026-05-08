@@ -55,8 +55,9 @@ export default function ShiftsScreen() {
         setShifts(mapped);
       } else {
         console.log('[ShiftsTab] Loading manager shifts...');
-        const data = await apiGet<Shift[]>('/api/shifts?role=manager');
-        setShifts(Array.isArray(data) ? data : []);
+        const data = await apiGet<{ shifts: Shift[] }>('/api/shifts?role=manager');
+        const shiftList = Array.isArray((data as any)?.shifts) ? (data as any).shifts : Array.isArray(data) ? data : [];
+        setShifts(shiftList);
       }
     } catch (err) {
       console.error('[ShiftsTab] Error loading shifts:', err);
