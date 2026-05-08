@@ -42,7 +42,6 @@ export function AnimatedPressable({
         onPress={onPress}
         disabled={disabled}
         style={style}
-        {...props}
       >
         {children}
       </Pressable>

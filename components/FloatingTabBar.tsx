@@ -86,14 +86,14 @@ export default function FloatingTabBar({
   }, [pathname, tabs]);
 
   React.useEffect(() => {
-    if (activeTabIndex >= 0) {
+    if (activeTabIndex >= 0 && tabs.length > 0) {
       animatedValue.value = withSpring(activeTabIndex, {
         damping: 20,
         stiffness: 120,
         mass: 1,
       });
     }
-  }, [activeTabIndex, animatedValue]);
+  }, [activeTabIndex, animatedValue, tabs.length]);
 
   const handleTabPress = (route: Href) => {
     router.push(route);
@@ -104,6 +104,7 @@ export default function FloatingTabBar({
   const tabWidthPercent = ((100 / tabs.length) - 1).toFixed(2);
 
   const indicatorStyle = useAnimatedStyle(() => {
+    if (tabs.length <= 1) return {};
     const tabWidth = (containerWidth - 8) / tabs.length; // Account for container padding (4px on each side)
     return {
       transform: [
