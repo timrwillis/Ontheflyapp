@@ -57,10 +57,6 @@ export default function TabLayout() {
         }}
       >
         <Stack.Screen name="(home)" />
-        <Stack.Screen name="shifts" />
-        <Stack.Screen name="workers" />
-        <Stack.Screen name="businesses" />
-        <Stack.Screen name="profile" />
       </Stack>
       {showTabBar && (
         <FloatingTabBar
