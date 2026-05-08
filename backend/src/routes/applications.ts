@@ -133,7 +133,14 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
         .update(schema.shiftApplications)
         .set({ status: 'rejected' as const })
         .where(eq(schema.shiftApplications.id, id))
-        .returning();
+        .returning({
+          id: schema.shiftApplications.id,
+          shiftId: schema.shiftApplications.shiftId,
+          workerId: schema.shiftApplications.workerId,
+          status: schema.shiftApplications.status,
+          appliedAt: schema.shiftApplications.appliedAt,
+          confirmedAt: schema.shiftApplications.confirmedAt,
+        });
 
       const otherApplications = await app.db
         .select()

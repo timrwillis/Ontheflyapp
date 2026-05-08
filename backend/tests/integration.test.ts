@@ -8,6 +8,8 @@ describe("API Integration Tests", () => {
   let workerId: string;
   let shiftId: string;
   let applicationId: string;
+  let secondShiftId: string;
+  let secondApplicationId: string;
 
   // ===== Setup and User Endpoints =====
   test("Sign up test user", async () => {
@@ -46,6 +48,17 @@ describe("API Integration Tests", () => {
     await expectStatus(res, 200);
     const data = await res.json();
     expect(data.role).toBe("worker");
+  });
+
+  test("POST /api/users/switch-role - Switch to admin", async () => {
+    const res = await authenticatedApi("/api/users/switch-role", authToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role: "admin" }),
+    });
+    await expectStatus(res, 200);
+    const data = await res.json();
+    expect(data.role).toBe("admin");
   });
 
   test("POST /api/users/switch-role - Missing required role field returns 400", async () => {
@@ -176,11 +189,20 @@ describe("API Integration Tests", () => {
     await expectStatus(res, 200);
   });
 
-  test("PATCH /api/worker-profiles/{id}/availability - Update worker availability", async () => {
+  test("PATCH /api/worker-profiles/{id}/availability - Update worker availability to true", async () => {
     const res = await authenticatedApi(`/api/worker-profiles/${workerId}/availability`, authToken, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_available: true }),
+    });
+    await expectStatus(res, 200);
+  });
+
+  test("PATCH /api/worker-profiles/{id}/availability - Update worker availability to false", async () => {
+    const res = await authenticatedApi(`/api/worker-profiles/${workerId}/availability`, authToken, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_available: false }),
     });
     await expectStatus(res, 200);
   });
@@ -294,6 +316,26 @@ describe("API Integration Tests", () => {
     await expectStatus(res, 404);
   });
 
+  test("POST /api/shifts - Create a second shift for rejection test", async () => {
+    const res = await authenticatedApi("/api/shifts", authToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roleNeeded: "server",
+        date: "2026-05-11",
+        startTime: "19:00",
+        endTime: "23:00",
+        hourlyPay: "20.00",
+        location: "Oakland",
+        urgency: "this_week",
+      }),
+    });
+    await expectStatus(res, 201);
+    const data = await res.json();
+    secondShiftId = data.id;
+    expect(secondShiftId).toBeDefined();
+  });
+
   test("POST /api/shifts/{id}/apply - Apply for shift", async () => {
     const res = await authenticatedApi(`/api/shifts/${shiftId}/apply`, authToken, {
       method: "POST",
@@ -301,6 +343,16 @@ describe("API Integration Tests", () => {
     await expectStatus(res, 201);
     const data = await res.json();
     applicationId = data.id;
+  });
+
+  test("POST /api/shifts/{id}/apply - Apply for second shift", async () => {
+    const res = await authenticatedApi(`/api/shifts/${secondShiftId}/apply`, authToken, {
+      method: "POST",
+    });
+    await expectStatus(res, 201);
+    const data = await res.json();
+    secondApplicationId = data.id;
+    expect(secondApplicationId).toBeDefined();
   });
 
   test("POST /api/shifts/{id}/apply - Non-existent shift returns 404", async () => {
@@ -344,6 +396,13 @@ describe("API Integration Tests", () => {
       method: "PATCH",
     });
     await expectStatus(res, 404);
+  });
+
+  test("PATCH /api/applications/{id}/reject - Reject application", async () => {
+    const res = await authenticatedApi(`/api/applications/${secondApplicationId}/reject`, authToken, {
+      method: "PATCH",
+    });
+    await expectStatus(res, 200);
   });
 
   test("PATCH /api/applications/{id}/reject - Non-existent application returns 404", async () => {

@@ -94,7 +94,24 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         }
       }
 
-      let allShifts = await app.db.select().from(schema.shifts);
+      let allShifts = await app.db.select({
+        id: schema.shifts.id,
+        businessId: schema.shifts.businessId,
+        roleNeeded: schema.shifts.roleNeeded,
+        workersNeeded: schema.shifts.workersNeeded,
+        date: schema.shifts.date,
+        startTime: schema.shifts.startTime,
+        endTime: schema.shifts.endTime,
+        hourlyPay: schema.shifts.hourlyPay,
+        location: schema.shifts.location,
+        dressCode: schema.shifts.dressCode,
+        experienceRequired: schema.shifts.experienceRequired,
+        certificationsRequired: schema.shifts.certificationsRequired,
+        notes: schema.shifts.notes,
+        urgency: schema.shifts.urgency,
+        status: schema.shifts.status,
+        createdAt: schema.shifts.createdAt,
+      }).from(schema.shifts);
 
       if (userRole === 'worker') {
         allShifts = allShifts.filter(
@@ -225,26 +242,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         .returning();
 
       app.logger.info({ shiftId: shift.id }, 'Shift created');
-      const response = {
-        id: shift.id,
-        businessId: shift.businessId,
-        roleNeeded: shift.roleNeeded,
-        workersNeeded: shift.workersNeeded,
-        date: shift.date,
-        startTime: shift.startTime,
-        endTime: shift.endTime,
-        hourlyPay: shift.hourlyPay,
-        location: shift.location,
-        dressCode: shift.dressCode,
-        experienceRequired: shift.experienceRequired,
-        certificationsRequired: shift.certificationsRequired,
-        notes: shift.notes,
-        urgency: shift.urgency,
-        status: shift.status,
-        createdAt: shift.createdAt,
-        business,
-      };
-      return reply.status(201).send(response);
+      return reply.status(201).send(shift);
     }
   );
 
