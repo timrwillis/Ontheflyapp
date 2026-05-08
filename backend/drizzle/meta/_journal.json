@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1778277449186,
+      "tag": "20260508215729_milky_thundra",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778277693396,
+      "tag": "20260508220133_wide_firebird",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778277814759,
+      "tag": "20260508220334_fancy_betty_brant",
+      "breakpoints": true
+    }
+  ]
+}
