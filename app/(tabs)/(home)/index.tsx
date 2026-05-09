@@ -8,6 +8,7 @@ import {
   Animated,
   RefreshControl,
   Alert,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -38,7 +39,7 @@ function LandingScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: Platform.OS !== 'web' }).start();
   }, [fadeAnim]);
 
   const handleRoleSelect = async (role: 'manager' | 'worker' | 'admin') => {
