@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Alert, Pressable } from 'react-native';
+import { View, Text, ScrollView, TextInput, Alert, Pressable, Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { useRole } from '@/contexts/RoleContext';
@@ -249,7 +249,7 @@ export default function CreateShiftScreen() {
 
         {/* Submit */}
         <AnimatedPressable onPress={() => { console.log('[CreateShift] Blast shift button pressed'); handleSubmit(); }} disabled={loading}>
-          <View style={{ backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: loading ? 0.6 : 1, boxShadow: '0 4px 20px rgba(0, 255, 135, 0.3)' }}>
+          <View style={{ backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: loading ? 0.6 : 1, ...(Platform.OS === 'web' ? { boxShadow: '0 4px 20px rgba(0, 255, 135, 0.3)' } : { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 12 }) }}>
             <Zap size={20} color="#000" fill="#000" />
             <Text style={{ color: '#000', fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
               {loading ? 'Blasting...' : 'Blast Shift 🚀'}

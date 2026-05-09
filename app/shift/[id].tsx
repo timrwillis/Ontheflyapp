@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, Alert } from 'react-native';
+import { View, Text, ScrollView, Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
@@ -210,7 +210,7 @@ export default function ShiftDetailScreen() {
             {/* Worker: Accept button */}
             {currentRole === 'worker' && isOpen && (
               <AnimatedPressable onPress={() => { console.log('[ShiftDetail] Accept shift pressed:', id); handleApply(); }} disabled={applying}>
-                <View style={{ backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 18, alignItems: 'center', marginBottom: 16, opacity: applying ? 0.6 : 1, boxShadow: '0 4px 20px rgba(0, 255, 135, 0.3)' }}>
+                <View style={{ backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 18, alignItems: 'center', marginBottom: 16, opacity: applying ? 0.6 : 1, ...(Platform.OS === 'web' ? { boxShadow: '0 4px 20px rgba(0, 255, 135, 0.3)' } : { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 12 }) }}>
                   <Text style={{ color: '#000', fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
                     {applying ? 'Applying...' : 'Accept Shift'}
                   </Text>

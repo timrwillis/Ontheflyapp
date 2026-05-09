@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
 import { apiGet } from '@/utils/api';
@@ -29,7 +29,7 @@ function BusinessCard({ business, index }: { business: Business; index: number }
 
   return (
     <AnimatedPressable onPress={() => console.log('[BusinessesTab] Business pressed:', business.id)}>
-      <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, padding: 16, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>
+      <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, padding: 16, marginBottom: 12, ...(Platform.OS === 'web' ? { boxShadow: '0 2px 8px rgba(0,0,0,0.4)' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }) }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
           <View style={{ flex: 1 }}>
             <Text style={{ color: COLORS.text, fontSize: 17, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 4 }} numberOfLines={1}>

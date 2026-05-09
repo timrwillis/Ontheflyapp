@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated } from 'react-native';
+import { View, Text, Animated, Platform } from 'react-native';
 import { COLORS } from '@/constants/Colors';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { ReliabilityScore } from '@/components/ReliabilityScore';
@@ -64,7 +64,7 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
             borderColor: COLORS.border,
             padding: 16,
             marginBottom: 12,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+            ...(Platform.OS === 'web' ? { boxShadow: '0 2px 8px rgba(0,0,0,0.4)' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }),
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

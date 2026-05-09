@@ -86,7 +86,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
             borderLeftColor: COLORS.primary,
             padding: 16,
             marginBottom: 12,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+            ...(Platform.OS === 'web' ? { boxShadow: '0 2px 8px rgba(0,0,0,0.4)' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }),
           }}
         >
           {/* Top row: role badge + urgency */}

@@ -329,7 +329,7 @@ function ManagerDashboard() {
       {/* Sticky Blast Shift button */}
       <View style={{ position: 'absolute', bottom: 100, left: 20, right: 20 }}>
         <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Blast Shift button pressed'); router.push('/create-shift'); }}>
-          <View style={{ backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 4px 20px rgba(0, 255, 135, 0.3)' }}>
+          <View style={{ backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, ...(Platform.OS === 'web' ? { boxShadow: '0 4px 20px rgba(0, 255, 135, 0.3)' } : { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 12 }) }}>
             <Plus size={20} color="#000" />
             <Text style={{ color: '#000', fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>Blast Shift</Text>
           </View>

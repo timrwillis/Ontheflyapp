@@ -1,4 +1,4 @@
-import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { StyleSheet, ViewStyle, TextStyle, Platform } from 'react-native';
 
 export const colors = {
   primary: '#162456',    // Material Blue
@@ -78,8 +78,7 @@ export const commonStyles = StyleSheet.create({
     padding: 10,
     marginVertical: 8,
     width: '100%',
-    boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
-    elevation: 2,
+    ...(Platform.OS === 'web' ? { boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 3 }),
   },
   icon: {
     width: 60,
