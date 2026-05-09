@@ -1,8 +1,7 @@
 import { fetch as expoFetch } from 'expo/fetch';
-import { polyfillGlobal } from 'react-native/Libraries/Utilities/PolyfillFunctions';
 
 // Replace global fetch with expo/fetch which supports streaming response bodies
-polyfillGlobal('fetch', () => expoFetch);
+global.fetch = expoFetch as unknown as typeof fetch;
 
 // Dynamic imports so missing packages don't break the bundle
 Promise.all([
@@ -10,15 +9,11 @@ Promise.all([
   import('@ungap/structured-clone').catch(() => null),
 ]).then(([streamsModule, structuredCloneModule]) => {
   if (streamsModule) {
-    polyfillGlobal('TextEncoderStream', () => streamsModule.TextEncoderStream);
-    polyfillGlobal('TextDecoderStream', () => streamsModule.TextDecoderStream);
+    (global as any).TextEncoderStream = streamsModule.TextEncoderStream;
+    (global as any).TextDecoderStream = streamsModule.TextDecoderStream;
   }
 
   if (structuredCloneModule && !('structuredClone' in globalThis)) {
-    polyfillGlobal('structuredClone', () => structuredCloneModule.default);
+    (global as any).structuredClone = structuredCloneModule.default;
   }
 });
-
-declare module 'react-native/Libraries/Utilities/PolyfillFunctions' {
-  export function polyfillGlobal(name: string, getValue: () => unknown): void;
-}
