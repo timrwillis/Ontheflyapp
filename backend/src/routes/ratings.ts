@@ -36,6 +36,15 @@ export function registerRatingRoutes(app: App, fastify: FastifyInstance) {
         response: {
           201: {
             type: 'object',
+            properties: {
+              id: { type: 'string' },
+              shiftId: { type: 'string' },
+              workerId: { type: 'string' },
+              managerId: { type: 'string' },
+              score: { type: 'integer' },
+              comment: { type: 'string' },
+              createdAt: { type: 'string', format: 'date-time' },
+            },
           },
           404: {
             type: 'object',
@@ -82,17 +91,17 @@ export function registerRatingRoutes(app: App, fastify: FastifyInstance) {
       }
 
       const newId = `r-${Date.now()}`;
-      const [rating] = await app.db
-        .insert(schema.ratings)
-        .values({
-          id: newId,
-          shiftId: body.shift_id,
-          workerId: body.worker_id,
-          managerId: userId,
-          score: body.score,
-          comment: body.comment,
-        })
-        .returning();
+      const ratingData = {
+        id: newId,
+        shiftId: body.shift_id,
+        workerId: body.worker_id,
+        managerId: userId,
+        score: body.score,
+        comment: body.comment,
+        createdAt: new Date(),
+      };
+
+      await app.db.insert(schema.ratings).values(ratingData);
 
       const allRatings = await app.db
         .select()
@@ -118,8 +127,8 @@ export function registerRatingRoutes(app: App, fastify: FastifyInstance) {
           type: 'rating' as const,
         });
 
-      app.logger.info({ ratingId: rating.id }, 'Rating created');
-      return reply.status(201).send(rating);
+      app.logger.info({ ratingId: ratingData.id }, 'Rating created');
+      return reply.status(201).send(ratingData);
     }
   );
 

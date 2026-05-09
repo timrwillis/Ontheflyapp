@@ -108,6 +108,22 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
             type: 'object',
             properties: {
               id: { type: 'string' },
+              userId: { type: 'string' },
+              name: { type: 'string' },
+              phone: { type: 'string' },
+              city: { type: 'string' },
+              roles: { type: 'array', items: { type: 'string' } },
+              yearsExperience: { type: 'integer' },
+              certifications: { type: 'array', items: { type: 'string' } },
+              hasTransportation: { type: 'boolean' },
+              preferredRadiusMiles: { type: 'integer' },
+              bio: { type: 'string' },
+              photoUrl: { type: 'string' },
+              isAvailable: { type: 'boolean' },
+              reliabilityScore: { type: 'integer' },
+              isVerified: { type: 'boolean' },
+              isSuspended: { type: 'boolean' },
+              createdAt: { type: 'string', format: 'date-time' },
             },
           },
         },
@@ -131,26 +147,30 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       app.logger.info({ name: body.name, userId }, 'Creating worker profile');
 
       const newId = `wp-${Date.now()}`;
-      const [profile] = await app.db
-        .insert(schema.workerProfiles)
-        .values({
-          id: newId,
-          userId,
-          name: body.name,
-          phone: body.phone,
-          city: body.city,
-          roles: body.roles || [],
-          yearsExperience: body.yearsExperience,
-          certifications: body.certifications || [],
-          hasTransportation: body.hasTransportation || false,
-          preferredRadiusMiles: body.preferredRadiusMiles,
-          bio: body.bio,
-          photoUrl: body.photoUrl,
-        })
-        .returning();
+      const profileData = {
+        id: newId,
+        userId,
+        name: body.name,
+        phone: body.phone,
+        city: body.city,
+        roles: body.roles || [],
+        yearsExperience: body.yearsExperience,
+        certifications: body.certifications || [],
+        hasTransportation: body.hasTransportation || false,
+        preferredRadiusMiles: body.preferredRadiusMiles,
+        bio: body.bio,
+        photoUrl: body.photoUrl,
+        isAvailable: false,
+        reliabilityScore: 75,
+        isVerified: false,
+        isSuspended: false,
+        createdAt: new Date(),
+      };
 
-      app.logger.info({ profileId: profile.id }, 'Worker profile created');
-      return reply.status(201).send(profile);
+      await app.db.insert(schema.workerProfiles).values(profileData);
+
+      app.logger.info({ profileId: profileData.id }, 'Worker profile created');
+      return reply.status(201).send(profileData);
     }
   );
 

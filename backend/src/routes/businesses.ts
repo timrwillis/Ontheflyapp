@@ -142,20 +142,20 @@ export function registerBusinessRoutes(app: App, fastify: FastifyInstance) {
       app.logger.info({ name, type, userId }, 'Creating business');
 
       const newId = `b-${Date.now()}`;
-      const [business] = await app.db
-        .insert(schema.businesses)
-        .values({
-          id: newId,
-          userId,
-          name,
-          type: type as any,
-          city,
-          address,
-        })
-        .returning();
+      const businessData = {
+        id: newId,
+        userId,
+        name,
+        type: type as any,
+        city,
+        address,
+        createdAt: new Date(),
+      };
 
-      app.logger.info({ businessId: business.id }, 'Business created');
-      return reply.status(201).send(business);
+      await app.db.insert(schema.businesses).values(businessData);
+
+      app.logger.info({ businessId: businessData.id }, 'Business created');
+      return reply.status(201).send(businessData);
     }
   );
 

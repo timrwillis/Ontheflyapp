@@ -94,24 +94,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         }
       }
 
-      let allShifts = await app.db.select({
-        id: schema.shifts.id,
-        businessId: schema.shifts.businessId,
-        roleNeeded: schema.shifts.roleNeeded,
-        workersNeeded: schema.shifts.workersNeeded,
-        date: schema.shifts.date,
-        startTime: schema.shifts.startTime,
-        endTime: schema.shifts.endTime,
-        hourlyPay: schema.shifts.hourlyPay,
-        location: schema.shifts.location,
-        dressCode: schema.shifts.dressCode,
-        experienceRequired: schema.shifts.experienceRequired,
-        certificationsRequired: schema.shifts.certificationsRequired,
-        notes: schema.shifts.notes,
-        urgency: schema.shifts.urgency,
-        status: schema.shifts.status,
-        createdAt: schema.shifts.createdAt,
-      }).from(schema.shifts);
+      let allShifts = await app.db.select().from(schema.shifts);
 
       if (userRole === 'worker') {
         allShifts = allShifts.filter(
@@ -183,6 +166,24 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         response: {
           201: {
             type: 'object',
+            properties: {
+              id: { type: 'string' },
+              businessId: { type: 'string' },
+              roleNeeded: { type: 'string' },
+              workersNeeded: { type: 'integer' },
+              date: { type: 'string' },
+              startTime: { type: 'string' },
+              endTime: { type: 'string' },
+              hourlyPay: { type: 'string' },
+              location: { type: 'string' },
+              dressCode: { type: 'string' },
+              experienceRequired: { type: 'string' },
+              certificationsRequired: { type: 'array', items: { type: 'string' } },
+              notes: { type: 'string' },
+              urgency: { type: 'string' },
+              status: { type: 'string' },
+              createdAt: { type: 'string', format: 'date-time' },
+            },
           },
           404: {
             type: 'object',
@@ -220,29 +221,29 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       }
 
       const newId = `s-${Date.now()}`;
-      const [shift] = await app.db
-        .insert(schema.shifts)
-        .values({
-          id: newId,
-          businessId: business.id,
-          roleNeeded: body.roleNeeded,
-          workersNeeded: body.workersNeeded || 1,
-          date: body.date,
-          startTime: body.startTime,
-          endTime: body.endTime,
-          hourlyPay: body.hourlyPay,
-          location: body.location,
-          dressCode: body.dressCode,
-          experienceRequired: body.experienceRequired,
-          certificationsRequired: body.certificationsRequired || [],
-          notes: body.notes,
-          urgency: body.urgency as any,
-          status: 'open' as const,
-        })
-        .returning();
+      const shiftData = {
+        id: newId,
+        businessId: business.id,
+        roleNeeded: body.roleNeeded,
+        workersNeeded: body.workersNeeded || 1,
+        date: body.date,
+        startTime: body.startTime,
+        endTime: body.endTime,
+        hourlyPay: body.hourlyPay,
+        location: body.location,
+        dressCode: body.dressCode,
+        experienceRequired: body.experienceRequired,
+        certificationsRequired: body.certificationsRequired || [],
+        notes: body.notes,
+        urgency: body.urgency as any,
+        status: 'open' as const,
+        createdAt: new Date(),
+      };
 
-      app.logger.info({ shiftId: shift.id }, 'Shift created');
-      return reply.status(201).send(shift);
+      await app.db.insert(schema.shifts).values(shiftData);
+
+      app.logger.info({ shiftId: shiftData.id }, 'Shift created');
+      return reply.status(201).send(shiftData);
     }
   );
 
@@ -339,6 +340,25 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         response: {
           200: {
             type: 'object',
+            properties: {
+              id: { type: 'string' },
+              businessId: { type: 'string' },
+              roleNeeded: { type: 'string' },
+              workersNeeded: { type: 'integer' },
+              date: { type: 'string' },
+              startTime: { type: 'string' },
+              endTime: { type: 'string' },
+              hourlyPay: { type: 'string' },
+              location: { type: 'string' },
+              dressCode: { type: 'string' },
+              experienceRequired: { type: 'string' },
+              certificationsRequired: { type: 'array', items: { type: 'string' } },
+              notes: { type: 'string' },
+              urgency: { type: 'string' },
+              status: { type: 'string' },
+              createdAt: { type: 'string', format: 'date-time' },
+              business: { type: 'object' },
+            },
           },
           404: {
             type: 'object',
@@ -364,11 +384,12 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Shift not found' });
       }
 
-      const [updated] = await app.db
+      await app.db
         .update(schema.shifts)
         .set({ status: status as any })
-        .where(eq(schema.shifts.id, id))
-        .returning();
+        .where(eq(schema.shifts.id, id));
+
+      const updated = { ...shift, status: status as any };
 
       const business = await app.db.query.businesses.findFirst({
         where: eq(schema.businesses.id, updated.businessId),
@@ -401,6 +422,14 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         response: {
           201: {
             type: 'object',
+            properties: {
+              id: { type: 'string' },
+              shiftId: { type: 'string' },
+              workerId: { type: 'string' },
+              status: { type: 'string' },
+              appliedAt: { type: 'string', format: 'date-time' },
+              confirmedAt: { type: ['string', 'null'], format: 'date-time' },
+            },
           },
           404: {
             type: 'object',
@@ -447,15 +476,18 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       }
 
       const newAppId = `sa-${Date.now()}`;
-      const [application] = await app.db
+      const applicationData = {
+        id: newAppId,
+        shiftId: id,
+        workerId: worker.id,
+        status: 'pending' as const,
+        appliedAt: new Date(),
+        confirmedAt: null as any,
+      };
+
+      await app.db
         .insert(schema.shiftApplications)
-        .values({
-          id: newAppId,
-          shiftId: id,
-          workerId: worker.id,
-          status: 'pending' as const,
-        })
-        .returning();
+        .values(applicationData);
 
       if (shift.status === 'open') {
         await app.db
@@ -482,8 +514,8 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
           });
       }
 
-      app.logger.info({ applicationId: application.id }, 'Application created');
-      return reply.status(201).send(application);
+      app.logger.info({ applicationId: applicationData.id }, 'Application created');
+      return reply.status(201).send(applicationData);
     }
   );
 

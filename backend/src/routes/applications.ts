@@ -20,6 +20,14 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
         response: {
           200: {
             type: 'object',
+            properties: {
+              id: { type: 'string' },
+              shiftId: { type: 'string' },
+              workerId: { type: 'string' },
+              status: { type: 'string' },
+              appliedAt: { type: 'string', format: 'date-time' },
+              confirmedAt: { type: ['string', 'null'], format: 'date-time' },
+            },
           },
           404: {
             type: 'object',
@@ -44,14 +52,16 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Application not found' });
       }
 
-      const [updated] = await app.db
+      const confirmedAt = new Date();
+      await app.db
         .update(schema.shiftApplications)
         .set({
           status: 'confirmed' as const,
-          confirmedAt: new Date(),
+          confirmedAt,
         })
-        .where(eq(schema.shiftApplications.id, id))
-        .returning();
+        .where(eq(schema.shiftApplications.id, id));
+
+      const updated = { ...application, status: 'confirmed' as const, confirmedAt };
 
       await app.db
         .update(schema.shifts)
@@ -105,6 +115,14 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
         response: {
           200: {
             type: 'object',
+            properties: {
+              id: { type: 'string' },
+              shiftId: { type: 'string' },
+              workerId: { type: 'string' },
+              status: { type: 'string' },
+              appliedAt: { type: 'string', format: 'date-time' },
+              confirmedAt: { type: ['string', 'null'], format: 'date-time' },
+            },
           },
           404: {
             type: 'object',
@@ -129,18 +147,12 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Application not found' });
       }
 
-      const [updated] = await app.db
+      await app.db
         .update(schema.shiftApplications)
         .set({ status: 'rejected' as const })
-        .where(eq(schema.shiftApplications.id, id))
-        .returning({
-          id: schema.shiftApplications.id,
-          shiftId: schema.shiftApplications.shiftId,
-          workerId: schema.shiftApplications.workerId,
-          status: schema.shiftApplications.status,
-          appliedAt: schema.shiftApplications.appliedAt,
-          confirmedAt: schema.shiftApplications.confirmedAt,
-        });
+        .where(eq(schema.shiftApplications.id, id));
+
+      const updated = { ...application, status: 'rejected' as const };
 
       const otherApplications = await app.db
         .select()
