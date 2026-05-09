@@ -58,11 +58,14 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
   const translateY = useRef(new Animated.Value(12)).current;
 
   useEffect(() => {
+    if (!shift?.id) return;
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 350, delay: index * 60, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 350, delay: index * 60, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 350, delay: index * 60, useNativeDriver: false }),
+      Animated.timing(translateY, { toValue: 0, duration: 350, delay: index * 60, useNativeDriver: false }),
     ]).start();
-  }, [index, opacity, translateY]);
+  }, [index, opacity, translateY, shift?.id]);
+
+  if (!shift?.id) return null;
 
   const dateDisplay = formatDate(shift.date);
   const payDisplay = formatPay(shift.hourly_pay);

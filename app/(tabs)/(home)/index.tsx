@@ -38,7 +38,7 @@ function LandingScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: false }).start();
   }, [fadeAnim]);
 
   const handleRoleSelect = async (role: 'manager' | 'worker' | 'admin') => {
