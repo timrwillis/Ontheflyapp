@@ -40,7 +40,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
             properties: {
               shifts: {
                 type: 'array',
-                items: { type: 'object' },
+                items: { type: 'object', additionalProperties: true },
               },
             },
           },
@@ -510,7 +510,9 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
             title: 'New Application Received',
             body: `${worker.name} applied for your ${shift.roleNeeded} shift`,
             type: 'shift_accepted' as const,
+            read: false,
             shiftId: id,
+            createdAt: new Date(),
           });
       }
 
@@ -538,7 +540,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
             properties: {
               applications: {
                 type: 'array',
-                items: { type: 'object' },
+                items: { type: 'object', additionalProperties: true },
               },
             },
           },

@@ -125,6 +125,8 @@ export function registerRatingRoutes(app: App, fastify: FastifyInstance) {
           title: 'New Rating Received',
           body: `You received a ${body.score}/5 rating for your recent shift`,
           type: 'rating' as const,
+          read: false,
+          createdAt: new Date(),
         });
 
       app.logger.info({ ratingId: ratingData.id }, 'Rating created');

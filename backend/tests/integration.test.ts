@@ -307,6 +307,15 @@ describe("API Integration Tests", () => {
     await expectStatus(res, 200);
   });
 
+  test("PATCH /api/shifts/{id} - Missing required status field returns 400", async () => {
+    const res = await authenticatedApi(`/api/shifts/${shiftId}`, authToken, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    await expectStatus(res, 400);
+  });
+
   test("PATCH /api/shifts/{id} - Non-existent shift returns 404", async () => {
     const res = await authenticatedApi("/api/shifts/nonexistent-id", authToken, {
       method: "PATCH",

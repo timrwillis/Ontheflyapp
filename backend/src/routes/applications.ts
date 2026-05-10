@@ -90,7 +90,9 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
             title: 'You got the shift!',
             body: `You have been confirmed for the ${shift!.roleNeeded} shift at ${business.name}`,
             type: 'worker_confirmed' as const,
+            read: false,
             shiftId: application.shiftId,
+            createdAt: new Date(),
           });
       }
 

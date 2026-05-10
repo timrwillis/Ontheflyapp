@@ -128,7 +128,7 @@ export const ratings = pgTable('ratings', {
   id: text('id').primaryKey(),
   shiftId: text('shift_id').notNull().references(() => shifts.id, { onDelete: 'cascade' }),
   workerId: text('worker_id').notNull().references(() => workerProfiles.id, { onDelete: 'cascade' }),
-  managerId: text('manager_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  managerId: text('manager_id').notNull(),
   score: integer('score').notNull(),
   comment: text('comment'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -142,7 +142,7 @@ export const certifications = pgTable('certifications', {
 
 export const notifications = pgTable('notifications', {
   id: text('id').primaryKey(),
-  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
   title: text('title').notNull(),
   body: text('body').notNull(),
   type: notificationTypeEnum('type').notNull(),
