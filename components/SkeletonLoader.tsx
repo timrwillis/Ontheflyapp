@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, View, ViewStyle, StyleProp } from 'react-native';
+import { Animated, View, ViewStyle, StyleProp, Platform } from 'react-native';
 import { COLORS } from '@/constants/Colors';
 
 interface SkeletonLineProps {
@@ -15,8 +15,8 @@ export function SkeletonLine({ width, height = 14, borderRadius, style }: Skelet
   useEffect(() => {
     const anim = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
       ])
     );
     anim.start();

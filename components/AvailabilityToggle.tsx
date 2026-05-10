@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Text, Pressable, Animated } from 'react-native';
+import { View, Text, Pressable, Animated, Platform } from 'react-native';
 import { COLORS } from '@/constants/Colors';
 import { Zap, ZapOff } from 'lucide-react-native';
 
@@ -15,8 +15,8 @@ export function AvailabilityToggle({ isAvailable, onToggle, loading }: Availabil
   const handlePress = () => {
     console.log('[AvailabilityToggle] Toggling availability:', !isAvailable);
     Animated.sequence([
-      Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 50, bounciness: 4 }),
-      Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 4 }),
+      Animated.spring(scale, { toValue: 0.96, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }),
+      Animated.spring(scale, { toValue: 1, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }),
     ]).start();
     onToggle();
   };

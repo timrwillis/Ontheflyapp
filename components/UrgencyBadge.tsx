@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated } from 'react-native';
+import { View, Text, Animated, Platform } from 'react-native';
 import { COLORS } from '@/constants/Colors';
 
 const URGENCY_CONFIG: Record<string, { bg: string; text: string; label: string; pulse: boolean }> = {
@@ -22,8 +22,8 @@ export function UrgencyBadge({ urgency }: UrgencyBadgeProps) {
     if (config.pulse) {
       const anim = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 0.4, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
         ])
       );
       anim.start();
