@@ -11,7 +11,7 @@ import { UrgencyBadge } from '@/components/UrgencyBadge';
 import { ReliabilityScore } from '@/components/ReliabilityScore';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { ShiftCardSkeleton } from '@/components/SkeletonLoader';
-import { MapPin, Clock, DollarSign, Users, Star, CheckCircle, XCircle, Calendar } from 'lucide-react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 interface Application {
   id: string;
@@ -114,13 +114,15 @@ export default function ShiftDetailScreen() {
   };
 
   const dateDisplay = formatDate(shift?.date);
-  const payDisplay = formatPay(shift?.hourly_pay);
-  const timeDisplay = shift?.start_time && shift?.end_time ? `${shift.start_time} – ${shift.end_time}` : shift?.start_time ?? '—';
+  const payDisplay = formatPay(shift?.hourly_pay ?? shift?.hourlyPay);
+  const shiftStartTime = shift?.start_time ?? shift?.startTime;
+  const shiftEndTime = shift?.end_time ?? shift?.endTime;
+  const timeDisplay = shiftStartTime && shiftEndTime ? `${shiftStartTime} – ${shiftEndTime}` : shiftStartTime ?? '—';
   const isOpen = shift?.status === 'open' || shift?.status === 'pending';
 
   return (
     <>
-      <Stack.Screen options={{ title: shift?.role ?? 'Shift Detail' }} />
+      <Stack.Screen options={{ title: shift?.role ?? shift?.roleNeeded ?? 'Shift Detail' }} />
       <ScrollView
         style={{ flex: 1, backgroundColor: COLORS.background }}
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 120 }}
@@ -140,26 +142,26 @@ export default function ShiftDetailScreen() {
             {/* Hero */}
             <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                <RoleBadge role={shift.role ?? 'Staff'} size="md" />
+                <RoleBadge role={shift.role ?? shift.roleNeeded ?? 'Staff'} size="md" />
                 {shift.urgency && <UrgencyBadge urgency={shift.urgency} />}
               </View>
               <Text style={{ color: COLORS.text, fontSize: 22, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 4 }}>
-                {shift.business_name ?? 'Unknown Venue'}
+                {(shift.business_name ?? shift.business?.name) || 'Unknown Venue'}
               </Text>
-              {shift.business_type && (
-                <Text style={{ color: COLORS.textSecondary, fontSize: 14, fontFamily: 'SpaceGrotesk-Regular' }}>{shift.business_type}</Text>
-              )}
+              {(shift.business_type ?? shift.business?.type) ? (
+                <Text style={{ color: COLORS.textSecondary, fontSize: 14, fontFamily: 'SpaceGrotesk-Regular' }}>{shift.business_type ?? shift.business?.type}</Text>
+              ) : null}
             </View>
 
             {/* Info grid */}
             <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16 }}>
               <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', letterSpacing: 1, marginBottom: 12 }}>SHIFT DETAILS</Text>
               {[
-                { icon: <Calendar size={16} color={COLORS.textSecondary} />, label: 'Date', value: dateDisplay },
-                { icon: <Clock size={16} color={COLORS.textSecondary} />, label: 'Time', value: timeDisplay },
-                { icon: <DollarSign size={16} color={COLORS.primary} />, label: 'Pay', value: payDisplay, highlight: true },
-                { icon: <MapPin size={16} color={COLORS.textSecondary} />, label: 'Location', value: shift.location ?? '—' },
-                { icon: <Users size={16} color={COLORS.textSecondary} />, label: 'Workers Needed', value: `${shift.workers_confirmed ?? 0}/${shift.workers_needed ?? 1} filled` },
+                { icon: <MaterialIcons name="calendar-today" size={16} color={COLORS.textSecondary} />, label: 'Date', value: dateDisplay },
+                { icon: <MaterialIcons name="access-time" size={16} color={COLORS.textSecondary} />, label: 'Time', value: timeDisplay },
+                { icon: <MaterialIcons name="attach-money" size={16} color={COLORS.primary} />, label: 'Pay', value: payDisplay, highlight: true },
+                { icon: <MaterialIcons name="place" size={16} color={COLORS.textSecondary} />, label: 'Location', value: shift.location ?? '—' },
+                { icon: <MaterialIcons name="people" size={16} color={COLORS.textSecondary} />, label: 'Workers Needed', value: `${shift.workers_confirmed ?? 0}/${shift.workers_needed ?? shift.workersNeeded ?? 1} filled` },
               ].map((item) => (
                 <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.divider, gap: 10 }}>
                   {item.icon}
@@ -169,28 +171,28 @@ export default function ShiftDetailScreen() {
                   </Text>
                 </View>
               ))}
-              {shift.dress_code && (
+              {(shift.dress_code ?? shift.dressCode) ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.divider, gap: 10 }}>
-                  <Star size={16} color={COLORS.textSecondary} />
+                  <MaterialIcons name="star" size={16} color={COLORS.textSecondary} />
                   <Text style={{ color: COLORS.textSecondary, fontSize: 14, fontFamily: 'SpaceGrotesk-Regular', width: 110 }}>Dress Code</Text>
-                  <Text style={{ color: COLORS.text, fontSize: 14, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>{shift.dress_code}</Text>
+                  <Text style={{ color: COLORS.text, fontSize: 14, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>{shift.dress_code ?? shift.dressCode}</Text>
                 </View>
-              )}
-              {shift.experience_required && (
+              ) : null}
+              {(shift.experience_required ?? shift.experienceRequired) ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 }}>
-                  <Star size={16} color={COLORS.textSecondary} />
+                  <MaterialIcons name="star" size={16} color={COLORS.textSecondary} />
                   <Text style={{ color: COLORS.textSecondary, fontSize: 14, fontFamily: 'SpaceGrotesk-Regular', width: 110 }}>Experience</Text>
-                  <Text style={{ color: COLORS.text, fontSize: 14, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>{shift.experience_required}</Text>
+                  <Text style={{ color: COLORS.text, fontSize: 14, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>{shift.experience_required ?? shift.experienceRequired}</Text>
                 </View>
-              )}
+              ) : null}
             </View>
 
             {/* Certifications */}
-            {shift.certifications_required && shift.certifications_required.length > 0 && (
+            {((shift.certifications_required ?? shift.certificationsRequired) ?? []).length > 0 && (
               <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16 }}>
                 <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', letterSpacing: 1, marginBottom: 10 }}>CERTIFICATIONS REQUIRED</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                  {shift.certifications_required.map((cert) => (
+                  {(shift.certifications_required ?? shift.certificationsRequired ?? []).map((cert) => (
                     <View key={cert} style={{ backgroundColor: COLORS.accentMuted, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
                       <Text style={{ color: COLORS.accent, fontSize: 12, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>{cert}</Text>
                     </View>
@@ -257,7 +259,7 @@ export default function ShiftDetailScreen() {
                             style={{ flex: 1 }}
                           >
                             <View style={{ backgroundColor: COLORS.primaryMuted, borderRadius: 10, paddingVertical: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
-                              <CheckCircle size={16} color={COLORS.primary} />
+                              <MaterialIcons name="check-circle" size={16} color={COLORS.primary} />
                               <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>Confirm</Text>
                             </View>
                           </AnimatedPressable>
@@ -267,7 +269,7 @@ export default function ShiftDetailScreen() {
                             style={{ flex: 1 }}
                           >
                             <View style={{ backgroundColor: COLORS.dangerMuted, borderRadius: 10, paddingVertical: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
-                              <XCircle size={16} color={COLORS.danger} />
+                              <MaterialIcons name="cancel" size={16} color={COLORS.danger} />
                               <Text style={{ color: COLORS.danger, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>Reject</Text>
                             </View>
                           </AnimatedPressable>

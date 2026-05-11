@@ -4,13 +4,23 @@ import { COLORS } from '@/constants/Colors';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { RoleBadge } from '@/components/RoleBadge';
 import { UrgencyBadge } from '@/components/UrgencyBadge';
-import { MapPin, Clock, Users } from 'lucide-react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export interface Shift {
   id: string;
   role: string;
+  // camelCase fields from backend
+  roleNeeded?: string;
+  businessId?: string;
+  workersNeeded?: number;
+  startTime?: string;
+  endTime?: string;
+  hourlyPay?: number | string;
+  // flat name fields (both snake_case and camelCase for compatibility)
   business_name?: string;
   business_type?: string;
+  business?: { name?: string; type?: string; city?: string; address?: string };
+  // other existing fields
   date?: string;
   start_time?: string;
   end_time?: string;
@@ -18,12 +28,15 @@ export interface Shift {
   location?: string;
   urgency?: string;
   dress_code?: string;
+  dressCode?: string;
   workers_needed?: number;
   workers_confirmed?: number;
   status?: string;
   notes?: string;
   experience_required?: string;
+  experienceRequired?: string;
   certifications_required?: string[];
+  certificationsRequired?: string[];
   manager_id?: string;
   business_id?: string;
 }
@@ -91,7 +104,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
         >
           {/* Top row: role badge + urgency */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <RoleBadge role={shift.role ?? 'Staff'} />
+            <RoleBadge role={shift.role ?? shift.roleNeeded ?? 'Staff'} />
             {shift.urgency && <UrgencyBadge urgency={shift.urgency} />}
           </View>
 
@@ -106,12 +119,12 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
             }}
             numberOfLines={1}
           >
-            {shift.business_name ?? 'Unknown Venue'}
+            {(shift.business_name ?? shift.business?.name) || 'Unknown Venue'}
           </Text>
 
           {/* Date + time */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-            <Clock size={14} color={COLORS.textSecondary} />
+            <MaterialIcons name="access-time" size={14} color={COLORS.textSecondary} />
             <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
               {dateDisplay}
             </Text>
@@ -125,7 +138,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
           {/* Location */}
           {shift.location && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-              <MapPin size={14} color={COLORS.textSecondary} />
+              <MaterialIcons name="place" size={14} color={COLORS.textSecondary} />
               <Text
                 style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}
                 numberOfLines={1}
@@ -151,7 +164,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
               </Text>
               {shift.workers_needed && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                  <Users size={12} color={COLORS.textTertiary} />
+                  <MaterialIcons name="people" size={12} color={COLORS.textTertiary} />
                   <Text style={{ color: COLORS.textTertiary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular' }}>
                     {shift.workers_confirmed ?? 0}/{shift.workers_needed} filled
                   </Text>
