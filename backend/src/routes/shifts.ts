@@ -124,6 +124,8 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
           return {
             ...shift,
             business,
+            business_name: business?.name || null,
+            business_type: business?.type || null,
           };
         })
       );
@@ -312,6 +314,8 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       return {
         ...shift,
         business,
+        business_name: business?.name || null,
+        business_type: business?.type || null,
         applications: applicationsWithWorkers,
       };
     }
@@ -396,7 +400,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       });
 
       app.logger.info({ id, status }, 'Shift status updated');
-      return { ...updated, business };
+      return { ...updated, business, business_name: business?.name || null, business_type: business?.type || null };
     }
   );
 

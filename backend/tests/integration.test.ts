@@ -216,6 +216,15 @@ describe("API Integration Tests", () => {
     await expectStatus(res, 400);
   });
 
+  test("PATCH /api/worker-profiles/{id}/availability - Non-existent worker returns 404", async () => {
+    const res = await authenticatedApi("/api/worker-profiles/nonexistent-id/availability", authToken, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_available: true }),
+    });
+    await expectStatus(res, 404);
+  });
+
   test("PATCH /api/worker-profiles/{id}/verify - Verify worker", async () => {
     const res = await authenticatedApi(`/api/worker-profiles/${workerId}/verify`, authToken, {
       method: "PATCH",
