@@ -6,7 +6,7 @@ import { COLORS } from '@/constants/Colors';
 import { useRole, Role } from '@/contexts/RoleContext';
 import { ReliabilityScore } from '@/components/ReliabilityScore';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
-import { CheckCircle, Edit, Shield, Building2, Star, Zap } from 'lucide-react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 function getInitials(name: string): string {
   return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
@@ -21,9 +21,9 @@ function RoleSwitcher() {
   };
 
   const roles: { role: Role; label: string; icon: React.ReactNode }[] = [
-    { role: 'manager', label: 'Manager', icon: <Building2 size={16} color={currentRole === 'manager' ? '#000' : COLORS.textSecondary} /> },
-    { role: 'worker', label: 'Worker', icon: <Zap size={16} color={currentRole === 'worker' ? '#000' : COLORS.textSecondary} /> },
-    { role: 'admin', label: 'Admin', icon: <Shield size={16} color={currentRole === 'admin' ? '#000' : COLORS.textSecondary} /> },
+    { role: 'manager', label: 'Manager', icon: <MaterialIcons name="business" size={16} color={currentRole === 'manager' ? '#000' : COLORS.textSecondary} /> },
+    { role: 'worker', label: 'Worker', icon: <MaterialIcons name="bolt" size={16} color={currentRole === 'worker' ? '#000' : COLORS.textSecondary} /> },
+    { role: 'admin', label: 'Admin', icon: <MaterialIcons name="shield" size={16} color={currentRole === 'admin' ? '#000' : COLORS.textSecondary} /> },
   ];
 
   return (
@@ -74,7 +74,7 @@ function WorkerProfile() {
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
           <Text style={{ color: COLORS.text, fontSize: 22, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold' }}>{name}</Text>
-          {workerProfile?.isVerified && <CheckCircle size={18} color={COLORS.primary} fill={COLORS.primary} />}
+          {workerProfile?.isVerified && <MaterialIcons name="check-circle" size={18} color={COLORS.primary} />}
         </View>
         {workerProfile?.city && (
           <Text style={{ color: COLORS.textSecondary, fontSize: 14, fontFamily: 'SpaceGrotesk-Regular', marginBottom: 12 }}>{workerProfile.city}</Text>
@@ -130,7 +130,7 @@ function WorkerProfile() {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {certs.map((cert) => (
               <View key={cert} style={{ backgroundColor: COLORS.accentMuted, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Star size={12} color={COLORS.accent} fill={COLORS.accent} />
+                <MaterialIcons name="star" size={12} color={COLORS.accent} />
                 <Text style={{ color: COLORS.accent, fontSize: 12, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>{cert}</Text>
               </View>
             ))}
@@ -141,7 +141,7 @@ function WorkerProfile() {
       {/* Edit profile button */}
       <AnimatedPressable onPress={() => { console.log('[Profile] Edit profile pressed'); router.push('/edit-profile'); }}>
         <View style={{ backgroundColor: COLORS.surface, borderRadius: 14, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: COLORS.border, marginBottom: 20 }}>
-          <Edit size={18} color={COLORS.primary} />
+          <MaterialIcons name="edit" size={18} color={COLORS.primary} />
           <Text style={{ color: COLORS.primary, fontSize: 15, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>Edit Profile</Text>
         </View>
       </AnimatedPressable>
@@ -171,7 +171,7 @@ function ManagerProfile() {
         <Text style={{ color: COLORS.text, fontSize: 22, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 4 }}>{name}</Text>
         {currentUser?.business_name && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Building2 size={14} color={COLORS.textSecondary} />
+            <MaterialIcons name="business" size={14} color={COLORS.textSecondary} />
             <Text style={{ color: COLORS.textSecondary, fontSize: 14, fontFamily: 'SpaceGrotesk-Regular' }}>{currentUser.business_name}</Text>
           </View>
         )}
@@ -222,7 +222,7 @@ function AdminProfile() {
         </View>
         <Text style={{ color: COLORS.text, fontSize: 22, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 8 }}>{name}</Text>
         <View style={{ backgroundColor: COLORS.dangerMuted, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Shield size={14} color={COLORS.danger} />
+          <MaterialIcons name="shield" size={14} color={COLORS.danger} />
           <Text style={{ color: COLORS.danger, fontSize: 12, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 0.5 }}>ADMIN ACCESS</Text>
         </View>
       </View>

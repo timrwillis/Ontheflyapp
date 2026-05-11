@@ -9,7 +9,7 @@ import { ShiftCard, Shift } from '@/components/ShiftCard';
 import { ReliabilityScore } from '@/components/ReliabilityScore';
 import { ShiftCardSkeleton } from '@/components/SkeletonLoader';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
-import { Calendar } from 'lucide-react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const MANAGER_TABS = ['Open', 'Pending', 'Filled', 'Completed'];
 const WORKER_TABS = ['Upcoming', 'Completed'];
@@ -91,7 +91,7 @@ export default function ShiftsScreen() {
     >
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <Calendar size={22} color={COLORS.primary} />
+        <MaterialIcons name="calendar-today" size={22} color={COLORS.primary} />
         <Text style={{ color: COLORS.text, fontSize: 24, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
           {currentRole === 'worker' ? 'My Shifts' : 'Shifts'}
         </Text>
@@ -124,7 +124,7 @@ export default function ShiftsScreen() {
       ) : filteredShifts.length === 0 ? (
         <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, padding: 40, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border }}>
           <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: COLORS.primaryMuted, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-            <Calendar size={28} color={COLORS.primary} />
+            <MaterialIcons name="calendar-today" size={28} color={COLORS.primary} />
           </View>
           <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 6 }}>
             No {selectedTab.toLowerCase()} shifts
