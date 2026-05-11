@@ -22,6 +22,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 // ─── Landing Screen ───────────────────────────────────────────────────────────
 
+const ROLE_CARDS = ['Bartender', 'Server', 'Cook', 'Dishwasher', 'Host', 'Event Staff'];
+
 function LandingScreen() {
   const { setRole } = useRole();
   const router = useRouter();
@@ -30,8 +32,6 @@ function LandingScreen() {
     console.log('[Landing] Role selected:', role);
     await setRole(role);
   };
-
-  const ROLE_CARDS = ['Bartender', 'Server', 'Cook', 'Dishwasher', 'Host', 'Event Staff'];
   const HOW_IT_WORKS = [
     { icon: '🍽', title: 'Post shift', desc: 'Describe the role, time, and pay' },
     { icon: '⚡', title: 'Alert workers', desc: 'Available staff get notified instantly' },
