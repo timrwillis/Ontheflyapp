@@ -86,24 +86,32 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
     ? `${shift.start_time} – ${shift.end_time}`
     : shift.start_time ?? '';
 
+  const urgencyBorderColor =
+    shift.urgency === 'tonight' ? 'rgba(255, 68, 68, 0.45)' :
+    shift.urgency === 'tomorrow' ? 'rgba(255, 184, 0, 0.35)' :
+    shift.urgency === 'this_week' ? 'rgba(96, 165, 250, 0.30)' :
+    'rgba(255, 255, 255, 0.08)';
+
   return (
     <Animated.View style={{ opacity, transform: [{ translateY }] }}>
       <AnimatedPressable onPress={onPress}>
         <View
           style={{
-            backgroundColor: COLORS.surface,
-            borderRadius: 16,
+            backgroundColor: COLORS.surfaceSecondary,
+            borderRadius: 20,
             borderWidth: 1,
-            borderColor: COLORS.border,
-            borderLeftWidth: 3,
-            borderLeftColor: COLORS.primary,
-            padding: 16,
-            marginBottom: 12,
-            ...(Platform.OS === 'web' ? { boxShadow: '0 2px 8px rgba(0,0,0,0.4)' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }),
+            borderColor: urgencyBorderColor,
+            padding: 18,
+            marginBottom: 14,
+            ...(Platform.OS === 'web'
+              ? { boxShadow: shift.urgency === 'tonight'
+                  ? '0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,68,68,0.3)'
+                  : '0 4px 16px rgba(0,0,0,0.5)' }
+              : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 8 }),
           }}
         >
           {/* Top row: role badge + urgency */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <RoleBadge role={shift.role ?? shift.roleNeeded ?? 'Staff'} />
             {shift.urgency && <UrgencyBadge urgency={shift.urgency} />}
           </View>
@@ -112,10 +120,10 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
           <Text
             style={{
               color: COLORS.text,
-              fontSize: 17,
+              fontSize: 18,
               fontWeight: '700',
               fontFamily: 'SpaceGrotesk-Bold',
-              marginBottom: 4,
+              marginBottom: 6,
             }}
             numberOfLines={1}
           >
@@ -123,7 +131,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
           </Text>
 
           {/* Date + time */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4, opacity: 0.85 }}>
             <MaterialIcons name="access-time" size={14} color={COLORS.textSecondary} />
             <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
               {dateDisplay}
@@ -137,7 +145,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
 
           {/* Location */}
           {shift.location && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14, opacity: 0.85 }}>
               <MaterialIcons name="place" size={14} color={COLORS.textSecondary} />
               <Text
                 style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}
@@ -148,24 +156,28 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
             </View>
           )}
 
+          {/* Divider */}
+          <View style={{ height: 1, backgroundColor: COLORS.divider, marginBottom: 14 }} />
+
           {/* Bottom row: pay + workers + accept button */}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View>
               <Text
                 style={{
                   color: COLORS.primary,
-                  fontSize: 24,
+                  fontSize: 28,
                   fontWeight: '700',
                   fontFamily: 'SpaceGrotesk-Bold',
-                  letterSpacing: -0.5,
+                  letterSpacing: -1,
+                  lineHeight: 32,
                 }}
               >
                 {payDisplay}
               </Text>
               {shift.workers_needed && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
                   <MaterialIcons name="people" size={12} color={COLORS.textTertiary} />
-                  <Text style={{ color: COLORS.textTertiary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular' }}>
+                  <Text style={{ color: COLORS.textTertiary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
                     {shift.workers_confirmed ?? 0}/{shift.workers_needed} filled
                   </Text>
                 </View>
@@ -183,11 +195,13 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
                 <View
                   style={{
                     backgroundColor: COLORS.primary,
-                    borderRadius: 10,
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
+                    borderRadius: 12,
+                    paddingHorizontal: 20,
+                    paddingVertical: 12,
                     minWidth: 110,
+                    minHeight: 44,
                     alignItems: 'center',
+                    justifyContent: 'center',
                     opacity: acceptLoading ? 0.6 : 1,
                   }}
                 >
@@ -216,18 +230,18 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const configs: Record<string, { bg: string; text: string }> = {
-    open: { bg: COLORS.primaryMuted, text: COLORS.primary },
-    pending: { bg: COLORS.accentMuted, text: COLORS.accent },
-    filled: { bg: 'rgba(59, 130, 246, 0.15)', text: '#60A5FA' },
-    completed: { bg: 'rgba(107, 114, 128, 0.15)', text: '#9CA3AF' },
-    cancelled: { bg: COLORS.dangerMuted, text: COLORS.danger },
+  const configs: Record<string, { bg: string; text: string; border: string }> = {
+    open:      { bg: COLORS.primaryMuted,              text: COLORS.primary,  border: 'rgba(0, 255, 135, 0.3)' },
+    pending:   { bg: COLORS.accentMuted,               text: COLORS.accent,   border: 'rgba(255, 184, 0, 0.3)' },
+    filled:    { bg: 'rgba(59, 130, 246, 0.15)',       text: '#60A5FA',       border: 'rgba(96, 165, 250, 0.3)' },
+    completed: { bg: 'rgba(107, 114, 128, 0.15)',      text: '#9CA3AF',       border: 'rgba(156, 163, 175, 0.3)' },
+    cancelled: { bg: COLORS.dangerMuted,               text: COLORS.danger,   border: 'rgba(255, 68, 68, 0.3)' },
   };
   const cfg = configs[status?.toLowerCase()] ?? configs['open'];
   const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Open';
 
   return (
-    <View style={{ backgroundColor: cfg.bg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
+    <View style={{ backgroundColor: cfg.bg, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: cfg.border }}>
       <Text style={{ color: cfg.text, fontSize: 12, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
         {label}
       </Text>
