@@ -28,7 +28,6 @@ import {
   AlertTriangle,
   LayoutDashboard,
   Building2,
-  Zap,
 } from 'lucide-react-native';
 
 // ─── Landing Screen ───────────────────────────────────────────────────────────
@@ -75,9 +74,9 @@ function LandingScreen() {
         {/* Hero */}
         <View style={{ paddingTop: 80, paddingBottom: 40, alignItems: 'center' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <Zap size={28} color={COLORS.primary} fill={COLORS.primary} />
+            <Text style={{ fontSize: 28 }}>⚡</Text>
             <Text style={{ color: COLORS.primary, fontSize: 32, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1 }}>
-              ShiftSlinger
+              Bar Fly
             </Text>
           </View>
           <Text style={{ color: COLORS.textSecondary, fontSize: 14, fontFamily: 'SpaceGrotesk-Regular', marginBottom: 32, textAlign: 'center' }}>
@@ -586,7 +585,7 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' }}>
-        <Zap size={32} color={COLORS.primary} fill={COLORS.primary} />
+        <Text style={{ fontSize: 32 }}>⚡</Text>
       </View>
     );
   }

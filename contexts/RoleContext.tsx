@@ -54,7 +54,7 @@ const RoleContext = createContext<RoleContextType>({
   refreshWorkerProfile: async () => {},
 });
 
-const ROLE_STORAGE_KEY = '@shiftslinger_role';
+const ROLE_STORAGE_KEY = '@barfly_role';
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const [currentRole, setCurrentRole] = useState<Role>(null);

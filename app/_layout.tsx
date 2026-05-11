@@ -43,7 +43,7 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  const ShiftSlingerDarkTheme: Theme = {
+  const BarFlyDarkTheme: Theme = {
     ...DarkTheme,
     colors: {
       primary: "#00FF87",
@@ -60,7 +60,7 @@ export default function RootLayout() {
   return (
     <DevErrorBoundary>
       <StatusBar style="light" animated />
-      <ThemeProvider value={ShiftSlingerDarkTheme}>
+      <ThemeProvider value={BarFlyDarkTheme}>
         <SafeAreaProvider>
           <RoleProvider>
             <WidgetProvider>
