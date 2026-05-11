@@ -9,18 +9,15 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 export interface Shift {
   id: string;
   role: string;
-  // camelCase fields from backend
   roleNeeded?: string;
   businessId?: string;
   workersNeeded?: number;
   startTime?: string;
   endTime?: string;
   hourlyPay?: number | string;
-  // flat name fields (both snake_case and camelCase for compatibility)
   business_name?: string;
   business_type?: string;
   business?: { name?: string; type?: string; city?: string; address?: string };
-  // other existing fields
   date?: string;
   start_time?: string;
   end_time?: string;
@@ -62,7 +59,7 @@ function formatDate(dateStr?: string): string {
 
 function formatPay(pay?: number | string): string {
   const num = Number(pay);
-  if (isNaN(num)) return '$--';
+  if (isNaN(num) || num === 0) return '$--';
   return `$${num.toFixed(0)}/hr`;
 }
 
@@ -81,7 +78,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
   if (!shift?.id) return null;
 
   const dateDisplay = formatDate(shift.date);
-  const payDisplay = formatPay(shift.hourly_pay);
+  const payDisplay = formatPay(shift.hourly_pay ?? shift.hourlyPay);
   const timeDisplay = shift.start_time && shift.end_time
     ? `${shift.start_time} – ${shift.end_time}`
     : shift.start_time ?? '';
@@ -92,28 +89,45 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
     shift.urgency === 'this_week' ? 'rgba(96, 165, 250, 0.30)' :
     'rgba(255, 255, 255, 0.08)';
 
+  const isEmergency = shift.urgency === 'tonight';
+  const businessName = (shift.business_name ?? shift.business?.name) || 'Unknown Venue';
+  const roleLabel = shift.role ?? shift.roleNeeded ?? 'Staff';
+
   return (
     <Animated.View style={{ opacity, transform: [{ translateY }] }}>
       <AnimatedPressable onPress={onPress}>
         <View
           style={{
-            backgroundColor: COLORS.surfaceSecondary,
+            backgroundColor: 'rgba(255,255,255,0.04)',
             borderRadius: 20,
             borderWidth: 1,
             borderColor: urgencyBorderColor,
             padding: 18,
             marginBottom: 14,
             ...(Platform.OS === 'web'
-              ? { boxShadow: shift.urgency === 'tonight'
-                  ? '0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,68,68,0.3)'
-                  : '0 4px 16px rgba(0,0,0,0.5)' }
-              : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 8 }),
+              ? {
+                  boxShadow: isEmergency
+                    ? '0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,68,68,0.25)'
+                    : '0 4px 16px rgba(0,0,0,0.5)',
+                }
+              : {
+                  shadowColor: isEmergency ? '#FF4444' : '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: isEmergency ? 0.3 : 0.5,
+                  shadowRadius: 12,
+                  elevation: 8,
+                }),
           }}
         >
           {/* Top row: role badge + urgency */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <RoleBadge role={shift.role ?? shift.roleNeeded ?? 'Staff'} />
-            {shift.urgency && <UrgencyBadge urgency={shift.urgency} />}
+            <RoleBadge role={roleLabel} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {shift.urgency && <UrgencyBadge urgency={shift.urgency} />}
+              {isEmergency && (
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.danger }} />
+              )}
+            </View>
           </View>
 
           {/* Business name */}
@@ -123,25 +137,29 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
               fontSize: 18,
               fontWeight: '700',
               fontFamily: 'SpaceGrotesk-Bold',
-              marginBottom: 6,
+              marginBottom: 8,
             }}
             numberOfLines={1}
           >
-            {(shift.business_name ?? shift.business?.name) || 'Unknown Venue'}
+            {businessName}
           </Text>
 
           {/* Date + time */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4, opacity: 0.85 }}>
-            <MaterialIcons name="access-time" size={14} color={COLORS.textSecondary} />
-            <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
-              {dateDisplay}
-            </Text>
-            {timeDisplay !== '' && (
-              <Text style={{ color: COLORS.textTertiary, fontSize: 13 }}>
-                {timeDisplay}
-              </Text>
-            )}
-          </View>
+          {(dateDisplay || timeDisplay) && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4, opacity: 0.85 }}>
+              <MaterialIcons name="access-time" size={14} color={COLORS.textSecondary} />
+              {dateDisplay !== '' && (
+                <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
+                  {dateDisplay}
+                </Text>
+              )}
+              {timeDisplay !== '' && (
+                <Text style={{ color: COLORS.textTertiary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
+                  {timeDisplay}
+                </Text>
+              )}
+            </View>
+          )}
 
           {/* Location */}
           {shift.location && (
@@ -164,7 +182,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
             <View>
               <Text
                 style={{
-                  color: COLORS.primary,
+                  color: COLORS.accent,
                   fontSize: 28,
                   fontWeight: '700',
                   fontFamily: 'SpaceGrotesk-Bold',
@@ -178,7 +196,13 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
                   <MaterialIcons name="people" size={12} color={COLORS.textTertiary} />
                   <Text style={{ color: COLORS.textTertiary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
-                    {shift.workers_confirmed ?? 0}/{shift.workers_needed} filled
+                    {shift.workers_confirmed ?? 0}
+                  </Text>
+                  <Text style={{ color: COLORS.textTertiary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
+                    /
+                  </Text>
+                  <Text style={{ color: COLORS.textTertiary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
+                    {shift.workers_needed} filled
                   </Text>
                 </View>
               )}
@@ -203,6 +227,9 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
                     alignItems: 'center',
                     justifyContent: 'center',
                     opacity: acceptLoading ? 0.6 : 1,
+                    ...(Platform.OS === 'web'
+                      ? { boxShadow: '0 0 16px rgba(0, 255, 135, 0.35)' }
+                      : { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 6 }),
                   }}
                 >
                   <Text

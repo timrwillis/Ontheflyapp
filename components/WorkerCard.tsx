@@ -3,7 +3,7 @@ import { View, Text, Animated, Platform } from 'react-native';
 import { COLORS } from '@/constants/Colors';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { ReliabilityScore } from '@/components/ReliabilityScore';
-import { CheckCircle } from 'lucide-react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export interface WorkerProfile {
   id: string;
@@ -37,6 +37,21 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+function getScoreColor(score: number): string {
+  if (score >= 95) return COLORS.primary;
+  if (score >= 85) return COLORS.accent;
+  return COLORS.danger;
+}
+
+const ROLE_PILL_COLORS: Record<string, { bg: string; text: string }> = {
+  Bartender:    { bg: 'rgba(139, 92, 246, 0.2)',  text: '#A78BFA' },
+  Server:       { bg: 'rgba(59, 130, 246, 0.2)',  text: '#60A5FA' },
+  Cook:         { bg: 'rgba(249, 115, 22, 0.2)',  text: '#FB923C' },
+  Dishwasher:   { bg: 'rgba(107, 114, 128, 0.2)', text: '#9CA3AF' },
+  Host:         { bg: 'rgba(20, 184, 166, 0.2)',  text: '#2DD4BF' },
+  'Event Staff':{ bg: 'rgba(236, 72, 153, 0.2)',  text: '#F472B6' },
+};
+
 export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSuspend, index = 0 }: WorkerCardProps) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(12)).current;
@@ -51,31 +66,35 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
   const initials = getInitials(worker.name ?? 'U');
   const roles = worker.roles ?? [];
   const score = worker.reliabilityScore ?? 0;
+  const scoreColor = getScoreColor(score);
+  const availabilityDotColor = worker.isAvailable ? COLORS.primary : COLORS.textTertiary;
 
   return (
     <Animated.View style={{ opacity, transform: [{ translateY }] }}>
       <AnimatedPressable onPress={onPress}>
         <View
           style={{
-            backgroundColor: COLORS.surface,
-            borderRadius: 16,
+            backgroundColor: 'rgba(255,255,255,0.04)',
+            borderRadius: 20,
             borderWidth: 1,
-            borderColor: COLORS.border,
+            borderColor: 'rgba(255,255,255,0.08)',
             padding: 16,
             marginBottom: 12,
-            ...(Platform.OS === 'web' ? { boxShadow: '0 2px 8px rgba(0,0,0,0.4)' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }),
+            ...(Platform.OS === 'web'
+              ? { boxShadow: '0 4px 16px rgba(0,0,0,0.5)' }
+              : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 8 }),
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            {/* Avatar */}
+            {/* Avatar with availability ring */}
             <View style={{ position: 'relative' }}>
               <View
                 style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 26,
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
                   backgroundColor: COLORS.primaryMuted,
-                  borderWidth: 2,
+                  borderWidth: 2.5,
                   borderColor: worker.isAvailable ? COLORS.primary : COLORS.border,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -98,10 +117,10 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
                   position: 'absolute',
                   bottom: 1,
                   right: 1,
-                  width: 12,
-                  height: 12,
-                  borderRadius: 6,
-                  backgroundColor: worker.isAvailable ? COLORS.primary : COLORS.textTertiary,
+                  width: 13,
+                  height: 13,
+                  borderRadius: 7,
+                  backgroundColor: availabilityDotColor,
                   borderWidth: 2,
                   borderColor: COLORS.surface,
                 }}
@@ -110,7 +129,7 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
 
             {/* Info */}
             <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                 <Text
                   style={{
                     color: COLORS.text,
@@ -123,50 +142,60 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
                   {worker.name}
                 </Text>
                 {worker.isVerified && (
-                  <CheckCircle size={14} color={COLORS.primary} fill={COLORS.primary} />
+                  <MaterialIcons name="verified" size={15} color={COLORS.primary} />
                 )}
               </View>
               {worker.city && (
-                <Text
-                  style={{
-                    color: COLORS.textSecondary,
-                    fontSize: 12,
-                    fontFamily: 'SpaceGrotesk-Regular',
-                    marginBottom: 6,
-                  }}
-                >
-                  {worker.city}
-                </Text>
-              )}
-              {/* Role chips */}
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
-                {roles.slice(0, 3).map((role) => (
-                  <View
-                    key={role}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                  <MaterialIcons name="place" size={12} color={COLORS.textSecondary} />
+                  <Text
                     style={{
-                      backgroundColor: COLORS.surfaceSecondary,
-                      borderRadius: 4,
-                      paddingHorizontal: 6,
-                      paddingVertical: 2,
+                      color: COLORS.textSecondary,
+                      fontSize: 12,
+                      fontFamily: 'SpaceGrotesk-Regular',
                     }}
                   >
-                    <Text
+                    {worker.city}
+                  </Text>
+                </View>
+              )}
+              {/* Role pills */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+                {roles.slice(0, 3).map((role) => {
+                  const pillColor = ROLE_PILL_COLORS[role] ?? { bg: COLORS.primaryMuted, text: COLORS.primary };
+                  return (
+                    <View
+                      key={role}
                       style={{
-                        color: COLORS.textSecondary,
-                        fontSize: 10,
-                        fontWeight: '600',
-                        fontFamily: 'SpaceGrotesk-SemiBold',
+                        backgroundColor: pillColor.bg,
+                        borderRadius: 6,
+                        paddingHorizontal: 7,
+                        paddingVertical: 3,
                       }}
                     >
-                      {role}
-                    </Text>
-                  </View>
-                ))}
+                      <Text
+                        style={{
+                          color: pillColor.text,
+                          fontSize: 10,
+                          fontWeight: '600',
+                          fontFamily: 'SpaceGrotesk-SemiBold',
+                        }}
+                      >
+                        {role}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
             </View>
 
-            {/* Score */}
-            <ReliabilityScore score={score} size={52} showLabel={false} />
+            {/* Reliability score */}
+            <View style={{ alignItems: 'center', gap: 4 }}>
+              <ReliabilityScore score={score} size={52} showLabel={false} />
+              <Text style={{ color: scoreColor, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                {score}
+              </Text>
+            </View>
           </View>
 
           {/* Admin actions */}
@@ -186,6 +215,8 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
                       borderRadius: 8,
                       paddingVertical: 8,
                       alignItems: 'center',
+                      borderWidth: 1,
+                      borderColor: 'rgba(0, 255, 135, 0.3)',
                     }}
                   >
                     <Text style={{ color: COLORS.primary, fontSize: 12, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
@@ -21,8 +21,20 @@ function SegmentedControl({ options, selected, onSelect }: { options: string[]; 
         const isActive = selected === opt;
         return (
           <AnimatedPressable key={opt} onPress={() => { console.log('[ShiftsTab] Segment selected:', opt); onSelect(opt); }} style={{ flex: 1 }}>
-            <View style={{ backgroundColor: isActive ? COLORS.surface : 'transparent', borderRadius: 9, paddingVertical: 8, alignItems: 'center', borderWidth: isActive ? 1 : 0, borderColor: COLORS.border }}>
-              <Text style={{ color: isActive ? COLORS.text : COLORS.textSecondary, fontSize: 13, fontWeight: isActive ? '600' : '400', fontFamily: isActive ? 'SpaceGrotesk-SemiBold' : 'SpaceGrotesk-Regular' }}>
+            <View style={{
+              backgroundColor: isActive ? COLORS.surface : 'transparent',
+              borderRadius: 9,
+              paddingVertical: 8,
+              alignItems: 'center',
+              borderWidth: isActive ? 1 : 0,
+              borderColor: COLORS.border,
+            }}>
+              <Text style={{
+                color: isActive ? COLORS.text : COLORS.textSecondary,
+                fontSize: 13,
+                fontWeight: isActive ? '600' : '400',
+                fontFamily: isActive ? 'SpaceGrotesk-SemiBold' : 'SpaceGrotesk-Regular',
+              }}>
                 {opt}
               </Text>
             </View>
@@ -99,15 +111,30 @@ export default function ShiftsScreen() {
 
       {/* Worker reliability score */}
       {currentRole === 'worker' && workerProfile && (
-        <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: COLORS.border, marginBottom: 20, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+        <View style={{
+          backgroundColor: 'rgba(255,255,255,0.04)',
+          borderRadius: 16,
+          padding: 20,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.08)',
+          marginBottom: 20,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 16,
+        }}>
           <ReliabilityScore score={workerProfile.reliabilityScore ?? 0} size={72} />
           <View style={{ flex: 1 }}>
-            <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginBottom: 4 }}>Reliability Score</Text>
-            <Text style={{ color: COLORS.text, fontSize: 18, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-              {workerProfile.reliabilityScore ?? 0}/100
+            <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginBottom: 4 }}>
+              Reliability Score
+            </Text>
+            <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+              {workerProfile.reliabilityScore ?? 0}
+            </Text>
+            <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular' }}>
+              /100
             </Text>
             <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginTop: 4 }}>
-              {(workerProfile.completedShifts ?? 0)} shifts completed
+              {workerProfile.completedShifts ?? 0} shifts completed
             </Text>
           </View>
         </View>
@@ -122,7 +149,14 @@ export default function ShiftsScreen() {
           <ShiftCardSkeleton />
         </>
       ) : filteredShifts.length === 0 ? (
-        <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, padding: 40, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border }}>
+        <View style={{
+          backgroundColor: 'rgba(255,255,255,0.04)',
+          borderRadius: 16,
+          padding: 40,
+          alignItems: 'center',
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.08)',
+        }}>
           <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: COLORS.primaryMuted, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
             <MaterialIcons name="calendar-today" size={28} color={COLORS.primary} />
           </View>

@@ -77,12 +77,24 @@ export default function WorkersScreen() {
           Workers
         </Text>
         <View style={{ marginLeft: 'auto', backgroundColor: COLORS.primaryMuted, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-          <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>{workers.length}</Text>
+          <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
+            {workers.length}
+          </Text>
         </View>
       </View>
 
       {/* Search bar */}
-      <View style={{ backgroundColor: COLORS.surfaceSecondary, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, marginBottom: 12, height: 48 }}>
+      <View style={{
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 14,
+        marginBottom: 12,
+        height: 48,
+      }}>
         <MaterialIcons name="search" size={18} color={COLORS.textSecondary} />
         <TextInput
           value={search}
@@ -91,11 +103,28 @@ export default function WorkersScreen() {
           placeholderTextColor={COLORS.textTertiary}
           style={{ flex: 1, color: COLORS.text, fontSize: 15, marginLeft: 10, fontFamily: 'SpaceGrotesk-Regular' }}
         />
+        {search.length > 0 && (
+          <AnimatedPressable onPress={() => setSearch('')}>
+            <MaterialIcons name="close" size={18} color={COLORS.textSecondary} />
+          </AnimatedPressable>
+        )}
       </View>
 
       {/* Available Now filter */}
       <AnimatedPressable onPress={() => { console.log('[WorkersTab] Available filter toggled:', !availableOnly); setAvailableOnly(!availableOnly); }}>
-        <View style={{ backgroundColor: availableOnly ? COLORS.primaryMuted : COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: availableOnly ? COLORS.primary : COLORS.border, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 20, alignSelf: 'flex-start' }}>
+        <View style={{
+          backgroundColor: availableOnly ? COLORS.primaryMuted : 'rgba(255,255,255,0.04)',
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: availableOnly ? COLORS.primary : 'rgba(255,255,255,0.08)',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+          marginBottom: 20,
+          alignSelf: 'flex-start',
+        }}>
           <MaterialIcons name="bolt" size={16} color={availableOnly ? COLORS.primary : COLORS.textSecondary} />
           <Text style={{ color: availableOnly ? COLORS.primary : COLORS.textSecondary, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
             Available Now
@@ -111,11 +140,20 @@ export default function WorkersScreen() {
           <WorkerCardSkeleton />
         </>
       ) : filtered.length === 0 ? (
-        <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, padding: 40, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border }}>
+        <View style={{
+          backgroundColor: 'rgba(255,255,255,0.04)',
+          borderRadius: 16,
+          padding: 40,
+          alignItems: 'center',
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.08)',
+        }}>
           <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: COLORS.primaryMuted, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
             <MaterialIcons name="people" size={28} color={COLORS.primary} />
           </View>
-          <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 6 }}>No workers found</Text>
+          <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 6 }}>
+            No workers found
+          </Text>
           <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center', fontFamily: 'SpaceGrotesk-Regular' }}>
             Try adjusting your search or filters.
           </Text>
