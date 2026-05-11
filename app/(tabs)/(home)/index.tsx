@@ -45,15 +45,6 @@ function LandingScreen() {
       contentContainerStyle={{ paddingBottom: 60 }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Grid background pattern */}
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 400, overflow: 'hidden' }}>
-        {Array.from({ length: 10 }).map((_, i) => (
-          <View key={i} style={{ position: 'absolute', top: i * 40, left: 0, right: 0, height: 1, backgroundColor: COLORS.divider }} />
-        ))}
-        {Array.from({ length: 8 }).map((_, i) => (
-          <View key={i} style={{ position: 'absolute', left: i * 50, top: 0, bottom: 0, width: 1, backgroundColor: COLORS.divider }} />
-        ))}
-      </View>
 
       <View style={{ paddingHorizontal: 20 }}>
         {/* Hero */}

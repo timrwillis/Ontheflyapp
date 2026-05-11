@@ -6,8 +6,7 @@
  */
 
 import React, { Component, ReactNode } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView, Platform } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View, Text, Pressable, StyleSheet, ScrollView, Platform, SafeAreaView } from "react-native";
 
 interface Props {
   children: ReactNode;

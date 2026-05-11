@@ -17,6 +17,7 @@ import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+// Bar Fly v2
 
 const DevErrorBoundary = __DEV__
   ? ErrorBoundary
