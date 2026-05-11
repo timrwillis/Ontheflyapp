@@ -508,4 +508,17 @@ describe("API Integration Tests", () => {
     expect(data.open_shifts).toBeDefined();
     expect(data.filled_shifts).toBeDefined();
   });
+
+  // ===== Marketplace Endpoints =====
+  test("GET /api/marketplace/stats - Get public marketplace statistics", async () => {
+    const res = await api("/api/marketplace/stats");
+    await expectStatus(res, 200);
+    const data = await res.json();
+    expect(data.workers_available).toBeDefined();
+    expect(typeof data.workers_available).toBe("number");
+    expect(data.restaurants_hiring).toBeDefined();
+    expect(typeof data.restaurants_hiring).toBe("number");
+    expect(data.shifts_filled_this_week).toBeDefined();
+    expect(typeof data.shifts_filled_this_week).toBe("number");
+  });
 });
