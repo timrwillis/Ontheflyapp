@@ -56,6 +56,7 @@ export default function FloatingTabBar({
     let bestMatchScore = 0;
 
     tabs.forEach((tab, index) => {
+      if (!tab) return; // guard against undefined entries
       let score = 0;
 
       // Exact route match gets highest score
@@ -173,6 +174,7 @@ export default function FloatingTabBar({
           <Animated.View style={[dynamicStyles.indicator, indicatorStyle]} />
           <View style={styles.tabsContainer}>
             {tabs.map((tab, index) => {
+              if (!tab) return null;
               const isActive = activeTabIndex === index;
 
               return (

@@ -19,16 +19,7 @@ import { ShiftCard, Shift } from '@/components/ShiftCard';
 import { AvailabilityToggle } from '@/components/AvailabilityToggle';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { ShiftCardSkeleton } from '@/components/SkeletonLoader';
-import {
-  Bell,
-  Plus,
-  TrendingUp,
-  Users,
-  CheckCircle,
-  AlertTriangle,
-  LayoutDashboard,
-  Building2,
-} from 'lucide-react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 // ─── Landing Screen ───────────────────────────────────────────────────────────
 
@@ -243,7 +234,7 @@ function ManagerDashboard() {
           </View>
           <AnimatedPressable onPress={() => console.log('[ManagerDashboard] Notifications pressed')}>
             <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' }}>
-              <Bell size={20} color={COLORS.text} />
+              <MaterialIcons name="notifications" size={20} color={COLORS.text} />
             </View>
           </AnimatedPressable>
         </View>
@@ -291,7 +282,7 @@ function ManagerDashboard() {
         ) : activeShifts.length === 0 ? (
           <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border, marginBottom: 12 }}>
             <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: COLORS.primaryMuted, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-              <CheckCircle size={28} color={COLORS.primary} />
+              <MaterialIcons name="check-circle" size={28} color={COLORS.primary} />
             </View>
             <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 6 }}>All shifts filled!</Text>
             <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center', fontFamily: 'SpaceGrotesk-Regular' }}>Need coverage tonight? Blast a new shift.</Text>
@@ -329,7 +320,7 @@ function ManagerDashboard() {
       <View style={{ position: 'absolute', bottom: 100, left: 20, right: 20 }}>
         <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Blast Shift button pressed'); router.push('/create-shift'); }}>
           <View style={{ backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, ...(Platform.OS === 'web' ? { boxShadow: '0 4px 20px rgba(0, 255, 135, 0.3)' } : { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 12 }) }}>
-            <Plus size={20} color="#000" />
+            <MaterialIcons name="add" size={20} color="#000" />
             <Text style={{ color: '#000', fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>Blast Shift</Text>
           </View>
         </AnimatedPressable>
@@ -426,7 +417,7 @@ function WorkerDashboard() {
           </Text>
           <AnimatedPressable onPress={() => console.log('[WorkerDashboard] Notifications pressed')}>
             <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' }}>
-              <Bell size={20} color={COLORS.text} />
+              <MaterialIcons name="notifications" size={20} color={COLORS.text} />
             </View>
           </AnimatedPressable>
         </View>
@@ -466,7 +457,7 @@ function WorkerDashboard() {
         ) : filteredShifts.length === 0 ? (
           <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, padding: 40, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border }}>
             <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: COLORS.primaryMuted, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-              <AlertTriangle size={28} color={COLORS.primary} />
+              <MaterialIcons name="warning" size={28} color={COLORS.primary} />
             </View>
             <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 6 }}>No open shifts nearby</Text>
             <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center', fontFamily: 'SpaceGrotesk-Regular' }}>
@@ -532,7 +523,7 @@ function AdminDashboard() {
       {/* Header */}
       <View style={{ marginBottom: 24 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <LayoutDashboard size={22} color={COLORS.primary} />
+          <MaterialIcons name="dashboard" size={22} color={COLORS.primary} />
           <Text style={{ color: COLORS.primary, fontSize: 12, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', letterSpacing: 1 }}>ADMIN</Text>
         </View>
         <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
@@ -558,9 +549,9 @@ function AdminDashboard() {
       </Text>
       <View style={{ gap: 10 }}>
         {[
-          { label: 'View All Workers', icon: <Users size={20} color={COLORS.primary} />, route: '/(tabs)/workers' },
-          { label: 'View All Businesses', icon: <Building2 size={20} color={COLORS.accent} />, route: '/(tabs)/businesses' },
-          { label: 'View All Shifts', icon: <TrendingUp size={20} color="#60A5FA" />, route: '/(tabs)/shifts' },
+          { label: 'View All Workers', icon: <MaterialIcons name="people" size={20} color={COLORS.primary} />, route: '/(tabs)/workers' },
+          { label: 'View All Businesses', icon: <MaterialIcons name="business" size={20} color={COLORS.accent} />, route: '/(tabs)/businesses' },
+          { label: 'View All Shifts', icon: <MaterialIcons name="trending-up" size={20} color="#60A5FA" />, route: '/(tabs)/shifts' },
         ].map((action) => (
           <AnimatedPressable key={action.label} onPress={() => { console.log('[AdminDashboard] Quick action pressed:', action.label); router.push(action.route as never); }}>
             <View style={{ backgroundColor: COLORS.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: COLORS.border, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
