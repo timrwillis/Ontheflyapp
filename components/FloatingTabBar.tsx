@@ -96,13 +96,7 @@ export default function FloatingTabBar({
     }
   }, [activeTabIndex, animatedValue, tabs.length]);
 
-  const handleTabPress = (route: Href) => {
-    router.push(route);
-  };
-
-  // Remove unnecessary tabBarStyle animation to prevent flickering
-
-  const tabWidthPercent = ((100 / tabs.length) - 1).toFixed(2);
+  const tabWidthPercent = ((100 / (tabs.length || 1)) - 1).toFixed(2);
 
   const indicatorStyle = useAnimatedStyle(() => {
     if (tabs.length <= 1) return {};
@@ -119,6 +113,14 @@ export default function FloatingTabBar({
       ],
     };
   });
+
+  // Early return after all hooks — prevents crash when tabs is empty (e.g. currentRole is null)
+  if (!tabs || tabs.length === 0) return null;
+
+  const handleTabPress = (route: Href) => {
+    console.log('[FloatingTabBar] Tab pressed:', route);
+    router.push(route);
+  };
 
   // Dynamic styles based on theme
   const dynamicStyles = {
