@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   FlatList,
   Pressable,
-  Animated,
   RefreshControl,
   Alert,
   Platform,
@@ -26,11 +25,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 function LandingScreen() {
   const { setRole } = useRole();
   const router = useRouter();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: false }).start();
-  }, [fadeAnim]);
 
   const handleRoleSelect = async (role: 'manager' | 'worker' | 'admin') => {
     console.log('[Landing] Role selected:', role);
@@ -61,7 +55,7 @@ function LandingScreen() {
         ))}
       </View>
 
-      <Animated.View style={{ opacity: fadeAnim, paddingHorizontal: 20 }}>
+      <View style={{ paddingHorizontal: 20 }}>
         {/* Hero */}
         <View style={{ paddingTop: 80, paddingBottom: 40, alignItems: 'center' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -173,7 +167,7 @@ function LandingScreen() {
             ))}
           </View>
         </View>
-      </Animated.View>
+      </View>
     </ScrollView>
   );
 }
