@@ -364,7 +364,7 @@ function WorkerDashboard() {
     try {
       console.log('[WorkerDashboard] Toggling availability for worker:', workerProfile.id);
       await apiPatch(`/api/worker-profiles/${workerProfile.id}/availability`, {
-        isAvailable: !isAvailable,
+        is_available: !isAvailable,
       });
       await refreshWorkerProfile();
     } catch (err) {
