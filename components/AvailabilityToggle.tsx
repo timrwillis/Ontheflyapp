@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { View, Text, Pressable, Animated, Platform } from 'react-native';
 import { COLORS } from '@/constants/Colors';
-import { Zap, ZapOff } from 'lucide-react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 interface AvailabilityToggleProps {
   isAvailable: boolean;
@@ -55,9 +55,9 @@ export function AvailabilityToggle({ isAvailable, onToggle, loading }: Availabil
           }}
         >
           {isAvailable ? (
-            <Zap size={22} color="#000" fill="#000" />
+            <MaterialIcons name="bolt" size={22} color="#000" />
           ) : (
-            <ZapOff size={22} color={COLORS.textSecondary} />
+            <MaterialIcons name="bolt" size={22} color={COLORS.textSecondary} />
           )}
         </View>
         <View style={{ flex: 1 }}>
