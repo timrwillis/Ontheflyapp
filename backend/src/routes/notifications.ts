@@ -22,7 +22,7 @@ export function registerNotificationRoutes(app: App, fastify: FastifyInstance) {
             properties: {
               notifications: {
                 type: 'array',
-                items: { type: 'object' },
+                items: { type: 'object', additionalProperties: true },
               },
             },
           },

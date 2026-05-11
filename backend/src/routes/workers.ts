@@ -39,6 +39,7 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
                 type: 'array',
                 items: {
                   type: 'object',
+                  additionalProperties: true,
                 },
               },
             },
@@ -189,6 +190,7 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
         response: {
           200: {
             type: 'object',
+            additionalProperties: true,
           },
           404: {
             type: 'object',
@@ -334,6 +336,7 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
         response: {
           200: {
             type: 'object',
+            additionalProperties: true,
           },
           404: {
             type: 'object',

@@ -474,6 +474,20 @@ describe("API Integration Tests", () => {
     expect(Array.isArray(data.notifications)).toBe(true);
   });
 
+  test("PATCH /api/notifications/{id}/read - Mark notification as read", async () => {
+    const notificationsRes = await authenticatedApi("/api/notifications", authToken);
+    await expectStatus(notificationsRes, 200);
+    const notificationsData = await notificationsRes.json();
+
+    if (notificationsData.notifications && notificationsData.notifications.length > 0) {
+      const notificationId = notificationsData.notifications[0].id;
+      const res = await authenticatedApi(`/api/notifications/${notificationId}/read`, authToken, {
+        method: "PATCH",
+      });
+      await expectStatus(res, 200);
+    }
+  });
+
   test("PATCH /api/notifications/{id}/read - Non-existent notification returns 404", async () => {
     const res = await authenticatedApi("/api/notifications/nonexistent-id/read", authToken, {
       method: "PATCH",
