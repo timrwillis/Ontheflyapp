@@ -17,23 +17,24 @@ export interface User {
 
 export interface WorkerProfile {
   id: string;
-  user_id: string;
+  userId: string;
   name: string;
+  phone?: string;
   city?: string;
   roles?: string[];
-  reliability_score?: number;
-  is_available?: boolean;
+  reliabilityScore?: number;
+  isAvailable?: boolean;
   bio?: string;
-  experience_years?: number;
+  yearsExperience?: number;
   certifications?: string[];
-  transportation?: boolean;
-  completed_shifts?: number;
-  avg_rating?: number;
+  hasTransportation?: boolean;
+  preferredRadiusMiles?: number;
+  completedShifts?: number;
+  avgRating?: number;
   cancellations?: number;
-  is_verified?: boolean;
-  is_suspended?: boolean;
-  hourly_rate?: number;
-  dress_code_preference?: string;
+  isVerified?: boolean;
+  isSuspended?: boolean;
+  photoUrl?: string;
 }
 
 interface RoleContextType {

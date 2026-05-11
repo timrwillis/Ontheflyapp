@@ -82,7 +82,6 @@ export default function EditProfileScreen() {
   const [roles, setRoles] = useState<string[]>([]);
   const [certs, setCerts] = useState<string[]>([]);
   const [experienceYears, setExperienceYears] = useState('');
-  const [hourlyRate, setHourlyRate] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -92,8 +91,7 @@ export default function EditProfileScreen() {
       setBio(workerProfile.bio ?? '');
       setRoles(workerProfile.roles ?? []);
       setCerts(workerProfile.certifications ?? []);
-      setExperienceYears(String(workerProfile.experience_years ?? ''));
-      setHourlyRate(String(workerProfile.hourly_rate ?? ''));
+      setExperienceYears(String(workerProfile.yearsExperience ?? ''));
     } else if (currentUser) {
       setName(currentUser.name ?? '');
       setCity(currentUser.city ?? '');
@@ -113,8 +111,7 @@ export default function EditProfileScreen() {
         bio,
         roles,
         certifications: certs,
-        experience_years: experienceYears ? Number(experienceYears) : undefined,
-        hourly_rate: hourlyRate ? Number(hourlyRate) : undefined,
+        yearsExperience: experienceYears ? Number(experienceYears) : undefined,
       };
       console.log('[EditProfile] Saving profile:', payload);
       await apiPut(`/api/worker-profiles/me?user_id=${currentUser.id}`, payload);
@@ -170,15 +167,9 @@ export default function EditProfileScreen() {
         </View>
 
         {/* Experience */}
-        <View style={{ marginBottom: 20 }}>
+        <View style={{ marginBottom: 32 }}>
           <Label text="Years of Experience" />
           <InputField value={experienceYears} onChangeText={setExperienceYears} placeholder="e.g. 3" keyboardType="numeric" />
-        </View>
-
-        {/* Hourly rate */}
-        <View style={{ marginBottom: 32 }}>
-          <Label text="Desired Hourly Rate ($)" />
-          <InputField value={hourlyRate} onChangeText={setHourlyRate} placeholder="e.g. 22" keyboardType="decimal-pad" />
         </View>
 
         {/* Save button */}

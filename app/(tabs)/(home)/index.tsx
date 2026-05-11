@@ -344,7 +344,7 @@ function WorkerDashboard() {
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [applyingId, setApplyingId] = useState<string | null>(null);
 
-  const isAvailable = workerProfile?.is_available ?? false;
+  const isAvailable = workerProfile?.isAvailable ?? false;
 
   const loadShifts = useCallback(async () => {
     try {
@@ -370,7 +370,7 @@ function WorkerDashboard() {
     try {
       console.log('[WorkerDashboard] Toggling availability for worker:', workerProfile.id);
       await apiPatch(`/api/worker-profiles/${workerProfile.id}/availability`, {
-        is_available: !isAvailable,
+        isAvailable: !isAvailable,
       });
       await refreshWorkerProfile();
     } catch (err) {

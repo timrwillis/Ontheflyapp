@@ -50,7 +50,7 @@ export default function WorkersScreen() {
   const handleSuspend = async (worker: WorkerProfile) => {
     try {
       console.log('[WorkersTab] Suspending/reinstating worker:', worker.id);
-      await apiPatch(`/api/worker-profiles/${worker.id}/suspend`, { suspended: !worker.is_suspended });
+      await apiPatch(`/api/worker-profiles/${worker.id}/suspend`, { suspended: !worker.isSuspended });
       loadWorkers();
     } catch (err) {
       console.error('[WorkersTab] Error suspending worker:', err);
@@ -59,7 +59,7 @@ export default function WorkersScreen() {
 
   const filtered = workers.filter((w) => {
     const matchSearch = search === '' || w.name?.toLowerCase().includes(search.toLowerCase()) || w.roles?.some((r) => r.toLowerCase().includes(search.toLowerCase()));
-    const matchAvail = !availableOnly || w.is_available;
+    const matchAvail = !availableOnly || w.isAvailable;
     return matchSearch && matchAvail;
   });
 

@@ -58,7 +58,7 @@ function WorkerProfile() {
   const name = workerProfile?.name ?? currentUser?.name ?? 'Worker';
   const initials = getInitials(name);
   const roles = workerProfile?.roles ?? [];
-  const score = workerProfile?.reliability_score ?? 0;
+  const score = workerProfile?.reliabilityScore ?? 0;
   const certs = workerProfile?.certifications ?? [];
 
   return (
@@ -74,7 +74,7 @@ function WorkerProfile() {
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
           <Text style={{ color: COLORS.text, fontSize: 22, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold' }}>{name}</Text>
-          {workerProfile?.is_verified && <CheckCircle size={18} color={COLORS.primary} fill={COLORS.primary} />}
+          {workerProfile?.isVerified && <CheckCircle size={18} color={COLORS.primary} fill={COLORS.primary} />}
         </View>
         {workerProfile?.city && (
           <Text style={{ color: COLORS.textSecondary, fontSize: 14, fontFamily: 'SpaceGrotesk-Regular', marginBottom: 12 }}>{workerProfile.city}</Text>
@@ -104,8 +104,8 @@ function WorkerProfile() {
       {/* Stats */}
       <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
         {[
-          { label: 'Completed', value: workerProfile?.completed_shifts ?? 0 },
-          { label: 'Avg Rating', value: workerProfile?.avg_rating ? Number(workerProfile.avg_rating).toFixed(1) : '—' },
+          { label: 'Completed', value: workerProfile?.completedShifts ?? 0 },
+          { label: 'Avg Rating', value: workerProfile?.avgRating ? Number(workerProfile.avgRating).toFixed(1) : '—' },
           { label: 'Cancellations', value: workerProfile?.cancellations ?? 0 },
         ].map((stat) => (
           <View key={stat.label} style={{ flex: 1, backgroundColor: COLORS.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' }}>

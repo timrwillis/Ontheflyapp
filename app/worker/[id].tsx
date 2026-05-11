@@ -12,17 +12,16 @@ interface WorkerDetail {
   name: string;
   city?: string;
   roles?: string[];
-  reliability_score?: number;
-  is_available?: boolean;
-  is_verified?: boolean;
+  reliabilityScore?: number;
+  isAvailable?: boolean;
+  isVerified?: boolean;
   bio?: string;
-  experience_years?: number;
+  yearsExperience?: number;
   certifications?: string[];
-  transportation?: boolean;
-  completed_shifts?: number;
-  avg_rating?: number;
+  hasTransportation?: boolean;
+  completedShifts?: number;
+  avgRating?: number;
   cancellations?: number;
-  hourly_rate?: number;
 }
 
 interface Rating {
@@ -100,7 +99,7 @@ export default function WorkerDetailScreen() {
   const initials = getInitials(worker.name);
   const roles = worker.roles ?? [];
   const certs = worker.certifications ?? [];
-  const avgRating = Number(worker.avg_rating) || 0;
+  const avgRating = Number(worker.avgRating) || 0;
 
   return (
     <>
@@ -117,7 +116,7 @@ export default function WorkerDetailScreen() {
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
             <Text style={{ color: COLORS.text, fontSize: 22, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold' }}>{worker.name}</Text>
-            {worker.is_verified && <CheckCircle size={18} color={COLORS.primary} fill={COLORS.primary} />}
+            {worker.isVerified && <CheckCircle size={18} color={COLORS.primary} fill={COLORS.primary} />}
           </View>
           {worker.city && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 12 }}>
@@ -126,19 +125,19 @@ export default function WorkerDetailScreen() {
             </View>
           )}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: worker.is_available ? COLORS.primary : COLORS.textTertiary }} />
-            <Text style={{ color: worker.is_available ? COLORS.primary : COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-SemiBold' }}>
-              {worker.is_available ? 'Available Now' : 'Not Available'}
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: worker.isAvailable ? COLORS.primary : COLORS.textTertiary }} />
+            <Text style={{ color: worker.isAvailable ? COLORS.primary : COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-SemiBold' }}>
+              {worker.isAvailable ? 'Available Now' : 'Not Available'}
             </Text>
           </View>
         </View>
 
         {/* Reliability score */}
         <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 20 }}>
-          <ReliabilityScore score={worker.reliability_score ?? 0} size={80} />
+          <ReliabilityScore score={worker.reliabilityScore ?? 0} size={80} />
           <View style={{ flex: 1 }}>
             <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginBottom: 4 }}>Reliability Score</Text>
-            <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>{worker.reliability_score ?? 0}/100</Text>
+            <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>{worker.reliabilityScore ?? 0}/100</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
               <StarRating rating={avgRating} />
               <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
@@ -151,7 +150,7 @@ export default function WorkerDetailScreen() {
         {/* Stats */}
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
           {[
-            { label: 'Completed', value: worker.completed_shifts ?? 0 },
+            { label: 'Completed', value: worker.completedShifts ?? 0 },
             { label: 'Avg Rating', value: avgRating > 0 ? avgRating.toFixed(1) : '—' },
             { label: 'Cancellations', value: worker.cancellations ?? 0 },
           ].map((stat) => (
@@ -188,8 +187,8 @@ export default function WorkerDetailScreen() {
         <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 16 }}>
           <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', letterSpacing: 1, marginBottom: 12 }}>DETAILS</Text>
           {[
-            { icon: <Briefcase size={16} color={COLORS.textSecondary} />, label: 'Experience', value: worker.experience_years ? `${worker.experience_years} years` : '—' },
-            { icon: <Car size={16} color={COLORS.textSecondary} />, label: 'Transportation', value: worker.transportation ? 'Has own transport' : 'No transport listed' },
+            { icon: <Briefcase size={16} color={COLORS.textSecondary} />, label: 'Experience', value: worker.yearsExperience ? `${worker.yearsExperience} years` : '—' },
+            { icon: <Car size={16} color={COLORS.textSecondary} />, label: 'Transportation', value: worker.hasTransportation ? 'Has own transport' : 'No transport listed' },
           ].map((item) => (
             <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.divider, gap: 10 }}>
               {item.icon}

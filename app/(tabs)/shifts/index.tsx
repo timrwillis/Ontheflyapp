@@ -100,14 +100,14 @@ export default function ShiftsScreen() {
       {/* Worker reliability score */}
       {currentRole === 'worker' && workerProfile && (
         <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: COLORS.border, marginBottom: 20, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-          <ReliabilityScore score={workerProfile.reliability_score ?? 0} size={72} />
+          <ReliabilityScore score={workerProfile.reliabilityScore ?? 0} size={72} />
           <View style={{ flex: 1 }}>
             <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginBottom: 4 }}>Reliability Score</Text>
             <Text style={{ color: COLORS.text, fontSize: 18, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-              {workerProfile.reliability_score ?? 0}/100
+              {workerProfile.reliabilityScore ?? 0}/100
             </Text>
             <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginTop: 4 }}>
-              {(workerProfile.completed_shifts ?? 0)} shifts completed
+              {(workerProfile.completedShifts ?? 0)} shifts completed
             </Text>
           </View>
         </View>

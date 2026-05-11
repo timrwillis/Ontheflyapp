@@ -7,17 +7,16 @@ import { CheckCircle } from 'lucide-react-native';
 
 export interface WorkerProfile {
   id: string;
-  user_id?: string;
+  userId?: string;
   name: string;
   city?: string;
   roles?: string[];
-  reliability_score?: number;
-  is_available?: boolean;
-  is_verified?: boolean;
-  is_suspended?: boolean;
-  completed_shifts?: number;
-  avg_rating?: number;
-  hourly_rate?: number;
+  reliabilityScore?: number;
+  isAvailable?: boolean;
+  isVerified?: boolean;
+  isSuspended?: boolean;
+  completedShifts?: number;
+  avgRating?: number;
 }
 
 interface WorkerCardProps {
@@ -51,7 +50,7 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
 
   const initials = getInitials(worker.name ?? 'U');
   const roles = worker.roles ?? [];
-  const score = worker.reliability_score ?? 0;
+  const score = worker.reliabilityScore ?? 0;
 
   return (
     <Animated.View style={{ opacity, transform: [{ translateY }] }}>
@@ -77,7 +76,7 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
                   borderRadius: 26,
                   backgroundColor: COLORS.primaryMuted,
                   borderWidth: 2,
-                  borderColor: worker.is_available ? COLORS.primary : COLORS.border,
+                  borderColor: worker.isAvailable ? COLORS.primary : COLORS.border,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -102,7 +101,7 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
                   width: 12,
                   height: 12,
                   borderRadius: 6,
-                  backgroundColor: worker.is_available ? COLORS.primary : COLORS.textTertiary,
+                  backgroundColor: worker.isAvailable ? COLORS.primary : COLORS.textTertiary,
                   borderWidth: 2,
                   borderColor: COLORS.surface,
                 }}
@@ -123,7 +122,7 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
                 >
                   {worker.name}
                 </Text>
-                {worker.is_verified && (
+                {worker.isVerified && (
                   <CheckCircle size={14} color={COLORS.primary} fill={COLORS.primary} />
                 )}
               </View>
@@ -173,7 +172,7 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
           {/* Admin actions */}
           {showAdminActions && (
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.divider }}>
-              {!worker.is_verified && (
+              {!worker.isVerified && (
                 <AnimatedPressable
                   onPress={() => {
                     console.log('[WorkerCard] Verify worker pressed:', worker.id);
@@ -204,7 +203,7 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
               >
                 <View
                   style={{
-                    backgroundColor: worker.is_suspended ? COLORS.primaryMuted : COLORS.dangerMuted,
+                    backgroundColor: worker.isSuspended ? COLORS.primaryMuted : COLORS.dangerMuted,
                     borderRadius: 8,
                     paddingVertical: 8,
                     alignItems: 'center',
@@ -212,13 +211,13 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
                 >
                   <Text
                     style={{
-                      color: worker.is_suspended ? COLORS.primary : COLORS.danger,
+                      color: worker.isSuspended ? COLORS.primary : COLORS.danger,
                       fontSize: 12,
                       fontWeight: '600',
                       fontFamily: 'SpaceGrotesk-SemiBold',
                     }}
                   >
-                    {worker.is_suspended ? 'Reinstate' : 'Suspend'}
+                    {worker.isSuspended ? 'Reinstate' : 'Suspend'}
                   </Text>
                 </View>
               </AnimatedPressable>
