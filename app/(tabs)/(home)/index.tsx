@@ -495,13 +495,11 @@ function ManagerDashboard() {
   const scarcityText = 'Only ' + scarcityBartenderCount + ' bartenders left';
   const workerCountDisplay = String(nearbyWorkers.length);
 
-  const fabBottom = insets.bottom + 52 + 20 + 24;
-
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 200 }}
+        contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 220 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
       >
@@ -888,41 +886,37 @@ function ManagerDashboard() {
       </ScrollView>
 
       {/* BLAST SHIFT FAB */}
-      <View style={{
-        position: 'absolute',
-        bottom: fabBottom,
-        left: 0,
-        right: 0,
-        alignItems: 'center',
-        pointerEvents: 'box-none',
-      }}>
-        <AnimatedPressable
-          onPress={() => {
-            console.log('[ManagerDashboard] Blast Shift FAB pressed');
-            router.push('/create-shift');
-          }}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            backgroundColor: '#00FF85',
-            paddingHorizontal: 32,
-            paddingVertical: 14,
-            borderRadius: 30,
-            shadowColor: '#00FF85',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.5,
-            shadowRadius: 16,
-            elevation: 20,
-          }}
-        >
-          <MaterialIcons name="bolt" size={20} color="#000" />
-          <View>
-            <Text style={{ color: '#000', fontFamily: 'SpaceGrotesk-Bold', fontSize: 15, letterSpacing: 1 }}>BLAST SHIFT</Text>
-            <Text style={{ color: 'rgba(0,0,0,0.55)', fontFamily: 'SpaceGrotesk-Regular', fontSize: 10 }}>avg 4 min fill</Text>
-          </View>
-        </AnimatedPressable>
-      </View>
+      <AnimatedPressable
+        onPress={() => {
+          console.log('[ManagerDashboard] Blast Shift FAB pressed');
+          router.push('/create-shift');
+        }}
+        style={{
+          position: 'absolute',
+          left: 24,
+          right: 24,
+          bottom: 110,
+          height: 64,
+          zIndex: 999,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          backgroundColor: '#00FF85',
+          borderRadius: 30,
+          shadowColor: '#00FF85',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.5,
+          shadowRadius: 16,
+          elevation: 999,
+        }}
+      >
+        <MaterialIcons name="bolt" size={20} color="#000" />
+        <View>
+          <Text style={{ color: '#000', fontFamily: 'SpaceGrotesk-Bold', fontSize: 15, letterSpacing: 1 }}>BLAST SHIFT</Text>
+          <Text style={{ color: 'rgba(0,0,0,0.55)', fontFamily: 'SpaceGrotesk-Regular', fontSize: 10 }}>avg 4 min fill</Text>
+        </View>
+      </AnimatedPressable>
 
     </View>
   );

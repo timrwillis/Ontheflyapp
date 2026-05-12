@@ -790,17 +790,18 @@ const styles = StyleSheet.create({
   roleGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    justifyContent: 'space-between',
+    width: '100%',
   },
   roleCard: {
-    width: '47%',
-    height: 96,
-    borderRadius: 14,
+    width: '48%',
+    height: 110,
+    marginBottom: 12,
+    borderRadius: 18,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'column',
-    gap: 8,
   },
   roleCardActive: {
     backgroundColor: COLORS.primary,
@@ -828,6 +829,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     letterSpacing: 0.2,
+    flexWrap: 'nowrap',
   },
 
   // Urgency
