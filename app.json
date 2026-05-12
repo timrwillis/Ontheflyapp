@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Bar-Fly",
-    "slug": "bar-fly",
+    "name": "ShiftSlinger",
+    "slug": "shiftslinger",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon-edd.png",
@@ -35,7 +35,7 @@
       "expo-web-browser",
       "expo-secure-store"
     ],
-    "scheme": "bar-fly",
+    "scheme": "shiftslinger",
     "experiments": {
       "typedRoutes": true
     },
