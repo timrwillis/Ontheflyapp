@@ -889,7 +889,7 @@ function ManagerDashboard() {
       <View
         style={{
           position: 'absolute',
-          bottom: 110,
+          bottom: insets.bottom + 84,
           left: 0,
           right: 0,
           alignItems: 'center',
