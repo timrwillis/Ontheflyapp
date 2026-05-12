@@ -5,7 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BETA_SEEN_KEY = 'barfly_beta_seen';
+const BETA_SEEN_KEY = 'onthefly_beta_seen';
 const FEEDBACK_URL = 'https://forms.gle/barfly-beta';
 
 export default function BetaWelcome() {
@@ -23,7 +23,7 @@ export default function BetaWelcome() {
     console.log('[BetaWelcome] Continue button pressed');
     try {
       await AsyncStorage.setItem(BETA_SEEN_KEY, 'true');
-      console.log('[BetaWelcome] barfly_beta_seen flag set in AsyncStorage');
+      console.log('[BetaWelcome] onthefly_beta_seen flag set in AsyncStorage');
     } catch (e) {
       console.warn('[BetaWelcome] Failed to set AsyncStorage flag:', e);
     }
@@ -36,7 +36,7 @@ export default function BetaWelcome() {
   };
 
   const betaLabel = 'BETA v0.1';
-  const betaBody = 'Bar-Fly is currently in active beta testing. Features and availability may evolve as we improve the experience.';
+  const betaBody = 'On The Fly is currently in active beta testing. Features and availability may evolve as we improve the experience.';
 
   return (
     <SafeAreaView style={styles.root}>
@@ -54,14 +54,14 @@ export default function BetaWelcome() {
             {/* Logo */}
             <View style={styles.logoContainer}>
               <MaterialIcons name="bolt" size={48} color="#00FF87" style={styles.boltIcon} />
-              <Text style={styles.logoText}>Bar-Fly</Text>
+              <Text style={styles.logoText}>On The Fly</Text>
             </View>
 
             {/* Divider */}
             <View style={styles.divider} />
 
             {/* Headline */}
-            <Text style={styles.headline}>Welcome to the Bar-Fly Beta</Text>
+            <Text style={styles.headline}>Welcome to the On The Fly Beta</Text>
 
             {/* Subheadline */}
             <Text style={styles.subheadline}>

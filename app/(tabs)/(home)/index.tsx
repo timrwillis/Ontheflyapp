@@ -132,7 +132,7 @@ function LandingScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}>
           <Text style={{ fontSize: 32 }}>⚡</Text>
           <Text style={{ color: COLORS.primary, fontSize: 38, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1.5 }}>
-            Bar-Fly
+            On The Fly
           </Text>
         </View>
         <Text style={{ color: COLORS.text, fontSize: 30, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', textAlign: 'center', letterSpacing: -0.5, marginBottom: 12, lineHeight: 38 }}>
@@ -240,10 +240,10 @@ function LandingScreen() {
         </View>
       </View>
 
-      {/* Why Bar-Fly */}
+      {/* Why On The Fly */}
       <View style={{ paddingHorizontal: 24, marginBottom: 40 }}>
         <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 16, letterSpacing: -0.3 }}>
-          Why Bar-Fly
+          Why On The Fly
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
           {WHY_BARFLY.map((item) => (
@@ -531,7 +531,7 @@ function ManagerDashboard() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <View>
             <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 1.5, marginBottom: 4 }}>
-              ⚡ BAR-FLY
+              ⚡ ON THE FLY
             </Text>
             <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
               {greeting},

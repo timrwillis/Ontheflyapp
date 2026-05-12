@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ShiftSlinger",
-    "slug": "barfly-app-gultwva",
+    "name": "On The Fly",
+    "slug": "on-the-fly",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/1000012749.png",
@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.barfly.app",
+      "bundleIdentifier": "com.onthefly.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -23,7 +23,7 @@
         "foregroundImage": "./assets/images/1000012749.png",
         "backgroundColor": "#000000"
       },
-      "package": "com.barfly.app"
+      "package": "com.onthefly.app"
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
@@ -35,7 +35,7 @@
       "expo-web-browser",
       "expo-secure-store"
     ],
-    "scheme": "shiftslinger",
+    "scheme": "onthefly",
     "experiments": {
       "typedRoutes": true
     },

@@ -69,10 +69,10 @@ function SplashOverlay({ onFadeComplete }: { onFadeComplete: () => void }) {
       <Animated.View style={{ opacity: pulseOpacity, alignItems: 'center' }}>
         <View style={splashStyles.logoRow}>
           <Text style={splashStyles.bolt}>⚡</Text>
-          <Text style={splashStyles.logoText}>Bar-Fly</Text>
+          <Text style={splashStyles.logoText}>On The Fly</Text>
         </View>
       </Animated.View>
-      <Text style={splashStyles.tagline}>Fill tonight's shift before the dinner rush.</Text>
+      <Text style={splashStyles.tagline}>Instant Coverage.</Text>
     </Animated.View>
   );
 }
@@ -134,8 +134,8 @@ export default function RootLayout() {
     if (!loaded || !splashDone) return;
     (async () => {
       try {
-        const seen = await AsyncStorage.getItem('barfly_beta_seen');
-        console.log('[RootLayout] barfly_beta_seen value:', seen);
+        const seen = await AsyncStorage.getItem('onthefly_beta_seen');
+        console.log('[RootLayout] onthefly_beta_seen value:', seen);
         if (!seen) {
           console.log('[RootLayout] First launch detected — will show beta screen');
           setShowBeta(true);
@@ -159,7 +159,7 @@ export default function RootLayout() {
     setSplashDone(true);
   };
 
-  const BarFlyDarkTheme: Theme = {
+  const OnTheFlyDarkTheme: Theme = {
     ...DarkTheme,
     colors: {
       primary: "#00FF87",
@@ -176,7 +176,7 @@ export default function RootLayout() {
   return (
     <DevErrorBoundary>
       <StatusBar style="light" animated />
-      <ThemeProvider value={BarFlyDarkTheme}>
+      <ThemeProvider value={OnTheFlyDarkTheme}>
         <SafeAreaProvider>
           <RoleProvider>
             <WidgetProvider>
