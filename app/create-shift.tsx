@@ -11,6 +11,7 @@ import {
   Easing,
   TouchableOpacity,
   StyleSheet,
+  Dimensions,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
@@ -18,6 +19,11 @@ import { useRole } from '@/contexts/RoleContext';
 import { apiPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+
+// ─── Layout constants ────────────────────────────────────────────────────────
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const ROLE_CARD_SIZE = (SCREEN_WIDTH - 20 * 2 - 10) / 2; // 2 columns, 20px side padding, 10px gap
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -317,20 +323,23 @@ export default function CreateShiftScreen() {
                       setSelectedRole(r.value);
                     }}
                     style={[
-                      styles.roleChip,
-                      isActive ? styles.roleChipActive : styles.roleChipInactive,
+                      styles.roleCard,
+                      isActive ? styles.roleCardActive : styles.roleCardInactive,
                     ]}
                   >
-                    <MaterialIcons
-                      name={r.icon as any}
-                      size={20}
-                      color={isActive ? '#000' : COLORS.primary}
-                    />
+                    <View style={styles.roleCardIconWrapper}>
+                      <MaterialIcons
+                        name={r.icon as any}
+                        size={28}
+                        color={isActive ? '#000' : COLORS.primary}
+                      />
+                    </View>
                     <Text
                       style={[
-                        styles.roleLabel,
+                        styles.roleCardLabel,
                         { color: isActive ? '#000' : COLORS.text },
                       ]}
+                      numberOfLines={1}
                     >
                       {r.label}
                     </Text>
@@ -779,23 +788,24 @@ const styles = StyleSheet.create({
     letterSpacing: 2.0,
   },
 
-  // Role grid
+  // Role grid — 2-column square cards
   roleGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
-  roleChip: {
-    width: '47%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderRadius: 14,
-    paddingVertical: 18,
-    paddingHorizontal: 14,
+  roleCard: {
+    width: ROLE_CARD_SIZE,
+    height: ROLE_CARD_SIZE * 0.75,
+    borderRadius: 16,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
   },
-  roleChipActive: {
+  roleCardActive: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
     shadowColor: '#00FF87',
@@ -804,15 +814,23 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 12,
   },
-  roleChipInactive: {
+  roleCardInactive: {
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderColor: 'rgba(255,255,255,0.1)',
   },
-  roleLabel: {
-    fontSize: 14,
+  roleCardIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleCardLabel: {
+    fontSize: 13,
     fontFamily: 'SpaceGrotesk-SemiBold',
     fontWeight: '600',
-    flexShrink: 1,
+    textAlign: 'center',
+    letterSpacing: 0.2,
   },
 
   // Urgency
