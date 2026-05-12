@@ -78,8 +78,8 @@ const CERT_OPTIONS = ['TIPS', 'ServSafe', 'Food Handler', 'Alcohol Awareness'];
 
 function SectionLabel({ text }: { text: string }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-      <View style={{ width: 3, height: 14, backgroundColor: COLORS.primary, borderRadius: 2 }} />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+      <View style={{ width: 2, height: 12, backgroundColor: COLORS.primary, borderRadius: 2 }} />
       <Text style={styles.sectionLabel}>{text}</Text>
     </View>
   );
@@ -701,12 +701,12 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 56 : 20,
-    paddingBottom: 12,
+    paddingTop: Platform.OS === 'ios' ? 52 : 16,
+    paddingBottom: 10,
     paddingHorizontal: 16,
     backgroundColor: COLORS.background,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,255,135,0.3)',
+    borderBottomColor: 'rgba(0,255,135,0.25)',
   },
   headerBack: {
     width: 44,
@@ -741,7 +741,7 @@ const styles = StyleSheet.create({
   // Scroll
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 12,
     paddingBottom: 48,
   },
 
@@ -751,14 +751,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.primary,
     borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    marginBottom: 12,
     backgroundColor: 'rgba(0,255,135,0.06)',
   },
   promiseBannerText: {
     color: COLORS.primary,
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'SpaceGrotesk-SemiBold',
     fontWeight: '600',
     letterSpacing: 0.2,
@@ -768,24 +768,24 @@ const styles = StyleSheet.create({
   progressContainer: {
     flexDirection: 'row',
     gap: 6,
-    marginBottom: 28,
+    marginBottom: 20,
   },
   progressSegment: {
     flex: 1,
-    height: 4,
+    height: 3,
     borderRadius: 2,
   },
 
   // Section
   section: {
-    marginBottom: 28,
+    marginBottom: 20,
   },
   sectionLabel: {
     color: COLORS.primary,
-    fontSize: 10,
-    fontFamily: 'SpaceGrotesk-SemiBold',
-    fontWeight: '600',
-    letterSpacing: 2.0,
+    fontSize: 9,
+    fontFamily: 'SpaceGrotesk-Bold',
+    fontWeight: '700',
+    letterSpacing: 2.5,
   },
 
   // Role grid — 2-column square cards
@@ -796,13 +796,13 @@ const styles = StyleSheet.create({
   },
   roleCard: {
     width: ROLE_CARD_SIZE,
-    height: ROLE_CARD_SIZE * 0.75,
-    borderRadius: 16,
+    height: ROLE_CARD_SIZE * 0.68,
+    borderRadius: 14,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
+    gap: 7,
+    paddingVertical: 12,
     paddingHorizontal: 8,
   },
   roleCardActive: {
@@ -819,14 +819,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.1)',
   },
   roleCardIconWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   roleCardLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'SpaceGrotesk-SemiBold',
     fontWeight: '600',
     textAlign: 'center',
@@ -835,16 +835,16 @@ const styles = StyleSheet.create({
 
   // Urgency
   urgencyRow: {
-    gap: 10,
+    gap: 8,
     paddingRight: 4,
   },
   urgencyPill: {
     alignItems: 'center',
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    minWidth: 110,
+    minWidth: 100,
   },
   urgencyPillActive: {
     backgroundColor: COLORS.primary,
@@ -855,13 +855,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.1)',
   },
   urgencyPillLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'SpaceGrotesk-Bold',
     fontWeight: '700',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   urgencyPillSublabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: 'SpaceGrotesk-Regular',
     fontWeight: '400',
   },
@@ -871,21 +871,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,255,135,0.04)',
     borderWidth: 1.5,
     borderColor: 'rgba(0,255,135,0.2)',
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 16,
+    padding: 16,
     shadowColor: '#00FF87',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 6,
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 5,
   },
   payCardLabel: {
     color: COLORS.primary,
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'SpaceGrotesk-Bold',
     fontWeight: '700',
-    letterSpacing: 2,
-    marginBottom: 12,
+    letterSpacing: 2.5,
+    marginBottom: 10,
   },
 
   // Pay
@@ -893,44 +893,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
-    gap: 4,
+    marginBottom: 12,
+    gap: 2,
   },
   payDollar: {
     color: COLORS.primary,
-    fontSize: 42,
+    fontSize: 32,
     fontFamily: 'SpaceGrotesk-Bold',
     fontWeight: '700',
-    lineHeight: 56,
+    lineHeight: 44,
   },
   payInput: {
     color: COLORS.text,
-    fontSize: 56,
+    fontSize: 44,
     fontFamily: 'SpaceGrotesk-Bold',
     fontWeight: '700',
-    minWidth: 100,
+    minWidth: 80,
     textAlign: 'center',
-    lineHeight: 64,
+    lineHeight: 52,
   },
   payHr: {
     color: COLORS.textSecondary,
-    fontSize: 18,
+    fontSize: 15,
     fontFamily: 'SpaceGrotesk-Regular',
     fontWeight: '400',
-    lineHeight: 56,
+    lineHeight: 44,
     alignSelf: 'flex-end',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   payPresets: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
     justifyContent: 'center',
   },
   payPresetBtn: {
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderWidth: 1,
   },
   payPresetActive: {
@@ -946,7 +946,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.12)',
   },
   payPresetText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'SpaceGrotesk-SemiBold',
     fontWeight: '600',
   },
@@ -955,13 +955,13 @@ const styles = StyleSheet.create({
   timePresets: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
+    gap: 7,
+    marginBottom: 10,
   },
   timePresetBtn: {
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderRadius: 9,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderWidth: 1,
   },
   timePresetActive: {
@@ -973,7 +973,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.1)',
   },
   timePresetText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'SpaceGrotesk-SemiBold',
     fontWeight: '600',
   },
@@ -981,16 +981,16 @@ const styles = StyleSheet.create({
   // Text input
   textInput: {
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     color: COLORS.text,
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'SpaceGrotesk-Regular',
     fontWeight: '400',
-    minHeight: 48,
+    minHeight: 44,
   },
   textInputMultiline: {
     minHeight: 88,
@@ -1003,12 +1003,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 28,
+    gap: 24,
   },
   stepperBtn: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
@@ -1017,12 +1017,12 @@ const styles = StyleSheet.create({
   },
   stepperValue: {
     color: COLORS.primary,
-    fontSize: 56,
+    fontSize: 44,
     fontFamily: 'SpaceGrotesk-Bold',
     fontWeight: '700',
-    minWidth: 64,
+    minWidth: 56,
     textAlign: 'center',
-    lineHeight: 64,
+    lineHeight: 52,
   },
 
   // Advanced
@@ -1076,7 +1076,7 @@ const styles = StyleSheet.create({
   // Blast button
   blastWrapper: {
     position: 'relative',
-    marginTop: 8,
+    marginTop: 4,
   },
   blastGlow: {
     position: 'absolute',
@@ -1098,21 +1098,21 @@ const styles = StyleSheet.create({
   },
   blastBtn: {
     backgroundColor: COLORS.primary,
-    borderRadius: 18,
-    height: 72,
+    borderRadius: 16,
+    height: 64,
     alignItems: 'center',
     justifyContent: 'center',
   },
   blastBtnText: {
     color: '#000',
-    fontSize: 18,
+    fontSize: 17,
     fontFamily: 'SpaceGrotesk-Bold',
     fontWeight: '700',
     letterSpacing: 1,
   },
   blastBtnSub: {
-    color: 'rgba(0,0,0,0.55)',
-    fontSize: 11,
+    color: 'rgba(0,0,0,0.5)',
+    fontSize: 10,
     fontFamily: 'SpaceGrotesk-Regular',
   },
 });
