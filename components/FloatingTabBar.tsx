@@ -16,6 +16,8 @@ import { BlurView } from 'expo-blur';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Href } from 'expo-router';
 
+export const TAB_BAR_TOTAL_HEIGHT = 52 + 20 + 34; // tabHeight + bottomMargin + safe area buffer = 106
+
 const { width: screenWidth } = Dimensions.get('window');
 
 const NEON = '#00FF85';

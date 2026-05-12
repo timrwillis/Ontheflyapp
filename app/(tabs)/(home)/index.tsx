@@ -428,9 +428,6 @@ function ManagerDashboard() {
   // LIVE dot pulse animation
   const liveGreenPulse = useRef(new Animated.Value(0.4)).current;
 
-  // FAB scale animation
-  const fabScale = useRef(new Animated.Value(1)).current;
-
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -448,15 +445,6 @@ function ManagerDashboard() {
       ])
     ).start();
   }, [liveGreenPulse]);
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(fabScale, { toValue: 1.03, duration: 1000, useNativeDriver: true }),
-        Animated.timing(fabScale, { toValue: 1.0, duration: 1000, useNativeDriver: true }),
-      ])
-    ).start();
-  }, [fabScale]);
 
   const firstName = currentUser?.name?.split(' ')[0] ?? 'Manager';
 
@@ -511,7 +499,7 @@ function ManagerDashboard() {
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 160 }}
+        contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 200 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
       >
@@ -897,25 +885,43 @@ function ManagerDashboard() {
         </View>
       </ScrollView>
 
-      {/* Floating corner pill FAB */}
-      <View style={{ position: 'absolute', bottom: 100, right: 20 }}>
-        <Animated.View style={{ transform: [{ scale: fabScale }] }}>
-          <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Blast Shift FAB pressed'); router.push('/create-shift'); }}>
-            <View style={{
-              backgroundColor: COLORS.primary,
-              borderRadius: 30,
-              paddingVertical: 16,
-              paddingHorizontal: 24,
-              alignItems: 'center',
-              justifyContent: 'center',
-              ...primaryGlow,
-            }}>
-              <Text style={{ color: '#000', fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                ⚡ BLAST
-              </Text>
-            </View>
-          </AnimatedPressable>
-        </Animated.View>
+      {/* Blast Shift FAB */}
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 110,
+          left: 0,
+          right: 0,
+          alignItems: 'center',
+          zIndex: 999,
+          pointerEvents: 'box-none',
+        }}
+      >
+        <AnimatedPressable
+          onPress={() => { console.log('[ManagerDashboard] Blast Shift FAB pressed'); router.push('/create-shift'); }}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            backgroundColor: '#00FF85',
+            paddingHorizontal: 28,
+            paddingVertical: 16,
+            borderRadius: 32,
+            shadowColor: '#00FF85',
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.6,
+            shadowRadius: 20,
+            elevation: 16,
+          }}
+        >
+          <MaterialIcons name="bolt" size={20} color="#000" />
+          <Text style={{ color: '#000', fontFamily: 'SpaceGrotesk-Bold', fontSize: 15, letterSpacing: 1 }}>
+            BLAST SHIFT
+          </Text>
+        </AnimatedPressable>
+        <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10, marginTop: 6, fontFamily: 'SpaceGrotesk-Regular' }}>
+          avg 4 min fill time
+        </Text>
       </View>
     </View>
   );
@@ -1071,7 +1077,7 @@ function WorkerDashboard() {
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 140 }}
+        contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 180 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
       >
@@ -1398,7 +1404,7 @@ function AdminDashboard() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: COLORS.background }}
-      contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 140 }}
+      contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 180 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
