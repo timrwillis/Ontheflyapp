@@ -25,10 +25,13 @@ export const businessTypeEnum = pgEnum('business_type', [
 ]);
 
 export const shiftUrgencyEnum = pgEnum('shift_urgency', [
+  'emergency',
   'tonight',
+  'high',
   'tomorrow',
   'this_week',
-  'future',
+  'medium',
+  'low',
 ]);
 
 export const shiftStatusEnum = pgEnum('shift_status', [
@@ -104,6 +107,7 @@ export const shifts = pgTable('shifts', {
   businessId: text('business_id').notNull().references(() => businesses.id, { onDelete: 'cascade' }),
   roleNeeded: text('role_needed').notNull(),
   workersNeeded: integer('workers_needed').default(1).notNull(),
+  workersConfirmed: integer('workers_confirmed').default(0).notNull(),
   date: text('date').notNull(),
   startTime: text('start_time').notNull(),
   endTime: text('end_time').notNull(),

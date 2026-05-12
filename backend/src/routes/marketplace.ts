@@ -17,6 +17,7 @@ export function registerMarketplaceRoutes(app: App, fastify: FastifyInstance) {
               workers_available: { type: 'number' },
               restaurants_hiring: { type: 'number' },
               shifts_filled_this_week: { type: 'number' },
+              active_shifts: { type: 'number' },
             },
           },
         },
@@ -58,11 +59,21 @@ export function registerMarketplaceRoutes(app: App, fastify: FastifyInstance) {
         (s) => new Date(s.createdAt) >= sevenDaysAgo
       );
 
+      // Count active shifts (open or pending)
+      const allShifts = await app.db
+        .select()
+        .from(schema.shifts);
+
+      const activeShifts = allShifts.filter(
+        (s) => s.status === 'open' || s.status === 'pending'
+      );
+
       app.logger.info(
         {
           workersAvailable: availableWorkers.length,
           restaurantsHiring,
           shiftsFilledThisWeek: filledThisWeek.length,
+          activeShifts: activeShifts.length,
         },
         'Marketplace statistics retrieved'
       );
@@ -71,6 +82,7 @@ export function registerMarketplaceRoutes(app: App, fastify: FastifyInstance) {
         workers_available: availableWorkers.length,
         restaurants_hiring: restaurantsHiring,
         shifts_filled_this_week: filledThisWeek.length,
+        active_shifts: activeShifts.length,
       };
     }
   );

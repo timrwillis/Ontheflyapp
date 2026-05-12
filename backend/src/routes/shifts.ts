@@ -19,11 +19,25 @@ interface ShiftInput {
 }
 
 export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
+  // Helper function to get urgency priority for sorting
+  function getUrgencyPriority(urgency: string): number {
+    const priorities: { [key: string]: number } = {
+      'emergency': 1,
+      'tonight': 2,
+      'high': 3,
+      'tomorrow': 4,
+      'this_week': 5,
+      'medium': 6,
+      'low': 7,
+    };
+    return priorities[urgency] || 8;
+  }
+
   fastify.get(
     '/api/shifts',
     {
       schema: {
-        description: 'Get shifts with filtering based on user role',
+        description: 'Get shifts with filtering and sorting by urgency',
         tags: ['shifts'],
         querystring: {
           type: 'object',
@@ -31,18 +45,14 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
             status: { type: 'string' },
             role: { type: 'string' },
             urgency: { type: 'string' },
+            business_id: { type: 'string' },
             user_id: { type: 'string' },
           },
         },
         response: {
           200: {
-            type: 'object',
-            properties: {
-              shifts: {
-                type: 'array',
-                items: { type: 'object', additionalProperties: true },
-              },
-            },
+            type: 'array',
+            items: { type: 'object', additionalProperties: true },
           },
           404: {
             type: 'object',
@@ -54,10 +64,11 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { status, role, urgency, user_id: qsUserId } = request.query as {
+      const { status, role, urgency, business_id: queryBusinessId, user_id: qsUserId } = request.query as {
         status?: string;
         role?: string;
         urgency?: string;
+        business_id?: string;
         user_id?: string;
       };
 
@@ -72,38 +83,11 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       const session = await app.auth.api.getSession({ headers });
       const userId = session?.user?.id || qsUserId || 'u-mgr-1';
 
-      app.logger.info({ userId, status, role, urgency }, 'Getting shifts');
-
-      // Try to determine user role
-      let userRole = 'worker'; // Default to worker for authenticated users
-
-      // Check if user has a business (manager)
-      const business = await app.db.query.businesses.findFirst({
-        where: eq(schema.businesses.userId, userId),
-      });
-
-      if (business) {
-        userRole = 'manager';
-      } else {
-        // Check if user is a demo user with a role
-        const demoUser = await app.db.query.users.findFirst({
-          where: eq(schema.users.id, userId),
-        });
-        if (demoUser) {
-          userRole = demoUser.role;
-        }
-      }
+      app.logger.info({ userId, status, role, urgency, business_id: queryBusinessId }, 'Getting shifts');
 
       let allShifts = await app.db.select().from(schema.shifts);
 
-      if (userRole === 'worker') {
-        allShifts = allShifts.filter(
-          (s) => s.status === 'open' || s.status === 'pending'
-        );
-      } else if (userRole === 'manager' && business) {
-        allShifts = allShifts.filter((s) => s.businessId === business.id);
-      }
-
+      // Apply filters
       if (status) {
         allShifts = allShifts.filter((s) => s.status === status);
       }
@@ -116,22 +100,57 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         allShifts = allShifts.filter((s) => s.urgency === urgency);
       }
 
+      if (queryBusinessId) {
+        allShifts = allShifts.filter((s) => s.businessId === queryBusinessId);
+      }
+
+      // Sort by urgency priority first, then by date
+      allShifts.sort((a, b) => {
+        const priorityA = getUrgencyPriority(a.urgency);
+        const priorityB = getUrgencyPriority(b.urgency);
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB;
+        }
+        return a.date.localeCompare(b.date);
+      });
+
+      // Enrich with business details
       const result = await Promise.all(
         allShifts.map(async (shift) => {
-          const business = await app.db.query.businesses.findFirst({
+          const biz = await app.db.query.businesses.findFirst({
             where: eq(schema.businesses.id, shift.businessId),
           });
           return {
-            ...shift,
-            business,
-            business_name: business?.name || null,
-            business_type: business?.type || null,
+            id: shift.id,
+            role: shift.roleNeeded,
+            role_needed: shift.roleNeeded,
+            business_name: biz?.name || '',
+            business_type: biz?.type || '',
+            business: biz ? {
+              name: biz.name,
+              type: biz.type,
+              city: biz.city,
+              address: biz.address,
+            } : null,
+            date: shift.date,
+            start_time: shift.startTime,
+            end_time: shift.endTime,
+            hourly_pay: shift.hourlyPay,
+            location: shift.location,
+            dress_code: shift.dressCode,
+            experience_required: shift.experienceRequired,
+            certifications_required: shift.certificationsRequired || [],
+            notes: shift.notes,
+            urgency: shift.urgency,
+            status: shift.status,
+            workers_needed: shift.workersNeeded,
+            workers_confirmed: shift.workersConfirmed,
           };
         })
       );
 
       app.logger.info({ count: result.length }, 'Shifts retrieved');
-      return { shifts: result };
+      return result;
     }
   );
 
@@ -162,7 +181,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
             experienceRequired: { type: 'string' },
             certificationsRequired: { type: 'array', items: { type: 'string' } },
             notes: { type: 'string' },
-            urgency: { type: 'string', enum: ['tonight', 'tomorrow', 'this_week', 'future'] },
+            urgency: { type: 'string', enum: ['emergency', 'tonight', 'high', 'tomorrow', 'this_week', 'medium', 'low'] },
           },
         },
         response: {
@@ -253,7 +272,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
     '/api/shifts/:id',
     {
       schema: {
-        description: 'Get a shift by ID with applications',
+        description: 'Get a shift by ID with rich business details',
         tags: ['shifts'],
         params: {
           type: 'object',
@@ -265,6 +284,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         response: {
           200: {
             type: 'object',
+            additionalProperties: true,
           },
           404: {
             type: 'object',
@@ -289,34 +309,36 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Shift not found' });
       }
 
-      const business = await app.db.query.businesses.findFirst({
+      const biz = await app.db.query.businesses.findFirst({
         where: eq(schema.businesses.id, shift.businessId),
       });
 
-      const applications = await app.db
-        .select()
-        .from(schema.shiftApplications)
-        .where(eq(schema.shiftApplications.shiftId, id));
-
-      const applicationsWithWorkers = await Promise.all(
-        applications.map(async (app_item) => {
-          const worker = await app.db.query.workerProfiles.findFirst({
-            where: eq(schema.workerProfiles.id, app_item.workerId),
-          });
-          return {
-            ...app_item,
-            worker,
-          };
-        })
-      );
-
-      app.logger.info({ id, appCount: applications.length }, 'Shift retrieved');
+      app.logger.info({ id }, 'Shift retrieved');
       return {
-        ...shift,
-        business,
-        business_name: business?.name || null,
-        business_type: business?.type || null,
-        applications: applicationsWithWorkers,
+        id: shift.id,
+        role: shift.roleNeeded,
+        role_needed: shift.roleNeeded,
+        business_name: biz?.name || '',
+        business_type: biz?.type || '',
+        business: biz ? {
+          name: biz.name,
+          type: biz.type,
+          city: biz.city,
+          address: biz.address,
+        } : null,
+        date: shift.date,
+        start_time: shift.startTime,
+        end_time: shift.endTime,
+        hourly_pay: shift.hourlyPay,
+        location: shift.location,
+        dress_code: shift.dressCode,
+        experience_required: shift.experienceRequired,
+        certifications_required: shift.certificationsRequired || [],
+        notes: shift.notes,
+        urgency: shift.urgency,
+        status: shift.status,
+        workers_needed: shift.workersNeeded,
+        workers_confirmed: shift.workersConfirmed,
       };
     }
   );

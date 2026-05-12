@@ -603,212 +603,53 @@ export async function seedDatabase(app: App) {
   const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0];
   const nextWeekStr = nextWeek.toISOString().split('T')[0];
 
+  // Calculate weekend dates
+  const dayOfWeek = today.getDay();
+  const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7;
+  const daysUntilSaturday = (6 - dayOfWeek + 7) % 7 || 7;
+  const daysUntilMonday = (1 - dayOfWeek + 7) % 7 || 7;
+  const daysUntilTuesday = (2 - dayOfWeek + 7) % 7 || 7;
+  const daysUntilWednesday = (3 - dayOfWeek + 7) % 7 || 7;
+
+  const thisFriday = new Date(today);
+  thisFriday.setDate(thisFriday.getDate() + daysUntilFriday);
+  const thisSaturday = new Date(today);
+  thisSaturday.setDate(thisSaturday.getDate() + daysUntilSaturday);
+  const nextMonday = new Date(today);
+  nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
+  const nextTuesday = new Date(today);
+  nextTuesday.setDate(nextTuesday.getDate() + daysUntilTuesday);
+  const nextWednesday = new Date(today);
+  nextWednesday.setDate(nextWednesday.getDate() + daysUntilWednesday);
+
+  const thisFridayStr = thisFriday.toISOString().split('T')[0];
+  const thisSaturdayStr = thisSaturday.toISOString().split('T')[0];
+  const nextMondayStr = nextMonday.toISOString().split('T')[0];
+  const nextTuesdayStr = nextTuesday.toISOString().split('T')[0];
+  const nextWednesdayStr = nextWednesday.toISOString().split('T')[0];
+
+  // First, delete existing shift_applications and shifts
+  await app.db.delete(schema.shiftApplications);
+  await app.db.delete(schema.shifts);
+
   // Insert shifts
   const shifts = [
-    {
-      id: 'shift-1',
-      businessId: 'biz-1',
-      roleNeeded: 'Bartender',
-      workersNeeded: 2,
-      date: todayStr,
-      startTime: '20:00',
-      endTime: '02:00',
-      hourlyPay: '38',
-      location: 'Prime Social KC — 4818 Main St',
-      dressCode: 'All black',
-      experienceRequired: '2+ years bartending',
-      certificationsRequired: [],
-      notes: 'High-volume Friday night. Must know craft cocktails.',
-      urgency: 'tonight' as const,
-      status: 'open' as const,
-    },
-    {
-      id: 'shift-2',
-      businessId: 'biz-2',
-      roleNeeded: 'Server',
-      workersNeeded: 3,
-      date: todayStr,
-      startTime: '18:00',
-      endTime: '23:00',
-      hourlyPay: '24',
-      location: 'Velvet Room — 1600 Genessee St',
-      dressCode: 'Smart casual',
-      experienceRequired: '1+ year serving',
-      certificationsRequired: [],
-      notes: 'Private event tonight. Professional demeanor required.',
-      urgency: 'tonight' as const,
-      status: 'open' as const,
-    },
-    {
-      id: 'shift-3',
-      businessId: 'biz-3',
-      roleNeeded: 'Event Bartender',
-      workersNeeded: 1,
-      date: todayStr,
-      startTime: '19:00',
-      endTime: '01:00',
-      hourlyPay: '45',
-      location: 'Midtown Tavern — 3901 Main St',
-      dressCode: 'All black formal',
-      experienceRequired: '3+ years, VIP events preferred',
-      certificationsRequired: ['TIPS Certified'],
-      notes: 'VIP corporate event. Top pay for top talent.',
-      urgency: 'tonight' as const,
-      status: 'open' as const,
-    },
-    {
-      id: 'shift-4',
-      businessId: 'biz-4',
-      roleNeeded: 'Line Cook',
-      workersNeeded: 1,
-      date: tomorrowStr,
-      startTime: '16:00',
-      endTime: '23:00',
-      hourlyPay: '30',
-      location: 'Neon Alley — 501 Westport Rd',
-      dressCode: 'Kitchen uniform provided',
-      experienceRequired: '2+ years line cook',
-      certificationsRequired: [],
-      notes: 'Weekend rush coverage. Grill and sauté stations.',
-      urgency: 'tomorrow' as const,
-      status: 'open' as const,
-    },
-    {
-      id: 'shift-5',
-      businessId: 'biz-5',
-      roleNeeded: 'Dishwasher',
-      workersNeeded: 1,
-      date: todayStr,
-      startTime: '17:00',
-      endTime: '23:00',
-      hourlyPay: '22',
-      location: 'Raw Hide Ranch — 6227 Brookside Blvd',
-      dressCode: 'Casual',
-      experienceRequired: 'No experience required',
-      certificationsRequired: [],
-      notes: 'Immediate opening. Start tonight.',
-      urgency: 'tonight' as const,
-      status: 'open' as const,
-    },
-    {
-      id: 'shift-6',
-      businessId: 'biz-6',
-      roleNeeded: 'Barback',
-      workersNeeded: 2,
-      date: todayStr,
-      startTime: '21:00',
-      endTime: '03:00',
-      hourlyPay: '20',
-      location: 'The Copper Mug — 4112 Pennsylvania Ave',
-      dressCode: 'All black',
-      experienceRequired: 'Some bar experience helpful',
-      certificationsRequired: [],
-      notes: 'Busy Saturday night. Keep the bar stocked.',
-      urgency: 'tonight' as const,
-      status: 'open' as const,
-    },
-    {
-      id: 'shift-7',
-      businessId: 'biz-7',
-      roleNeeded: 'Host',
-      workersNeeded: 1,
-      date: tomorrowStr,
-      startTime: '17:00',
-      endTime: '22:00',
-      hourlyPay: '18',
-      location: 'Luna Lounge — 1815 Wyandotte St',
-      dressCode: 'Business casual',
-      experienceRequired: '1+ year hosting',
-      certificationsRequired: [],
-      notes: 'Reservation management and guest greeting.',
-      urgency: 'tomorrow' as const,
-      status: 'open' as const,
-    },
-    {
-      id: 'shift-8',
-      businessId: 'biz-8',
-      roleNeeded: 'Server',
-      workersNeeded: 2,
-      date: tomorrowStr,
-      startTime: '11:00',
-      endTime: '16:00',
-      hourlyPay: '22',
-      location: 'Barrel House — 2101 Central St',
-      dressCode: 'Casual',
-      experienceRequired: '1+ year serving',
-      certificationsRequired: [],
-      notes: 'Brunch service. Friendly and fast.',
-      urgency: 'tomorrow' as const,
-      status: 'open' as const,
-    },
-    {
-      id: 'shift-9',
-      businessId: 'biz-1',
-      roleNeeded: 'Bartender',
-      workersNeeded: 1,
-      date: yesterdayStr,
-      startTime: '20:00',
-      endTime: '02:00',
-      hourlyPay: '38',
-      location: 'Prime Social KC — 4818 Main St',
-      dressCode: 'All black',
-      experienceRequired: '2+ years',
-      certificationsRequired: [],
-      notes: 'Thursday night shift.',
-      urgency: 'tomorrow' as const,
-      status: 'filled' as const,
-    },
-    {
-      id: 'shift-10',
-      businessId: 'biz-3',
-      roleNeeded: 'Server',
-      workersNeeded: 2,
-      date: yesterdayStr,
-      startTime: '18:00',
-      endTime: '23:00',
-      hourlyPay: '24',
-      location: 'Midtown Tavern — 3901 Main St',
-      dressCode: 'Smart casual',
-      experienceRequired: '1+ year',
-      certificationsRequired: [],
-      notes: '',
-      urgency: 'tomorrow' as const,
-      status: 'completed' as const,
-    },
-    {
-      id: 'shift-11',
-      businessId: 'biz-2',
-      roleNeeded: 'Event Staff',
-      workersNeeded: 4,
-      date: threeDaysAgoStr,
-      startTime: '18:00',
-      endTime: '00:00',
-      hourlyPay: '28',
-      location: 'Velvet Room — 1600 Genessee St',
-      dressCode: 'All black',
-      experienceRequired: 'Event experience preferred',
-      certificationsRequired: [],
-      notes: 'Large private event.',
-      urgency: 'tomorrow' as const,
-      status: 'completed' as const,
-    },
-    {
-      id: 'shift-12',
-      businessId: 'biz-4',
-      roleNeeded: 'Bartender',
-      workersNeeded: 1,
-      date: nextWeekStr,
-      startTime: '19:00',
-      endTime: '01:00',
-      hourlyPay: '40',
-      location: 'Neon Alley — 501 Westport Rd',
-      dressCode: 'All black',
-      experienceRequired: '3+ years',
-      certificationsRequired: [],
-      notes: 'Special event next weekend.',
-      urgency: 'this_week' as const,
-      status: 'open' as const,
-    },
+    { id: 'shift-1', businessId: 'biz-1', roleNeeded: 'Bartender', workersNeeded: 2, workersConfirmed: 0, date: todayStr, startTime: '19:00', endTime: '02:00', hourlyPay: '38', location: '4818 Main St, Kansas City, MO', dressCode: 'All Black', experienceRequired: '2+ years bar experience', certificationsRequired: [], notes: 'VIP event tonight, high volume', urgency: 'emergency' as const, status: 'open' as const },
+    { id: 'shift-2', businessId: 'biz-3', roleNeeded: 'Server', workersNeeded: 3, workersConfirmed: 1, date: todayStr, startTime: '18:00', endTime: '23:00', hourlyPay: '24', location: '3901 Main St, Kansas City, MO', dressCode: 'Black shirt, dark jeans', experienceRequired: '', certificationsRequired: [], notes: '', urgency: 'tonight' as const, status: 'open' as const },
+    { id: 'shift-3', businessId: 'biz-2', roleNeeded: 'Event Bartender', workersNeeded: 2, workersConfirmed: 0, date: todayStr, startTime: '21:00', endTime: '03:00', hourlyPay: '45', location: '1600 Genessee St, Kansas City, MO', dressCode: '', experienceRequired: '', certificationsRequired: ['TIPS Certified'], notes: 'VIP private event, upscale venue', urgency: 'emergency' as const, status: 'open' as const },
+    { id: 'shift-4', businessId: 'biz-4', roleNeeded: 'Line Cook', workersNeeded: 1, workersConfirmed: 0, date: tomorrowStr, startTime: '16:00', endTime: '23:00', hourlyPay: '30', location: '501 Westport Rd, Kansas City, MO', dressCode: '', experienceRequired: '1+ year line cook', certificationsRequired: [], notes: '', urgency: 'high' as const, status: 'open' as const },
+    { id: 'shift-5', businessId: 'biz-5', roleNeeded: 'Dishwasher', workersNeeded: 1, workersConfirmed: 0, date: todayStr, startTime: '17:00', endTime: '22:00', hourlyPay: '22', location: '6227 Brookside Blvd, Kansas City, MO', dressCode: '', experienceRequired: '', certificationsRequired: [], notes: '', urgency: 'tonight' as const, status: 'open' as const },
+    { id: 'shift-6', businessId: 'biz-6', roleNeeded: 'Host/Hostess', workersNeeded: 2, workersConfirmed: 1, date: tomorrowStr, startTime: '17:00', endTime: '22:00', hourlyPay: '20', location: '4112 Pennsylvania Ave, Kansas City, MO', dressCode: '', experienceRequired: '', certificationsRequired: [], notes: '', urgency: 'tomorrow' as const, status: 'open' as const },
+    { id: 'shift-7', businessId: 'biz-7', roleNeeded: 'Barback', workersNeeded: 1, workersConfirmed: 0, date: todayStr, startTime: '20:00', endTime: '02:00', hourlyPay: '18', location: '1815 Wyandotte St, Kansas City, MO', dressCode: '', experienceRequired: '', certificationsRequired: [], notes: 'Fast-paced lounge, VIP section', urgency: 'tonight' as const, status: 'open' as const },
+    { id: 'shift-8', businessId: 'biz-8', roleNeeded: 'Server', workersNeeded: 4, workersConfirmed: 2, date: thisSaturdayStr, startTime: '11:00', endTime: '17:00', hourlyPay: '26', location: '2101 Central St, Kansas City, MO', dressCode: '', experienceRequired: '', certificationsRequired: [], notes: '', urgency: 'this_week' as const, status: 'open' as const },
+    { id: 'shift-9', businessId: 'biz-1', roleNeeded: 'Bartender', workersNeeded: 3, workersConfirmed: 1, date: thisSaturdayStr, startTime: '20:00', endTime: '02:00', hourlyPay: '40', location: '4818 Main St, Kansas City, MO', dressCode: 'All Black', experienceRequired: '', certificationsRequired: ['TIPS Certified'], notes: '', urgency: 'high' as const, status: 'open' as const },
+    { id: 'shift-10', businessId: 'biz-2', roleNeeded: 'Event Staff', workersNeeded: 5, workersConfirmed: 3, date: thisFridayStr, startTime: '19:00', endTime: '01:00', hourlyPay: '28', location: '1600 Genessee St, Kansas City, MO', dressCode: '', experienceRequired: '', certificationsRequired: [], notes: 'Large private event, multiple roles', urgency: 'this_week' as const, status: 'open' as const },
+    { id: 'shift-11', businessId: 'biz-3', roleNeeded: 'Line Cook', workersNeeded: 1, workersConfirmed: 0, date: nextMondayStr, startTime: '15:00', endTime: '22:00', hourlyPay: '32', location: '3901 Main St, Kansas City, MO', dressCode: '', experienceRequired: '', certificationsRequired: [], notes: '', urgency: 'medium' as const, status: 'open' as const },
+    { id: 'shift-12', businessId: 'biz-4', roleNeeded: 'Bartender', workersNeeded: 2, workersConfirmed: 0, date: nextTuesdayStr, startTime: '19:00', endTime: '01:00', hourlyPay: '35', location: '501 Westport Rd, Kansas City, MO', dressCode: 'Smart casual', experienceRequired: '', certificationsRequired: [], notes: '', urgency: 'medium' as const, status: 'open' as const },
+    { id: 'shift-13', businessId: 'biz-7', roleNeeded: 'Server', workersNeeded: 2, workersConfirmed: 1, date: todayStr, startTime: '18:00', endTime: '23:00', hourlyPay: '22', location: '1815 Wyandotte St, Kansas City, MO', dressCode: '', experienceRequired: '', certificationsRequired: [], notes: '', urgency: 'tonight' as const, status: 'open' as const },
+    { id: 'shift-14', businessId: 'biz-8', roleNeeded: 'Barback', workersNeeded: 1, workersConfirmed: 0, date: tomorrowStr, startTime: '17:00', endTime: '23:00', hourlyPay: '16', location: '2101 Central St, Kansas City, MO', dressCode: '', experienceRequired: '', certificationsRequired: [], notes: '', urgency: 'tomorrow' as const, status: 'open' as const },
+    { id: 'shift-15', businessId: 'biz-6', roleNeeded: 'Event Bartender', workersNeeded: 2, workersConfirmed: 0, date: thisSaturdayStr, startTime: '18:00', endTime: '00:00', hourlyPay: '42', location: '4112 Pennsylvania Ave, Kansas City, MO', dressCode: '', experienceRequired: '', certificationsRequired: ['TIPS Certified', 'Food Handler'], notes: 'Wedding reception, premium event', urgency: 'high' as const, status: 'open' as const },
+    { id: 'shift-16', businessId: 'biz-5', roleNeeded: 'Host/Hostess', workersNeeded: 1, workersConfirmed: 0, date: nextWednesdayStr, startTime: '17:00', endTime: '22:00', hourlyPay: '19', location: '6227 Brookside Blvd, Kansas City, MO', dressCode: '', experienceRequired: '', certificationsRequired: [], notes: '', urgency: 'medium' as const, status: 'open' as const },
   ];
 
   await app.db.insert(schema.shifts).values(shifts).onConflictDoNothing();
@@ -875,21 +716,30 @@ export async function seedDatabase(app: App) {
   await app.db.insert(schema.shiftApplications).values(shiftApplications).onConflictDoNothing();
   app.logger.info('Upserted 6 shift applications');
 
+  // Calculate timestamps for ratings (using different names to avoid conflicts)
+  const ratingTs2 = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+  const ratingTs3 = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+  const ratingTs5 = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+  const ratingTs7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const ratingTs10 = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+  const ratingTs12 = new Date(now.getTime() - 12 * 24 * 60 * 60 * 1000);
+  const ratingTs14 = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const ratingTs16 = new Date(now.getTime() - 16 * 24 * 60 * 60 * 1000);
+
   // Insert ratings
   const ratings = [
-    {
-      id: 'r-1',
-      shiftId: 'shift-10',
-      workerId: 'wp-2',
-      managerId: 'u-mgr-2',
-      score: 5,
-      comment: 'Excellent service, very professional.',
-      createdAt: now,
-    },
+    { id: 'r-1', shiftId: 'shift-1', workerId: 'wp-1', managerId: 'u-mgr-1', score: 5, comment: 'Exceptional bartender — fast, friendly, and handled the VIP crowd perfectly. Will definitely book again.', createdAt: ratingTs2 },
+    { id: 'r-2', shiftId: 'shift-2', workerId: 'wp-2', managerId: 'u-mgr-3', score: 5, comment: 'Showed up early, knew the menu cold, and guests loved her. One of the best servers we\'ve had.', createdAt: ratingTs3 },
+    { id: 'r-3', shiftId: 'shift-3', workerId: 'wp-3', managerId: 'u-mgr-2', score: 4, comment: 'Solid work behind the bar. Kept up with the rush and maintained quality throughout the night.', createdAt: ratingTs5 },
+    { id: 'r-4', shiftId: 'shift-4', workerId: 'wp-4', managerId: 'u-mgr-4', score: 5, comment: 'Incredible line cook — clean station, fast tickets, zero complaints from the floor. Highly recommend.', createdAt: ratingTs7 },
+    { id: 'r-5', shiftId: 'shift-5', workerId: 'wp-5', managerId: 'u-mgr-1', score: 4, comment: 'Reliable and hardworking. Kept the kitchen running smoothly during a busy Friday night.', createdAt: ratingTs10 },
+    { id: 'r-6', shiftId: 'shift-6', workerId: 'wp-1', managerId: 'u-mgr-3', score: 5, comment: 'Guests were impressed with the service. Professional attitude and great energy all night.', createdAt: ratingTs12 },
+    { id: 'r-7', shiftId: 'shift-7', workerId: 'wp-2', managerId: 'u-mgr-2', score: 4, comment: 'Good barback — kept bottles stocked and ice full without being asked. Solid team player.', createdAt: ratingTs14 },
+    { id: 'r-8', shiftId: 'shift-8', workerId: 'wp-3', managerId: 'u-mgr-4', score: 5, comment: 'Outstanding performance during a packed Saturday brunch. Handled a 6-table section without missing a beat.', createdAt: ratingTs16 },
   ];
 
   await app.db.insert(schema.ratings).values(ratings).onConflictDoNothing();
-  app.logger.info('Upserted 1 rating');
+  app.logger.info('Upserted 8 ratings');
 
   // Insert certifications
   const certifications = [

@@ -284,7 +284,7 @@ describe("API Integration Tests", () => {
     const res = await authenticatedApi("/api/shifts", authToken);
     await expectStatus(res, 200);
     const data = await res.json();
-    expect(data.shifts).toBeDefined();
+    expect(Array.isArray(data)).toBe(true);
   });
 
   test("POST /api/shifts - Create a shift", async () => {
