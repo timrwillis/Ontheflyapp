@@ -6,8 +6,9 @@ import {
   SpaceGrotesk_600SemiBold,
   SpaceGrotesk_700Bold,
 } from "@expo-google-fonts/space-grotesk";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -118,6 +119,8 @@ export default function RootLayout() {
   });
 
   const [splashDone, setSplashDone] = useState(false);
+  const [betaChecked, setBetaChecked] = useState(false);
+  const [showBeta, setShowBeta] = useState(false);
   // App is always visible — splash overlay sits on top (zIndex 999) and fades out
   const appOpacity = useRef(new Animated.Value(1)).current;
 
@@ -126,6 +129,31 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  useEffect(() => {
+    if (!loaded || !splashDone) return;
+    (async () => {
+      try {
+        const seen = await AsyncStorage.getItem('barfly_beta_seen');
+        console.log('[RootLayout] barfly_beta_seen value:', seen);
+        if (!seen) {
+          console.log('[RootLayout] First launch detected — will show beta screen');
+          setShowBeta(true);
+        }
+      } catch (e) {
+        console.warn('[RootLayout] AsyncStorage read error:', e);
+      } finally {
+        setBetaChecked(true);
+      }
+    })();
+  }, [loaded, splashDone]);
+
+  useEffect(() => {
+    if (splashDone && betaChecked && showBeta) {
+      console.log('[RootLayout] Navigating to /beta-welcome');
+      router.replace('/beta-welcome');
+    }
+  }, [splashDone, betaChecked, showBeta]);
 
   const handleSplashFadeComplete = () => {
     setSplashDone(true);
@@ -201,6 +229,10 @@ export default function RootLayout() {
                     <Stack.Screen
                       name="nearby-workers"
                       options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                      name="beta-welcome"
+                      options={{ headerShown: false, gestureEnabled: false }}
                     />
                   </Stack>
                 </Animated.View>
