@@ -19,6 +19,9 @@ export default function WorkersScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [availableOnly, setAvailableOnly] = useState(false);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [topRatedOnly, setTopRatedOnly] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const loadWorkers = useCallback(async () => {
     try {
@@ -60,8 +63,16 @@ export default function WorkersScreen() {
   const filtered = workers.filter((w) => {
     const matchSearch = search === '' || w.name?.toLowerCase().includes(search.toLowerCase()) || w.roles?.some((r) => r.toLowerCase().includes(search.toLowerCase()));
     const matchAvail = !availableOnly || w.isAvailable;
-    return matchSearch && matchAvail;
+    const matchVerified = !verifiedOnly || w.isVerified;
+    const matchTopRated = !topRatedOnly || (w.reliabilityScore ?? 0) >= 90;
+    return matchSearch && matchAvail && matchVerified && matchTopRated;
   });
+
+  const availableCount = workers.filter((w) => w.isAvailable).length;
+  const verifiedCount = workers.filter((w) => w.isVerified).length;
+  const topRatedCount = workers.filter((w) => (w.reliabilityScore ?? 0) >= 90).length;
+
+  const statsText = `${availableCount} available · ${verifiedCount} verified · ${topRatedCount} top-rated`;
 
   return (
     <ScrollView
@@ -76,8 +87,8 @@ export default function WorkersScreen() {
         <Text style={{ color: COLORS.text, fontSize: 24, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
           Workers
         </Text>
-        <View style={{ marginLeft: 'auto', backgroundColor: COLORS.primaryMuted, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-          <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
+        <View style={{ marginLeft: 'auto', backgroundColor: COLORS.primaryMuted, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(0, 255, 135, 0.2)' }}>
+          <Text style={{ color: COLORS.primary, fontSize: 12, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
             {workers.length}
           </Text>
         </View>
@@ -88,17 +99,19 @@ export default function WorkersScreen() {
         backgroundColor: 'rgba(255,255,255,0.04)',
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.08)',
+        borderColor: isFocused ? COLORS.primary : 'rgba(255,255,255,0.08)',
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 14,
         marginBottom: 12,
         height: 48,
       }}>
-        <MaterialIcons name="search" size={18} color={COLORS.textSecondary} />
+        <MaterialIcons name="search" size={18} color={isFocused ? COLORS.primary : COLORS.textSecondary} />
         <TextInput
           value={search}
           onChangeText={(t) => { console.log('[WorkersTab] Search changed:', t); setSearch(t); }}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           placeholder="Search workers or roles..."
           placeholderTextColor={COLORS.textTertiary}
           style={{ flex: 1, color: COLORS.text, fontSize: 15, marginLeft: 10, fontFamily: 'SpaceGrotesk-Regular' }}
@@ -110,27 +123,77 @@ export default function WorkersScreen() {
         )}
       </View>
 
-      {/* Available Now filter */}
-      <AnimatedPressable onPress={() => { console.log('[WorkersTab] Available filter toggled:', !availableOnly); setAvailableOnly(!availableOnly); }}>
-        <View style={{
-          backgroundColor: availableOnly ? COLORS.primaryMuted : 'rgba(255,255,255,0.04)',
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: availableOnly ? COLORS.primary : 'rgba(255,255,255,0.08)',
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          paddingHorizontal: 14,
-          paddingVertical: 10,
-          marginBottom: 20,
-          alignSelf: 'flex-start',
-        }}>
-          <MaterialIcons name="bolt" size={16} color={availableOnly ? COLORS.primary : COLORS.textSecondary} />
-          <Text style={{ color: availableOnly ? COLORS.primary : COLORS.textSecondary, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
-            Available Now
-          </Text>
-        </View>
-      </AnimatedPressable>
+      {/* Filter chips row */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ marginHorizontal: -20, marginBottom: 16 }}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+      >
+        <AnimatedPressable onPress={() => { console.log('[WorkersTab] Available filter toggled:', !availableOnly); setAvailableOnly(!availableOnly); }}>
+          <View style={{
+            backgroundColor: availableOnly ? COLORS.primaryMuted : 'rgba(255,255,255,0.04)',
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: availableOnly ? COLORS.primary : 'rgba(255,255,255,0.08)',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+          }}>
+            <MaterialIcons name="bolt" size={14} color={availableOnly ? COLORS.primary : COLORS.textSecondary} />
+            <Text style={{ color: availableOnly ? COLORS.primary : COLORS.textSecondary, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
+              Available Now
+            </Text>
+          </View>
+        </AnimatedPressable>
+
+        <AnimatedPressable onPress={() => { console.log('[WorkersTab] Verified filter toggled:', !verifiedOnly); setVerifiedOnly(!verifiedOnly); }}>
+          <View style={{
+            backgroundColor: verifiedOnly ? COLORS.primaryMuted : 'rgba(255,255,255,0.04)',
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: verifiedOnly ? COLORS.primary : 'rgba(255,255,255,0.08)',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+          }}>
+            <MaterialIcons name="verified" size={14} color={verifiedOnly ? COLORS.primary : COLORS.textSecondary} />
+            <Text style={{ color: verifiedOnly ? COLORS.primary : COLORS.textSecondary, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
+              Verified
+            </Text>
+          </View>
+        </AnimatedPressable>
+
+        <AnimatedPressable onPress={() => { console.log('[WorkersTab] Top Rated filter toggled:', !topRatedOnly); setTopRatedOnly(!topRatedOnly); }}>
+          <View style={{
+            backgroundColor: topRatedOnly ? COLORS.accentMuted : 'rgba(255,255,255,0.04)',
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: topRatedOnly ? COLORS.accent : 'rgba(255,255,255,0.08)',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+          }}>
+            <MaterialIcons name="star" size={14} color={topRatedOnly ? COLORS.accent : COLORS.textSecondary} />
+            <Text style={{ color: topRatedOnly ? COLORS.accent : COLORS.textSecondary, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
+              Top Rated
+            </Text>
+          </View>
+        </AnimatedPressable>
+      </ScrollView>
+
+      {/* Stats bar */}
+      {!loading && workers.length > 0 && (
+        <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center', marginBottom: 16 }}>
+          {statsText}
+        </Text>
+      )}
 
       {/* Workers list */}
       {loading ? (

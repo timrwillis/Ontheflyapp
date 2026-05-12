@@ -28,6 +28,8 @@ function SegmentedControl({ options, selected, onSelect }: { options: string[]; 
               alignItems: 'center',
               borderWidth: isActive ? 1 : 0,
               borderColor: COLORS.border,
+              borderBottomWidth: isActive ? 2 : 0,
+              borderBottomColor: isActive ? COLORS.primary : 'transparent',
             }}>
               <Text style={{
                 color: isActive ? COLORS.text : COLORS.textSecondary,
@@ -94,6 +96,12 @@ export default function ShiftsScreen() {
 
   const tabs = currentRole === 'worker' ? WORKER_TABS : MANAGER_TABS;
 
+  const score = workerProfile?.reliabilityScore ?? 0;
+  const completedShifts = workerProfile?.completedShifts ?? 0;
+  const scoreStanding = score >= 95 ? 'Top 5% of workers' : score >= 85 ? 'Good standing' : 'Building reputation';
+  const scoreColor = score >= 95 ? COLORS.primary : score >= 85 ? COLORS.accent : COLORS.danger;
+  const scoreBarWidth = Math.min(100, Math.max(0, score));
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: COLORS.background }}
@@ -107,6 +115,21 @@ export default function ShiftsScreen() {
         <Text style={{ color: COLORS.text, fontSize: 24, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
           {currentRole === 'worker' ? 'My Shifts' : 'Shifts'}
         </Text>
+        {shifts.length > 0 && (
+          <View style={{
+            marginLeft: 'auto',
+            backgroundColor: COLORS.primaryMuted,
+            borderRadius: 10,
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            borderWidth: 1,
+            borderColor: 'rgba(0, 255, 135, 0.2)',
+          }}>
+            <Text style={{ color: COLORS.primary, fontSize: 12, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+              {shifts.length}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Worker reliability score */}
@@ -122,19 +145,28 @@ export default function ShiftsScreen() {
           alignItems: 'center',
           gap: 16,
         }}>
-          <ReliabilityScore score={workerProfile.reliabilityScore ?? 0} size={72} />
+          <ReliabilityScore score={score} size={72} />
           <View style={{ flex: 1 }}>
             <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginBottom: 4 }}>
               Reliability Score
             </Text>
-            <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-              {workerProfile.reliabilityScore ?? 0}
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2, marginBottom: 6 }}>
+              <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                {score}
+              </Text>
+              <Text style={{ color: COLORS.textSecondary, fontSize: 14, fontFamily: 'SpaceGrotesk-Regular' }}>
+                /100
+              </Text>
+            </View>
+            {/* Progress bar */}
+            <View style={{ height: 3, backgroundColor: COLORS.surfaceSecondary, borderRadius: 2, marginBottom: 6, overflow: 'hidden' }}>
+              <View style={{ height: 3, width: `${scoreBarWidth}%`, backgroundColor: scoreColor, borderRadius: 2 }} />
+            </View>
+            <Text style={{ color: scoreColor, fontSize: 11, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
+              {scoreStanding}
             </Text>
-            <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular' }}>
-              /100
-            </Text>
-            <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginTop: 4 }}>
-              {workerProfile.completedShifts ?? 0} shifts completed
+            <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginTop: 2 }}>
+              {completedShifts} shifts completed
             </Text>
           </View>
         </View>
@@ -163,9 +195,38 @@ export default function ShiftsScreen() {
           <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 6 }}>
             No {selectedTab.toLowerCase()} shifts
           </Text>
-          <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center', fontFamily: 'SpaceGrotesk-Regular' }}>
+          <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center', fontFamily: 'SpaceGrotesk-Regular', marginBottom: 20 }}>
             {currentRole === 'manager' ? 'Post a shift to get started.' : 'Accept shifts to see them here.'}
           </Text>
+          {currentRole === 'manager' ? (
+            <AnimatedPressable onPress={() => { console.log('[ShiftsTab] Post First Shift CTA pressed'); router.push('/create-shift'); }}>
+              <View style={{
+                backgroundColor: COLORS.primary,
+                borderRadius: 12,
+                paddingHorizontal: 24,
+                paddingVertical: 12,
+              }}>
+                <Text style={{ color: '#000', fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                  Post Your First Shift
+                </Text>
+              </View>
+            </AnimatedPressable>
+          ) : (
+            <AnimatedPressable onPress={() => { console.log('[ShiftsTab] Browse Open Shifts CTA pressed'); router.push('/(tabs)/(home)'); }}>
+              <View style={{
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                borderRadius: 12,
+                paddingHorizontal: 24,
+                paddingVertical: 12,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.08)',
+              }}>
+                <Text style={{ color: COLORS.text, fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                  Browse Open Shifts
+                </Text>
+              </View>
+            </AnimatedPressable>
+          )}
         </View>
       ) : (
         filteredShifts.map((shift, i) => (

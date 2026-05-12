@@ -30,8 +30,13 @@ const glass = {
 };
 
 const primaryGlow = Platform.select({
-  web: { boxShadow: '0 0 20px rgba(0, 255, 135, 0.3)' },
-  default: { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 8 },
+  web: { boxShadow: '0 0 24px rgba(0, 255, 135, 0.35)' },
+  default: { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 10 },
+}) as object;
+
+const emergencyGlow = Platform.select({
+  web: { boxShadow: '0 0 20px rgba(255, 68, 68, 0.3)' },
+  default: { shadowColor: '#FF4444', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 8 },
 }) as object;
 
 // ─── Landing Screen ───────────────────────────────────────────────────────────
@@ -305,6 +310,59 @@ function LandingScreen() {
   );
 }
 
+// ─── Worker Mini Card ─────────────────────────────────────────────────────────
+
+interface WorkerMini {
+  id: string;
+  name: string;
+  roles?: string[];
+  isAvailable?: boolean;
+}
+
+function WorkerMiniCard({ worker }: { worker: WorkerMini }) {
+  const initials = worker.name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+  const primaryRole = worker.roles?.[0] ?? 'Staff';
+
+  return (
+    <View style={{
+      width: 80,
+      backgroundColor: 'rgba(255,255,255,0.04)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.08)',
+      borderRadius: 12,
+      padding: 10,
+      alignItems: 'center',
+    }}>
+      <View style={{
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: COLORS.primaryMuted,
+        borderWidth: 2,
+        borderColor: worker.isAvailable ? COLORS.primary : COLORS.border,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 6,
+      }}>
+        <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+          {initials}
+        </Text>
+      </View>
+      <Text style={{ color: COLORS.text, fontSize: 10, fontFamily: 'SpaceGrotesk-SemiBold', textAlign: 'center' }} numberOfLines={1}>
+        {worker.name.split(' ')[0]}
+      </Text>
+      <Text style={{ color: COLORS.textSecondary, fontSize: 9, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center', marginTop: 2 }} numberOfLines={1}>
+        {primaryRole}
+      </Text>
+    </View>
+  );
+}
+
 // ─── Manager Dashboard ────────────────────────────────────────────────────────
 
 function ManagerDashboard() {
@@ -315,6 +373,19 @@ function ManagerDashboard() {
   const [stats, setStats] = useState({ open: 0, filled: 0, confirmed: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [nearbyWorkers, setNearbyWorkers] = useState<WorkerMini[]>([]);
+
+  // Emergency banner pulse animation
+  const emergencyPulse = useRef(new Animated.Value(0.4)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(emergencyPulse, { toValue: 1.0, duration: 700, useNativeDriver: true }),
+        Animated.timing(emergencyPulse, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [emergencyPulse]);
 
   const firstName = currentUser?.name?.split(' ')[0] ?? 'Manager';
 
@@ -324,13 +395,17 @@ function ManagerDashboard() {
   const loadData = useCallback(async () => {
     try {
       console.log('[ManagerDashboard] Loading shifts...');
-      const data = await apiGet<{ shifts: Shift[] }>('/api/shifts?role=manager');
-      const shiftList = Array.isArray((data as any)?.shifts) ? (data as any).shifts : Array.isArray(data) ? data : [];
+      const [shiftsData, workersData] = await Promise.all([
+        apiGet<{ shifts: Shift[] }>('/api/shifts?role=manager'),
+        apiGet<WorkerMini[]>('/api/worker-profiles?available=true').catch(() => []),
+      ]);
+      const shiftList = Array.isArray((shiftsData as any)?.shifts) ? (shiftsData as any).shifts : Array.isArray(shiftsData) ? shiftsData : [];
       setShifts(shiftList);
       const open = shiftList.filter((s: Shift) => s.status === 'open').length;
       const filled = shiftList.filter((s: Shift) => s.status === 'filled').length;
       const confirmed = shiftList.filter((s: Shift) => s.status === 'pending').length;
       setStats({ open, filled, confirmed });
+      setNearbyWorkers(Array.isArray(workersData) ? workersData : []);
     } catch (err) {
       console.error('[ManagerDashboard] Error loading shifts:', err);
     } finally {
@@ -345,74 +420,102 @@ function ManagerDashboard() {
 
   const activeShifts = shifts.filter((s) => s.status === 'open' || s.status === 'pending');
   const recentShifts = shifts.filter((s) => s.status === 'filled' || s.status === 'completed');
+  const emergencyShifts = activeShifts.filter((s) => s.urgency === 'emergency' || s.urgency === 'tonight');
+  const hasEmergency = emergencyShifts.length > 0;
+
+  const displayedWorkers = nearbyWorkers.slice(0, 5);
+  const extraWorkers = nearbyWorkers.length > 5 ? nearbyWorkers.length - 5 : 0;
+
+  const statCards = [
+    { label: 'Open Shifts', value: stats.open, color: COLORS.primary, borderColor: COLORS.primary },
+    { label: 'Filled Today', value: stats.filled, color: COLORS.accent, borderColor: COLORS.accent },
+    { label: 'Confirmed', value: stats.confirmed, color: '#60A5FA', borderColor: '#60A5FA' },
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 140 }}
+        contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 160 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
       >
         {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <View>
+            <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 1.5, marginBottom: 4 }}>
+              ⚡ BAR-FLY
+            </Text>
             <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
               {greeting},
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={{ color: COLORS.text, fontSize: 26, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
+              <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
                 {firstName}
               </Text>
               <Text style={{ fontSize: 22 }}>👋</Text>
             </View>
           </View>
           <AnimatedPressable onPress={() => console.log('[ManagerDashboard] Notifications pressed')}>
-            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 44, height: 44, borderRadius: 22, ...glass, padding: 0, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialIcons name="notifications" size={20} color={COLORS.text} />
             </View>
           </AnimatedPressable>
         </View>
 
-        {/* Blast shift banner */}
-        <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Blast shift banner pressed'); router.push('/create-shift'); }}>
-          <View style={{
-            backgroundColor: COLORS.primaryMuted,
+        {/* Emergency Banner */}
+        {hasEmergency && (
+          <Animated.View style={{
             borderRadius: 16,
-            padding: 20,
             borderWidth: 1.5,
-            borderColor: COLORS.primary,
+            borderColor: COLORS.danger,
+            backgroundColor: 'rgba(255, 68, 68, 0.08)',
+            padding: 16,
             marginBottom: 20,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            ...primaryGlow,
+            opacity: emergencyPulse,
+            ...emergencyGlow,
           }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: COLORS.primary, fontSize: 17, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 4 }}>
-                86'd on staff?
-              </Text>
-              <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
-                Blast a shift now. Fill the floor fast.
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,68,68,0.15)', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 18 }}>🚨</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: COLORS.danger, fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                  Emergency Coverage Needed
+                </Text>
+                <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginTop: 2 }}>
+                  You have {emergencyShifts.length} open emergency shift{emergencyShifts.length > 1 ? 's' : ''}
+                </Text>
+              </View>
             </View>
-            <View style={{ backgroundColor: COLORS.primary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 }}>
-              <Text style={{ color: '#000', fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                Post Shift
-              </Text>
-            </View>
-          </View>
-        </AnimatedPressable>
+            <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Fill Now pressed'); router.push('/create-shift'); }}>
+              <View style={{ backgroundColor: COLORS.danger, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                  Fill Now →
+                </Text>
+              </View>
+            </AnimatedPressable>
+          </Animated.View>
+        )}
 
         {/* Stats row */}
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 28 }}>
-          {[
-            { label: 'Open Shifts', value: stats.open, color: COLORS.primary },
-            { label: 'Filled Today', value: stats.filled, color: COLORS.accent },
-            { label: 'Confirmed', value: stats.confirmed, color: '#60A5FA' },
-          ].map((stat) => (
-            <View key={stat.label} style={{ flex: 1, ...glass, alignItems: 'center', paddingVertical: 14 }}>
-              <Text style={{ color: stat.color, fontSize: 30, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1 }}>
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
+          {statCards.map((stat) => (
+            <View key={stat.label} style={{
+              flex: 1,
+              backgroundColor: 'rgba(255,255,255,0.04)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.08)',
+              borderRadius: 16,
+              padding: 14,
+              alignItems: 'center',
+              borderBottomWidth: 3,
+              borderBottomColor: stat.borderColor,
+            }}>
+              <Text style={{ color: stat.color, fontSize: 32, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1 }}>
                 {stat.value}
               </Text>
               <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center', marginTop: 4 }}>
@@ -422,10 +525,124 @@ function ManagerDashboard() {
           ))}
         </View>
 
+        {/* Quick Actions */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginHorizontal: -20, marginBottom: 28 }}
+          contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+        >
+          <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Emergency Shift pressed'); router.push('/create-shift'); }}>
+            <View style={{
+              backgroundColor: 'rgba(255,68,68,0.15)',
+              borderRadius: 20,
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              borderWidth: 1,
+              borderColor: COLORS.danger,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+            }}>
+              <Text style={{ fontSize: 14 }}>🚨</Text>
+              <Text style={{ color: COLORS.danger, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
+                Emergency Shift
+              </Text>
+            </View>
+          </AnimatedPressable>
+          <AnimatedPressable onPress={() => console.log('[ManagerDashboard] Repost Last pressed')}>
+            <View style={{ ...glass, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontSize: 14 }}>↩</Text>
+              <Text style={{ color: COLORS.text, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
+                Repost Last
+              </Text>
+            </View>
+          </AnimatedPressable>
+          <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] View Workers pressed'); router.push('/(tabs)/workers'); }}>
+            <View style={{ ...glass, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontSize: 14 }}>👥</Text>
+              <Text style={{ color: COLORS.text, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
+                View Workers
+              </Text>
+            </View>
+          </AnimatedPressable>
+          <AnimatedPressable onPress={() => console.log('[ManagerDashboard] Invite Staff pressed')}>
+            <View style={{ ...glass, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontSize: 14 }}>✉</Text>
+              <Text style={{ color: COLORS.text, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
+                Invite Staff
+              </Text>
+            </View>
+          </AnimatedPressable>
+        </ScrollView>
+
+        {/* Nearby Available Workers */}
+        <View style={{ marginBottom: 28 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primary }} />
+            <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+              Available Now
+            </Text>
+            {nearbyWorkers.length > 0 && (
+              <View style={{ backgroundColor: COLORS.primaryMuted, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                  {nearbyWorkers.length}
+                </Text>
+              </View>
+            )}
+          </View>
+          {nearbyWorkers.length === 0 ? (
+            <View style={{ ...glass, padding: 20, alignItems: 'center' }}>
+              <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
+                No workers available right now
+              </Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginHorizontal: -20 }}
+              contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+            >
+              {displayedWorkers.map((worker) => (
+                <WorkerMiniCard key={worker.id} worker={worker} />
+              ))}
+              {extraWorkers > 0 && (
+                <View style={{
+                  width: 80,
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.08)',
+                  borderRadius: 12,
+                  padding: 10,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Text style={{ color: COLORS.primary, fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                    +{extraWorkers}
+                  </Text>
+                  <Text style={{ color: COLORS.textSecondary, fontSize: 9, fontFamily: 'SpaceGrotesk-Regular', marginTop: 2 }}>
+                    more
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          )}
+        </View>
+
         {/* Active Shifts */}
-        <Text style={{ color: COLORS.text, fontSize: 18, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 12 }}>
-          Active Shifts
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <Text style={{ color: COLORS.text, fontSize: 18, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+            Active Shifts
+          </Text>
+          {activeShifts.length > 0 && (
+            <View style={{ backgroundColor: COLORS.primaryMuted, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+              <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                {activeShifts.length}
+              </Text>
+            </View>
+          )}
+        </View>
         {loading ? (
           <>
             <ShiftCardSkeleton />
@@ -457,7 +674,7 @@ function ManagerDashboard() {
         {/* Recent Activity */}
         {recentShifts.length > 0 && (
           <>
-            <Text style={{ color: COLORS.text, fontSize: 18, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 12, marginTop: 8 }}>
+            <Text style={{ color: COLORS.text, fontSize: 18, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 14, marginTop: 8 }}>
               Recent Activity
             </Text>
             {recentShifts.map((shift, i) => (
@@ -485,7 +702,7 @@ function ManagerDashboard() {
             gap: 8,
             ...primaryGlow,
           }}>
-            <MaterialIcons name="add" size={20} color="#000" />
+            <Text style={{ fontSize: 16 }}>⚡</Text>
             <Text style={{ color: '#000', fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
               Blast Shift
             </Text>
@@ -512,6 +729,12 @@ function WorkerDashboard() {
   const [applyingId, setApplyingId] = useState<string | null>(null);
 
   const isAvailable = workerProfile?.isAvailable ?? false;
+  const workerName = workerProfile?.name ?? currentUser?.name ?? null;
+  const completedShifts = workerProfile?.completedShifts ?? 0;
+  const score = workerProfile?.reliabilityScore ?? 0;
+  const scoreColor = score >= 95 ? COLORS.primary : score >= 85 ? COLORS.accent : COLORS.danger;
+  const earningsEst = completedShifts * 6 * 28;
+  const earningsDisplay = '$' + earningsEst.toLocaleString();
 
   const loadShifts = useCallback(async () => {
     try {
@@ -564,10 +787,18 @@ function WorkerDashboard() {
     }
   };
 
-  const filteredShifts = shifts.filter((s) => {
-    if (activeFilter === 'All') return true;
-    return s.urgency?.toLowerCase() === activeFilter.toLowerCase();
-  });
+  const filteredShifts = shifts
+    .filter((s) => {
+      if (activeFilter === 'All') return true;
+      return s.urgency?.toLowerCase() === activeFilter.toLowerCase();
+    })
+    .sort((a, b) => {
+      const urgencyOrder: Record<string, number> = { emergency: 0, tonight: 1, high: 2, tomorrow: 3 };
+      const aOrder = urgencyOrder[a.urgency ?? ''] ?? 10;
+      const bOrder = urgencyOrder[b.urgency ?? ''] ?? 10;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return Number(b.hourly_pay ?? b.hourlyPay ?? 0) - Number(a.hourly_pay ?? a.hourlyPay ?? 0);
+    });
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
@@ -578,15 +809,48 @@ function WorkerDashboard() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
       >
         {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
-            Find Shifts
-          </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+          <View>
+            <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
+              Find Shifts
+            </Text>
+            {workerName && (
+              <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular', marginTop: 2 }}>
+                {workerName}
+              </Text>
+            )}
+          </View>
           <AnimatedPressable onPress={() => console.log('[WorkerDashboard] Notifications pressed')}>
-            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 44, height: 44, borderRadius: 22, ...glass, padding: 0, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialIcons name="notifications" size={20} color={COLORS.text} />
             </View>
           </AnimatedPressable>
+        </View>
+
+        {/* Worker stats strip */}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+          {[
+            { label: 'Reliability', value: String(score), color: scoreColor },
+            { label: 'Completed', value: String(completedShifts), color: COLORS.text },
+            { label: 'Est. Earned', value: earningsDisplay, color: COLORS.accent },
+          ].map((stat) => (
+            <View key={stat.label} style={{
+              flex: 1,
+              backgroundColor: 'rgba(255,255,255,0.04)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.08)',
+              borderRadius: 16,
+              paddingVertical: 12,
+              alignItems: 'center',
+            }}>
+              <Text style={{ color: stat.color, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
+                {stat.value}
+              </Text>
+              <Text style={{ color: COLORS.textSecondary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', marginTop: 3 }}>
+                {stat.label}
+              </Text>
+            </View>
+          ))}
         </View>
 
         {/* Availability toggle */}
@@ -698,6 +962,18 @@ function AdminDashboard() {
     { label: 'Filled Shifts', value: stats.filled_shifts ?? 0, color: COLORS.primaryDim },
   ];
 
+  const platformHealth = [
+    { label: 'Active', value: stats.open_shifts ?? 0, dotColor: COLORS.primary },
+    { label: 'Pending', value: stats.pending_shifts ?? 0, dotColor: COLORS.accent },
+    { label: 'Issues', value: 0, dotColor: COLORS.danger },
+  ];
+
+  const adminTools = [
+    { label: 'Worker Verification Queue', iconName: 'verified-user' as const, color: COLORS.primary },
+    { label: 'Dispute Management', iconName: 'gavel' as const, color: COLORS.accent },
+    { label: 'No-Show Tracking', iconName: 'warning' as const, color: COLORS.danger },
+  ];
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: COLORS.background }}
@@ -706,19 +982,16 @@ function AdminDashboard() {
     >
       {/* Header */}
       <View style={{ marginBottom: 24 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <MaterialIcons name="dashboard" size={16} color={COLORS.primary} />
-          <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', letterSpacing: 1.5 }}>
-            ADMIN
-          </Text>
-        </View>
+        <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 2, marginBottom: 6 }}>
+          ⚡ ADMIN
+        </Text>
         <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
           Admin Dashboard
         </Text>
       </View>
 
       {/* Stats grid */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 28 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 }}>
         {statItems.map((item) => (
           <View key={item.label} style={{ width: '47%', ...glass }}>
             <Text style={{ color: item.color, fontSize: 34, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1 }}>
@@ -731,11 +1004,29 @@ function AdminDashboard() {
         ))}
       </View>
 
+      {/* Platform Health */}
+      <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 12 }}>
+        Platform Health
+      </Text>
+      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 28 }}>
+        {platformHealth.map((item) => (
+          <View key={item.label} style={{ flex: 1, ...glass, alignItems: 'center', paddingVertical: 14 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.dotColor, marginBottom: 8 }} />
+            <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+              {loading ? '—' : item.value}
+            </Text>
+            <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular', marginTop: 3 }}>
+              {item.label}
+            </Text>
+          </View>
+        ))}
+      </View>
+
       {/* Quick actions */}
-      <Text style={{ color: COLORS.text, fontSize: 18, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 12 }}>
+      <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 12 }}>
         Quick Actions
       </Text>
-      <View style={{ gap: 10 }}>
+      <View style={{ gap: 10, marginBottom: 28 }}>
         {[
           { label: 'View All Workers', iconName: 'people' as const, color: COLORS.primary, route: '/(tabs)/workers' },
           { label: 'View All Businesses', iconName: 'business' as const, color: COLORS.accent, route: '/(tabs)/businesses' },
@@ -751,6 +1042,29 @@ function AdminDashboard() {
               </View>
               <Text style={{ color: COLORS.text, fontSize: 15, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
                 {action.label}
+              </Text>
+              <MaterialIcons name="chevron-right" size={20} color={COLORS.textSecondary} />
+            </View>
+          </AnimatedPressable>
+        ))}
+      </View>
+
+      {/* Admin Tools */}
+      <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 12 }}>
+        Admin Tools
+      </Text>
+      <View style={{ gap: 10 }}>
+        {adminTools.map((tool) => (
+          <AnimatedPressable
+            key={tool.label}
+            onPress={() => console.log('[AdminDashboard] Admin tool pressed:', tool.label)}
+          >
+            <View style={{ ...glass, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialIcons name={tool.iconName} size={20} color={tool.color} />
+              </View>
+              <Text style={{ color: COLORS.text, fontSize: 15, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
+                {tool.label}
               </Text>
               <MaterialIcons name="chevron-right" size={20} color={COLORS.textSecondary} />
             </View>

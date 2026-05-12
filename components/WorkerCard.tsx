@@ -4,20 +4,9 @@ import { COLORS } from '@/constants/Colors';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { ReliabilityScore } from '@/components/ReliabilityScore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import type { WorkerProfile } from '@/contexts/RoleContext';
 
-export interface WorkerProfile {
-  id: string;
-  userId?: string;
-  name: string;
-  city?: string;
-  roles?: string[];
-  reliabilityScore?: number;
-  isAvailable?: boolean;
-  isVerified?: boolean;
-  isSuspended?: boolean;
-  completedShifts?: number;
-  avgRating?: number;
-}
+export type { WorkerProfile };
 
 interface WorkerCardProps {
   worker: WorkerProfile;
@@ -68,6 +57,15 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
   const score = worker.reliabilityScore ?? 0;
   const scoreColor = getScoreColor(score);
   const availabilityDotColor = worker.isAvailable ? COLORS.primary : COLORS.textTertiary;
+  const yearsExp = worker.yearsExperience ?? null;
+
+  const availableGlow = worker.isAvailable
+    ? (Platform.OS === 'web'
+        ? { boxShadow: '0 0 20px rgba(0, 255, 135, 0.15)' }
+        : { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 6 })
+    : (Platform.OS === 'web'
+        ? { boxShadow: '0 4px 16px rgba(0,0,0,0.5)' }
+        : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 8 });
 
   return (
     <Animated.View style={{ opacity, transform: [{ translateY }] }}>
@@ -80,9 +78,7 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
             borderColor: 'rgba(255,255,255,0.08)',
             padding: 16,
             marginBottom: 12,
-            ...(Platform.OS === 'web'
-              ? { boxShadow: '0 4px 16px rgba(0,0,0,0.5)' }
-              : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 8 }),
+            ...availableGlow,
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -90,9 +86,9 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
             <View style={{ position: 'relative' }}>
               <View
                 style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
+                  width: 60,
+                  height: 60,
+                  borderRadius: 30,
                   backgroundColor: COLORS.primaryMuted,
                   borderWidth: 2.5,
                   borderColor: worker.isAvailable ? COLORS.primary : COLORS.border,
@@ -117,8 +113,8 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
                   position: 'absolute',
                   bottom: 1,
                   right: 1,
-                  width: 13,
-                  height: 13,
+                  width: 14,
+                  height: 14,
                   borderRadius: 7,
                   backgroundColor: availabilityDotColor,
                   borderWidth: 2,
@@ -133,7 +129,7 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
                 <Text
                   style={{
                     color: COLORS.text,
-                    fontSize: 16,
+                    fontSize: 17,
                     fontWeight: '700',
                     fontFamily: 'SpaceGrotesk-Bold',
                   }}
@@ -189,12 +185,19 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
               </View>
             </View>
 
-            {/* Reliability score */}
+            {/* Reliability score + exp badge */}
             <View style={{ alignItems: 'center', gap: 4 }}>
               <ReliabilityScore score={score} size={52} showLabel={false} />
               <Text style={{ color: scoreColor, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
                 {score}
               </Text>
+              {yearsExp !== null && (
+                <View style={{ backgroundColor: COLORS.accentMuted, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                  <Text style={{ color: COLORS.accent, fontSize: 9, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                    {yearsExp} yrs
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
