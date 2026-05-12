@@ -21,23 +21,23 @@ import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
-const ROLES: { label: string; emoji: string; value: string }[] = [
-  { label: 'Bartender', emoji: '🍸', value: 'Bartender' },
-  { label: 'Server', emoji: '🍽️', value: 'Server' },
-  { label: 'Line Cook', emoji: '🔥', value: 'Line Cook' },
-  { label: 'Dishwasher', emoji: '🫧', value: 'Dishwasher' },
-  { label: 'Host', emoji: '🎩', value: 'Host' },
-  { label: 'Event Staff', emoji: '⭐', value: 'Event Staff' },
-  { label: 'Barback', emoji: '🧊', value: 'Barback' },
-  { label: 'Security', emoji: '🛡️', value: 'Security' },
+const ROLES: { label: string; icon: string; value: string }[] = [
+  { label: 'Bartender',   icon: 'local-bar',        value: 'Bartender' },
+  { label: 'Server',      icon: 'room-service',     value: 'Server' },
+  { label: 'Line Cook',   icon: 'outdoor-grill',    value: 'Line Cook' },
+  { label: 'Dishwasher',  icon: 'water-drop',       value: 'Dishwasher' },
+  { label: 'Host',        icon: 'emoji-people',     value: 'Host' },
+  { label: 'Event Staff', icon: 'celebration',      value: 'Event Staff' },
+  { label: 'Barback',     icon: 'sports-bar',       value: 'Barback' },
+  { label: 'Security',    icon: 'security',         value: 'Security' },
 ];
 
-const URGENCY_OPTIONS: { label: string; emoji: string; sublabel: string; value: string }[] = [
-  { label: 'ASAP', emoji: '🚨', sublabel: 'Right now', value: 'asap' },
-  { label: 'Tonight', emoji: '🌙', sublabel: 'This evening', value: 'tonight' },
-  { label: 'Rush Coverage', emoji: '⚡', sublabel: 'Emergency fill', value: 'rush' },
-  { label: 'Weekend Rush', emoji: '🎉', sublabel: 'Fri–Sun', value: 'weekend' },
-  { label: 'Future Shift', emoji: '📅', sublabel: 'Plan ahead', value: 'future' },
+const URGENCY_OPTIONS: { label: string; icon: string; sublabel: string; value: string }[] = [
+  { label: 'ASAP',          icon: 'warning',     sublabel: 'Right now',      value: 'asap' },
+  { label: 'Tonight',       icon: 'nightlight',  sublabel: 'This evening',   value: 'tonight' },
+  { label: 'Rush Coverage', icon: 'bolt',        sublabel: 'Emergency fill', value: 'rush' },
+  { label: 'Weekend Rush',  icon: 'weekend',     sublabel: 'Fri–Sun',        value: 'weekend' },
+  { label: 'Future Shift',  icon: 'event',       sublabel: 'Plan ahead',     value: 'future' },
 ];
 
 const URGENCY_COLORS: Record<string, string> = {
@@ -48,7 +48,16 @@ const URGENCY_COLORS: Record<string, string> = {
   future: '#00FF87',
 };
 
-const PAY_PRESETS = [22, 28, 32, 38, 45, 55];
+const PAY_PRESETS = [
+  { label: '<$20', value: '19' },
+  { label: '$22',  value: '22' },
+  { label: '$28',  value: '28' },
+  { label: '$32',  value: '32' },
+  { label: '$38',  value: '38' },
+  { label: '$45',  value: '45' },
+  { label: '$55',  value: '55' },
+  { label: 'Custom', value: 'custom' },
+];
 
 const TIME_PRESETS: { label: string; value: string }[] = [
   { label: '🔴 Now', value: 'Now' },
@@ -132,6 +141,7 @@ export default function CreateShiftScreen() {
   const [certs, setCerts] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
 
+  const [customPayMode, setCustomPayMode] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Pulsing glow animation for blast button
@@ -311,7 +321,11 @@ export default function CreateShiftScreen() {
                       isActive ? styles.roleChipActive : styles.roleChipInactive,
                     ]}
                   >
-                    <Text style={styles.roleEmoji}>{r.emoji}</Text>
+                    <MaterialIcons
+                      name={r.icon as any}
+                      size={20}
+                      color={isActive ? '#000' : COLORS.primary}
+                    />
                     <Text
                       style={[
                         styles.roleLabel,
@@ -361,7 +375,12 @@ export default function CreateShiftScreen() {
                         : styles.urgencyPillInactive,
                     ]}
                   >
-                    <Text style={styles.urgencyEmoji}>{u.emoji}</Text>
+                    <MaterialIcons
+                      name={u.icon as any}
+                      size={22}
+                      color={isActive ? accentColor : COLORS.textSecondary}
+                      style={{ marginBottom: 4 }}
+                    />
                     <Text
                       style={[
                         styles.urgencyPillLabel,
@@ -406,13 +425,20 @@ export default function CreateShiftScreen() {
               </View>
               <View style={styles.payPresets}>
                 {PAY_PRESETS.map((p) => {
-                  const isActive = hourlyPay === String(p);
+                  const isCustom = p.value === 'custom';
+                  const isActive = isCustom ? customPayMode : (!customPayMode && hourlyPay === p.value);
                   return (
                     <AnimatedPressable
-                      key={p}
+                      key={p.value}
                       onPress={() => {
-                        console.log('[CreateShift] Pay preset tapped:', p);
-                        setHourlyPay(String(p));
+                        console.log('[CreateShift] Pay preset tapped:', p.value);
+                        if (isCustom) {
+                          setCustomPayMode(true);
+                          setHourlyPay('');
+                        } else {
+                          setCustomPayMode(false);
+                          setHourlyPay(p.value);
+                        }
                       }}
                       style={[
                         styles.payPresetBtn,
@@ -425,7 +451,7 @@ export default function CreateShiftScreen() {
                           { color: isActive ? '#000' : COLORS.textSecondary },
                         ]}
                       >
-                        ${p}
+                        {p.label}
                       </Text>
                     </AnimatedPressable>
                   );
@@ -782,9 +808,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderColor: 'rgba(255,255,255,0.1)',
   },
-  roleEmoji: {
-    fontSize: 20,
-  },
   roleLabel: {
     fontSize: 14,
     fontFamily: 'SpaceGrotesk-SemiBold',
@@ -812,10 +835,6 @@ const styles = StyleSheet.create({
   urgencyPillInactive: {
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderColor: 'rgba(255,255,255,0.1)',
-  },
-  urgencyEmoji: {
-    fontSize: 22,
-    marginBottom: 4,
   },
   urgencyPillLabel: {
     fontSize: 13,
