@@ -93,6 +93,9 @@ export const workerProfiles = pgTable('worker_profiles', {
   reliabilityScore: integer('reliability_score').default(75).notNull(),
   isVerified: boolean('is_verified').default(false).notNull(),
   isSuspended: boolean('is_suspended').default(false).notNull(),
+  responseTimeMinutes: integer('response_time_minutes'),
+  distanceMiles: numeric('distance_miles', { precision: 4, scale: 1 }),
+  avgRating: numeric('avg_rating', { precision: 3, scale: 2 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 

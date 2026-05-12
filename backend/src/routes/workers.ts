@@ -17,6 +17,32 @@ interface WorkerProfileInput {
 }
 
 export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
+  // Helper function to convert database record to camelCase
+  function toCamelCase(worker: any) {
+    return {
+      id: worker.id,
+      userId: worker.userId,
+      name: worker.name,
+      photoUrl: worker.photoUrl,
+      phone: worker.phone,
+      city: worker.city,
+      roles: worker.roles,
+      yearsExperience: worker.yearsExperience,
+      certifications: worker.certifications,
+      hasTransportation: worker.hasTransportation,
+      preferredRadiusMiles: worker.preferredRadiusMiles,
+      bio: worker.bio,
+      isAvailable: worker.isAvailable,
+      reliabilityScore: worker.reliabilityScore,
+      isVerified: worker.isVerified,
+      isSuspended: worker.isSuspended,
+      responseTimeMinutes: worker.responseTimeMinutes,
+      distanceMiles: worker.distanceMiles,
+      avgRating: worker.avgRating,
+      createdAt: worker.createdAt,
+    };
+  }
+
   fastify.get(
     '/api/worker-profiles',
     {
@@ -26,53 +52,65 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
         querystring: {
           type: 'object',
           properties: {
-            city: { type: 'string' },
+            available: { type: 'string', enum: ['true', 'false'] },
             role: { type: 'string' },
-            is_available: { type: 'boolean' },
+            limit: { type: 'integer', default: 20 },
           },
         },
         response: {
           200: {
-            type: 'object',
-            properties: {
-              workers: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  additionalProperties: true,
-                },
-              },
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: true,
             },
           },
         },
       },
     },
     async (request, reply) => {
-      const { city, role, is_available } = request.query as {
-        city?: string;
+      const { available, role, limit: limitStr } = request.query as {
+        available?: string;
         role?: string;
-        is_available?: boolean;
+        limit?: string;
       };
 
-      app.logger.info({ city, role, is_available }, 'Getting worker profiles');
+      const limit = limitStr ? parseInt(limitStr, 10) : 20;
 
-      const workers = await app.db.select().from(schema.workerProfiles);
-      let filtered = workers;
+      app.logger.info({ available, role, limit }, 'Getting worker profiles');
 
-      if (city) {
-        filtered = filtered.filter((w) => w.city === city);
+      let workers = await app.db.select().from(schema.workerProfiles);
+
+      // Filter by availability
+      if (available === 'true') {
+        workers = workers.filter((w) => w.isAvailable === true);
       }
 
+      // Filter by role (case-insensitive)
       if (role) {
-        filtered = filtered.filter((w) => w.roles && w.roles.includes(role));
+        workers = workers.filter(
+          (w) =>
+            w.roles &&
+            w.roles.some((r) => r.toLowerCase() === role.toLowerCase())
+        );
       }
 
-      if (is_available !== undefined) {
-        filtered = filtered.filter((w) => w.isAvailable === is_available);
-      }
+      // Sort: is_available DESC, reliability_score DESC
+      workers.sort((a, b) => {
+        if (a.isAvailable !== b.isAvailable) {
+          return b.isAvailable ? 1 : -1;
+        }
+        return b.reliabilityScore - a.reliabilityScore;
+      });
 
-      app.logger.info({ count: filtered.length }, 'Worker profiles retrieved');
-      return { workers: filtered };
+      // Apply limit
+      const result = workers.slice(0, limit);
+
+      // Convert to camelCase
+      const response = result.map(toCamelCase);
+
+      app.logger.info({ count: response.length }, 'Worker profiles retrieved');
+      return response;
     }
   );
 
@@ -362,7 +400,7 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       }
 
       app.logger.info({ id }, 'Worker profile retrieved');
-      return profile;
+      return toCamelCase(profile);
     }
   );
 
@@ -542,6 +580,78 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
 
       app.logger.info({ id }, 'Worker profile suspended');
       return updated;
+    }
+  );
+
+  fastify.post(
+    '/api/worker-invites',
+    {
+      schema: {
+        description: 'Send a worker invite (stub endpoint)',
+        tags: ['workers'],
+        body: {
+          type: 'object',
+          required: ['workerId'],
+          properties: {
+            workerId: { type: 'string' },
+            shiftId: { type: 'string' },
+            message: { type: 'string' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              message: { type: 'string' },
+            },
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { workerId, shiftId, message } = request.body as {
+        workerId: string;
+        shiftId?: string;
+        message?: string;
+      };
+
+      app.logger.info({ workerId, shiftId, message }, 'Sending worker invite');
+
+      // Look up the worker profile by workerId
+      const worker = await app.db.query.workerProfiles.findFirst({
+        where: eq(schema.workerProfiles.id, workerId),
+      });
+
+      if (!worker) {
+        app.logger.warn({ workerId }, 'Worker not found');
+        return reply.status(404).send({ error: 'Worker not found' });
+      }
+
+      // Log the invite details
+      console.log(`Invite sent to: ${worker.name}`);
+      if (shiftId) {
+        console.log(`  Shift ID: ${shiftId}`);
+      }
+      if (message) {
+        console.log(`  Message: ${message}`);
+      }
+
+      app.logger.info(
+        { workerId, workerName: worker.name, shiftId, message },
+        'Worker invite sent successfully'
+      );
+
+      return {
+        success: true,
+        message: `Invite sent to ${worker.name}`,
+      };
     }
   );
 }

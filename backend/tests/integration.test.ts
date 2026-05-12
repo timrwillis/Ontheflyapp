@@ -127,8 +127,7 @@ describe("API Integration Tests", () => {
     const res = await authenticatedApi("/api/worker-profiles", authToken);
     await expectStatus(res, 200);
     const data = await res.json();
-    expect(data.workers).toBeDefined();
-    expect(Array.isArray(data.workers)).toBe(true);
+    expect(Array.isArray(data)).toBe(true);
   });
 
   test("POST /api/worker-profiles - Create a worker profile", async () => {
@@ -251,6 +250,33 @@ describe("API Integration Tests", () => {
       method: "PATCH",
     });
     await expectStatus(res, 404);
+  });
+
+  // ===== Worker Invites Endpoints =====
+  test("POST /api/worker-invites - Send worker invite", async () => {
+    const res = await authenticatedApi("/api/worker-invites", authToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        workerId: workerId,
+        shiftId: "nonexistent-shift",
+        message: "Please apply for this shift",
+      }),
+    });
+    // Endpoint may return 404 if shift doesn't exist, or 200 if it succeeds
+    await expectStatus(res, 200, 404);
+  });
+
+  test("POST /api/worker-invites - Missing required workerId returns 400", async () => {
+    const res = await authenticatedApi("/api/worker-invites", authToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        shiftId: "some-shift",
+        message: "Please apply for this shift",
+      }),
+    });
+    await expectStatus(res, 400);
   });
 
   // ===== Shift Endpoints =====
