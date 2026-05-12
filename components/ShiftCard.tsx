@@ -94,7 +94,9 @@ interface LiveSignal {
   label: string;
   color: string;
   bgColor: string;
+  borderColor?: string;
   pulse?: boolean;
+  bold?: boolean;
 }
 
 function buildLiveSignals(shift: Shift): LiveSignal[] {
@@ -114,9 +116,17 @@ function buildLiveSignals(shift: Shift): LiveSignal[] {
     signals.push({ label: 'Just Posted', color: COLORS.primary, bgColor: 'rgba(0,255,135,0.12)' });
   }
 
-  // X workers viewing
+  // X workers viewing — more prominent
   const viewerCount = getViewerCount(shift.id);
-  signals.push({ label: `${viewerCount} viewing`, color: '#FF8C00', bgColor: 'rgba(255,140,0,0.12)', pulse: true });
+  const viewerLabel = viewerCount + ' viewing';
+  signals.push({
+    label: viewerLabel,
+    color: '#FF8C00',
+    bgColor: 'rgba(255,140,0,0.15)',
+    borderColor: 'rgba(255,140,0,0.3)',
+    pulse: true,
+    bold: true,
+  });
 
   // High Demand
   if (workersNeeded > 1 || isUrgent) {
@@ -127,7 +137,8 @@ function buildLiveSignals(shift: Shift): LiveSignal[] {
   if (isUrgent) {
     const mins = getMinutesUntilStart(shift.start_time ?? shift.startTime);
     if (mins !== null) {
-      signals.push({ label: `Starts in ${mins}min`, color: COLORS.accent, bgColor: 'rgba(255,184,0,0.12)' });
+      const startsLabel = 'Starts in ' + mins + 'min';
+      signals.push({ label: startsLabel, color: COLORS.accent, bgColor: 'rgba(255,184,0,0.12)' });
     }
   }
 
@@ -147,7 +158,14 @@ function buildLiveSignals(shift: Shift): LiveSignal[] {
   return signals.slice(0, 3);
 }
 
-function SignalBadge({ label, color, bgColor, pulse }: { label: string; color: string; bgColor: string; pulse?: boolean }) {
+function SignalBadge({ label, color, bgColor, borderColor, pulse, bold }: {
+  label: string;
+  color: string;
+  bgColor: string;
+  borderColor?: string;
+  pulse?: boolean;
+  bold?: boolean;
+}) {
   const dotOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -161,11 +179,28 @@ function SignalBadge({ label, color, bgColor, pulse }: { label: string; color: s
   }, [pulse, dotOpacity]);
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: bgColor, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+    <View style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: bgColor,
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderWidth: borderColor ? 1 : 0,
+      borderColor: borderColor ?? 'transparent',
+    }}>
       {pulse && (
         <Animated.View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: color, opacity: dotOpacity }} />
       )}
-      <Text style={{ color, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>{label}</Text>
+      <Text style={{
+        color,
+        fontSize: bold ? 12 : 11,
+        fontWeight: bold ? '700' : '700',
+        fontFamily: 'SpaceGrotesk-Bold',
+      }}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -179,6 +214,8 @@ const emergencyGlow = Platform.select({
   web: { boxShadow: '0 0 20px rgba(255, 68, 68, 0.3)' },
   default: { shadowColor: '#FF4444', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 8 },
 }) as object;
+
+
 
 export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLoading, index = 0 }: ShiftCardProps) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -239,7 +276,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
   const workersNeeded = shift.workers_needed ?? 0;
   const workersConfirmed = shift.workers_confirmed ?? 0;
   const showFillBar = workersNeeded > 0;
-  const fillLabel = `${workersConfirmed}/${workersNeeded} filled`;
+  const fillLabel = workersConfirmed + '/' + workersNeeded + ' filled';
 
   const liveSignals = buildLiveSignals(shift);
 
@@ -252,6 +289,8 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
     shift.urgency === 'this_week' ? 'rgba(96, 165, 250, 0.35)' :
     'rgba(255, 255, 255, 0.08)';
 
+  const cardBg = isEmergency ? 'rgba(255,68,68,0.06)' : 'rgba(255,255,255,0.04)';
+
   const cardShadow = isEmergency ? emergencyGlow : (Platform.OS === 'web'
     ? { boxShadow: '0 4px 16px rgba(0,0,0,0.5)' }
     : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 8 });
@@ -261,7 +300,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
       <AnimatedPressable onPress={onPress}>
         <View
           style={{
-            backgroundColor: 'rgba(255,255,255,0.04)',
+            backgroundColor: cardBg,
             borderRadius: 20,
             borderWidth: 1,
             borderColor: urgencyBorderColor,
@@ -282,13 +321,48 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
               contentContainerStyle={{ gap: 6 }}
             >
               {liveSignals.map((sig, i) => (
-                <SignalBadge key={i} label={sig.label} color={sig.color} bgColor={sig.bgColor} pulse={sig.pulse} />
+                <SignalBadge
+                  key={i}
+                  label={sig.label}
+                  color={sig.color}
+                  bgColor={sig.bgColor}
+                  borderColor={sig.borderColor}
+                  pulse={sig.pulse}
+                  bold={sig.bold}
+                />
               ))}
             </ScrollView>
           )}
 
-          {/* Top row: role badge + urgency + pulsing dot */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* Pay row — dominant, at top */}
+          <View style={{
+            borderLeftWidth: 3,
+            borderLeftColor: payColor,
+            paddingLeft: 10,
+            marginBottom: 10,
+          }}>
+            <Text style={{
+              color: payColor,
+              fontSize: 38,
+              fontWeight: '800',
+              fontFamily: 'SpaceGrotesk-Bold',
+              letterSpacing: -1.5,
+              lineHeight: 44,
+            }}>
+              {payDisplay}
+            </Text>
+            <Text style={{
+              color: COLORS.textSecondary,
+              fontSize: 13,
+              fontFamily: 'SpaceGrotesk-Regular',
+              marginTop: 1,
+            }}>
+              {businessName}
+            </Text>
+          </View>
+
+          {/* Role badge row */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <RoleBadge role={roleLabel} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               {shift.urgency && <UrgencyBadge urgency={shift.urgency} />}
@@ -304,35 +378,8 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
             </View>
           </View>
 
-          {/* Pay + Business name row */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 12 }}>
-            <Text style={{
-              color: payColor,
-              fontSize: 34,
-              fontWeight: '800',
-              fontFamily: 'SpaceGrotesk-Bold',
-              letterSpacing: -1,
-              lineHeight: 40,
-            }}>
-              {payDisplay}
-            </Text>
-            <Text
-              style={{
-                color: COLORS.text,
-                fontSize: 16,
-                fontWeight: '700',
-                fontFamily: 'SpaceGrotesk-Bold',
-                textAlign: 'right',
-                maxWidth: 160,
-              }}
-              numberOfLines={2}
-            >
-              {businessName}
-            </Text>
-          </View>
-
           {/* Details rows */}
-          <View style={{ marginTop: 10, gap: 6 }}>
+          <View style={{ gap: 6 }}>
             {(dateDisplay || timeDisplay) && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <MaterialIcons name="access-time" size={14} color={COLORS.textSecondary} />
@@ -402,9 +449,9 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
                 <View
                   style={{
                     backgroundColor: COLORS.primary,
-                    borderRadius: 12,
-                    paddingHorizontal: 20,
-                    paddingVertical: 14,
+                    borderRadius: 14,
+                    paddingHorizontal: 24,
+                    paddingVertical: 16,
                     minWidth: 120,
                     minHeight: 44,
                     alignItems: 'center',
@@ -423,7 +470,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
                       fontFamily: 'SpaceGrotesk-Bold',
                     }}
                   >
-                    {acceptLoading ? 'Applying...' : 'Accept Shift →'}
+                    {acceptLoading ? 'Applying...' : '⚡ Accept'}
                   </Text>
                 </View>
               </AnimatedPressable>

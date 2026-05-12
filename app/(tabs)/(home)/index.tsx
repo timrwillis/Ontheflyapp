@@ -50,23 +50,12 @@ const ACTIVITY_FEED = [
   '⚡ Host confirmed at Rooftop Lounge',
 ];
 
-const HOW_IT_WORKS = [
-  { icon: '🍽', title: 'Post shift', desc: 'Describe the role, time, and pay' },
-  { icon: '⚡', title: 'Alert workers', desc: 'Available staff get notified instantly' },
-  { icon: '✅', title: 'Fill coverage', desc: 'Confirm the best fit in seconds' },
-];
-
-const WHY_BARFLY = [
-  { icon: '✓', title: 'Verified Workers', desc: 'Background-checked and rated' },
-  { icon: '★', title: 'Reliability Scores', desc: 'Know who shows up' },
-  { icon: '⚡', title: 'Emergency Coverage', desc: 'Fill shifts in minutes' },
-  { icon: '🍺', title: 'Built for Hospitality', desc: 'Designed for the industry' },
-];
-
-const PRICING = [
-  { label: 'Emergency Fill', price: '$19', unit: '/shift', desc: 'Per shift filled' },
-  { label: 'Starter', price: '$99', unit: '/mo', desc: 'Up to 20 shifts/month' },
-  { label: 'Pro', price: '$299', unit: '/mo', desc: 'Unlimited + analytics', featured: true },
+const LIVE_FEED_ITEMS = [
+  { iconName: 'check-circle' as const, iconColor: COLORS.primary, text: 'Bartender confirmed at Prime Social KC', time: 'just now' },
+  { iconName: 'bolt' as const, iconColor: '#FFB800', text: 'Server accepted shift at Midtown Tavern', time: '2m' },
+  { iconName: 'star' as const, iconColor: '#60A5FA', text: 'VIP event fully staffed in 4 minutes', time: '8m' },
+  { iconName: 'check-circle' as const, iconColor: COLORS.primary, text: 'Line Cook filled at Neon Alley', time: '14m' },
+  { iconName: 'bolt' as const, iconColor: '#FFB800', text: 'Rush coverage filled at Velvet Room', time: '22m' },
 ];
 
 interface MarketplaceStats {
@@ -79,6 +68,7 @@ function LandingScreen() {
   const { setRole } = useRole();
   const tickerScrollRef = useRef<ScrollView>(null);
   const tickerOffset = useRef(0);
+  const dotOpacity = useRef(new Animated.Value(1)).current;
   const [stats, setStats] = useState<MarketplaceStats>({
     workers_available: 31,
     restaurants_hiring: 14,
@@ -98,12 +88,21 @@ function LandingScreen() {
     fetchStats();
   }, []);
 
+  // Pulsing dot animation
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(dotOpacity, { toValue: 0.2, duration: 600, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(dotOpacity, { toValue: 1, duration: 600, useNativeDriver: Platform.OS !== 'web' }),
+      ])
+    ).start();
+  }, [dotOpacity]);
+
   // Auto-scroll ticker
   useEffect(() => {
     const interval = setInterval(() => {
       tickerOffset.current += 1;
       tickerScrollRef.current?.scrollTo({ x: tickerOffset.current, animated: false });
-      // Reset when we've scrolled far enough
       if (tickerOffset.current > 2000) {
         tickerOffset.current = 0;
         tickerScrollRef.current?.scrollTo({ x: 0, animated: false });
@@ -121,6 +120,12 @@ function LandingScreen() {
   const restaurantsHiring = stats.restaurants_hiring ?? 14;
   const shiftsFilled = stats.shifts_filled_week ?? 127;
 
+  const statRows = [
+    { value: String(workersAvailable), label: 'workers online' },
+    { value: String(restaurantsHiring), label: 'venues hiring' },
+    { value: String(shiftsFilled), label: 'filled today' },
+  ];
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: COLORS.background }}
@@ -128,32 +133,28 @@ function LandingScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Hero */}
-      <View style={{ paddingTop: 72, paddingHorizontal: 24, alignItems: 'center', paddingBottom: 32 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-          <Text style={{ fontSize: 32 }}>⚡</Text>
-          <Text style={{ color: COLORS.primary, fontSize: 38, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1.5 }}>
+      <View style={{ paddingTop: 64, paddingHorizontal: 24, alignItems: 'center', paddingBottom: 28 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <Text style={{ fontSize: 28 }}>⚡</Text>
+          <Text style={{ color: COLORS.primary, fontSize: 34, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1.5 }}>
             On The Fly
           </Text>
         </View>
-        <Text style={{ color: COLORS.text, fontSize: 30, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', textAlign: 'center', letterSpacing: -0.5, marginBottom: 12, lineHeight: 38 }}>
-          86'd on staff tonight?
-        </Text>
-        <Text style={{ color: COLORS.textSecondary, fontSize: 15, textAlign: 'center', lineHeight: 22, fontFamily: 'SpaceGrotesk-Regular', maxWidth: 300, marginBottom: 32 }}>
-          Instantly connect with verified hospitality workers nearby.
+        <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', textAlign: 'center', letterSpacing: -0.5, marginBottom: 28, lineHeight: 34 }}>
+          Fill the floor fast.
         </Text>
 
         {/* Live stats row */}
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 28, width: '100%' }}>
-          {[
-            { value: String(workersAvailable), label: 'workers nearby' },
-            { value: String(restaurantsHiring), label: 'hiring tonight' },
-            { value: String(shiftsFilled), label: 'filled this week' },
-          ].map((stat) => (
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24, width: '100%' }}>
+          {statRows.map((stat) => (
             <View key={stat.label} style={{ flex: 1, ...glass, alignItems: 'center', paddingVertical: 14 }}>
-              <Text style={{ color: COLORS.primary, fontSize: 26, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1 }}>
-                {stat.value}
-              </Text>
-              <Text style={{ color: COLORS.textSecondary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center', marginTop: 3 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                <Animated.View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.primary, opacity: dotOpacity }} />
+                <Text style={{ color: COLORS.primary, fontSize: 30, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1 }}>
+                  {stat.value}
+                </Text>
+              </View>
+              <Text style={{ color: COLORS.textSecondary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center' }}>
                 {stat.label}
               </Text>
             </View>
@@ -161,31 +162,50 @@ function LandingScreen() {
         </View>
 
         {/* Activity ticker */}
-        <View style={{ width: '100%', overflow: 'hidden', marginBottom: 32 }}>
+        <View style={{ width: '100%', overflow: 'hidden', marginBottom: 28 }}>
           <ScrollView
             ref={tickerScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             scrollEnabled={false}
-            contentContainerStyle={{ gap: 20, paddingHorizontal: 4 }}
+            contentContainerStyle={{ gap: 12, paddingHorizontal: 4 }}
           >
-            {[...ACTIVITY_FEED, ...ACTIVITY_FEED].map((item, i) => (
-              <View key={i} style={{ backgroundColor: COLORS.surfaceSecondary, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1, borderColor: COLORS.border }}>
-                <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
-                  {item}
-                </Text>
-              </View>
-            ))}
+            {[...ACTIVITY_FEED, ...ACTIVITY_FEED].map((item, i) => {
+              const firstSpace = item.indexOf(' ');
+              const firstWord = firstSpace > -1 ? item.slice(0, firstSpace) : item;
+              const rest = firstSpace > -1 ? item.slice(firstSpace) : '';
+              return (
+                <View key={i} style={{
+                  backgroundColor: 'rgba(0,255,133,0.08)',
+                  borderRadius: 20,
+                  paddingHorizontal: 14,
+                  paddingVertical: 7,
+                  borderWidth: 1,
+                  borderColor: 'rgba(0,255,133,0.2)',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                }}>
+                  <Animated.View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.primary, opacity: dotOpacity }} />
+                  <Text style={{ color: COLORS.primary, fontSize: 12, fontFamily: 'SpaceGrotesk-SemiBold' }}>
+                    {firstWord}
+                  </Text>
+                  <Text style={{ color: COLORS.text, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
+                    {rest}
+                  </Text>
+                </View>
+              );
+            })}
           </ScrollView>
         </View>
 
         {/* CTA Buttons */}
-        <View style={{ gap: 12, width: '100%', marginBottom: 40 }}>
-          <AnimatedPressable onPress={() => handleRoleSelect('manager')}>
+        <View style={{ gap: 12, width: '100%', marginBottom: 32 }}>
+          <AnimatedPressable onPress={() => { console.log('[Landing] Manager CTA pressed'); handleRoleSelect('manager'); }}>
             <View style={{
               backgroundColor: COLORS.primary,
               borderRadius: 14,
-              paddingVertical: 18,
+              paddingVertical: 20,
               alignItems: 'center',
               ...primaryGlow,
             }}>
@@ -194,14 +214,20 @@ function LandingScreen() {
               </Text>
             </View>
           </AnimatedPressable>
-          <AnimatedPressable onPress={() => handleRoleSelect('worker')}>
+          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center', marginTop: -6 }}>
+            avg 4 min fill time
+          </Text>
+          <AnimatedPressable onPress={() => { console.log('[Landing] Worker CTA pressed'); handleRoleSelect('worker'); }}>
             <View style={{ ...glass, paddingVertical: 18, alignItems: 'center' }}>
               <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
                 I'm a Worker — Find Work Tonight
               </Text>
             </View>
           </AnimatedPressable>
-          <AnimatedPressable onPress={() => handleRoleSelect('admin')}>
+          <Text style={{ color: COLORS.primary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center', marginTop: -6 }}>
+            Shifts available now →
+          </Text>
+          <AnimatedPressable onPress={() => { console.log('[Landing] Admin access pressed'); handleRoleSelect('admin'); }}>
             <View style={{ paddingVertical: 12, alignItems: 'center' }}>
               <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
                 Admin Access
@@ -211,97 +237,29 @@ function LandingScreen() {
         </View>
       </View>
 
-      {/* How it works */}
+      {/* Live Activity Feed */}
       <View style={{ paddingHorizontal: 24, marginBottom: 40 }}>
-        <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 16, letterSpacing: -0.3 }}>
-          How it works
+        <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 1.5, marginBottom: 14 }}>
+          LIVE ACTIVITY
         </Text>
-        <View style={{ gap: 10 }}>
-          {HOW_IT_WORKS.map((step, i) => (
-            <View key={i} style={{ ...glass, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primaryMuted, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontSize: 20 }}>{step.icon}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: COLORS.text, fontSize: 15, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
-                  {step.title}
-                </Text>
-                <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular', marginTop: 2 }}>
-                  {step.desc}
-                </Text>
-              </View>
-              <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: COLORS.primaryMuted, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                  {i + 1}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Why On The Fly */}
-      <View style={{ paddingHorizontal: 24, marginBottom: 40 }}>
-        <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 16, letterSpacing: -0.3 }}>
-          Why On The Fly
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-          {WHY_BARFLY.map((item) => (
-            <View key={item.title} style={{ width: '47%', ...glass }}>
-              <Text style={{ fontSize: 22, marginBottom: 8 }}>{item.icon}</Text>
-              <Text style={{ color: COLORS.text, fontSize: 14, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 4 }}>
-                {item.title}
+        <View style={{ ...glass, padding: 0, overflow: 'hidden' }}>
+          {LIVE_FEED_ITEMS.map((item, i) => (
+            <View key={i} style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              borderBottomWidth: i < LIVE_FEED_ITEMS.length - 1 ? 1 : 0,
+              borderBottomColor: 'rgba(255,255,255,0.05)',
+            }}>
+              <MaterialIcons name={item.iconName} size={18} color={item.iconColor} />
+              <Text style={{ color: COLORS.text, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular', flex: 1 }}>
+                {item.text}
               </Text>
-              <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', lineHeight: 18 }}>
-                {item.desc}
+              <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular' }}>
+                {item.time}
               </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Pricing */}
-      <View style={{ paddingHorizontal: 24, marginBottom: 40 }}>
-        <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 16, letterSpacing: -0.3 }}>
-          Simple pricing
-        </Text>
-        <View style={{ gap: 10 }}>
-          {PRICING.map((plan) => (
-            <View
-              key={plan.label}
-              style={{
-                ...glass,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                ...(plan.featured ? { borderColor: 'rgba(0, 255, 135, 0.3)', ...primaryGlow } : {}),
-              }}
-            >
-              <View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ color: COLORS.text, fontSize: 15, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
-                    {plan.label}
-                  </Text>
-                  {plan.featured && (
-                    <View style={{ backgroundColor: COLORS.primaryMuted, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                      <Text style={{ color: COLORS.primary, fontSize: 10, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                        POPULAR
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginTop: 2 }}>
-                  {plan.desc}
-                </Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 1 }}>
-                <Text style={{ color: COLORS.primary, fontSize: 24, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
-                  {plan.price}
-                </Text>
-                <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
-                  {plan.unit}
-                </Text>
-              </View>
             </View>
           ))}
         </View>
@@ -418,6 +376,36 @@ function WorkerMiniCard({ worker }: { worker: WorkerMini }) {
       <Text style={{ color: COLORS.textSecondary, fontSize: 9, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center' }}>
         {distanceDisplay}
       </Text>
+    </View>
+  );
+}
+
+// ─── Section Header ───────────────────────────────────────────────────────────
+
+function SectionHeader({
+  title,
+  count,
+  sectionColor,
+  sectionBg,
+}: {
+  title: string;
+  count: number;
+  sectionColor: string;
+  sectionBg: string;
+}) {
+  const countText = count + ' shifts';
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12, marginTop: 8 }}>
+      <View style={{ width: 3, height: 16, backgroundColor: sectionColor, borderRadius: 2 }} />
+      <Text style={{ color: COLORS.text, fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 0.3 }}>
+        {title}
+      </Text>
+      <View style={{ flex: 1 }} />
+      <View style={{ backgroundColor: sectionBg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+        <Text style={{ color: sectionColor, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+          {countText}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -909,23 +897,21 @@ function ManagerDashboard() {
         </View>
       </ScrollView>
 
-      {/* Sticky Blast Shift FAB — premium */}
-      <View style={{ position: 'absolute', bottom: 90, left: 20, right: 20 }}>
+      {/* Floating corner pill FAB */}
+      <View style={{ position: 'absolute', bottom: 100, right: 20 }}>
         <Animated.View style={{ transform: [{ scale: fabScale }] }}>
           <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Blast Shift FAB pressed'); router.push('/create-shift'); }}>
             <View style={{
               backgroundColor: COLORS.primary,
-              borderRadius: 14,
-              paddingVertical: 14,
+              borderRadius: 30,
+              paddingVertical: 16,
+              paddingHorizontal: 24,
               alignItems: 'center',
               justifyContent: 'center',
               ...primaryGlow,
             }}>
-              <Text style={{ color: '#000', fontSize: 15, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                ⚡ BLAST A SHIFT
-              </Text>
-              <Text style={{ color: 'rgba(0,0,0,0.6)', fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', marginTop: 2 }}>
-                avg 4 min fill time
+              <Text style={{ color: '#000', fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                ⚡ BLAST
               </Text>
             </View>
           </AnimatedPressable>
@@ -1092,9 +1078,18 @@ function WorkerDashboard() {
         {/* Header */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <View>
-            <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
-              Find Shifts
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
+                Find Shifts
+              </Text>
+              {/* LIVE pill */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,255,133,0.1)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.primary, opacity: liveDotOpacity }} />
+                <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                  LIVE
+                </Text>
+              </View>
+            </View>
             {workerName && (
               <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular', marginTop: 2 }}>
                 {workerName}
@@ -1284,22 +1279,12 @@ function WorkerDashboard() {
             {/* Emergency section */}
             {emergencySection.length > 0 && (
               <>
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
-                  marginBottom: 10,
-                  paddingVertical: 6,
-                  paddingHorizontal: 12,
-                  backgroundColor: 'rgba(255,68,68,0.08)',
-                  borderRadius: 10,
-                  borderLeftWidth: 3,
-                  borderLeftColor: COLORS.danger,
-                }}>
-                  <Text style={{ color: COLORS.danger, fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                    🚨 Emergency — Fill Tonight
-                  </Text>
-                </View>
+                <SectionHeader
+                  title="🚨 RUSH COVERAGE"
+                  count={emergencySection.length}
+                  sectionColor={COLORS.danger}
+                  sectionBg="rgba(255,68,68,0.12)"
+                />
                 {emergencySection.map((shift, i) => (
                   <ShiftCard
                     key={shift.id}
@@ -1317,23 +1302,12 @@ function WorkerDashboard() {
             {/* Boosted pay section */}
             {boostedSection.length > 0 && (
               <>
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
-                  marginBottom: 10,
-                  marginTop: emergencySection.length > 0 ? 6 : 0,
-                  paddingVertical: 6,
-                  paddingHorizontal: 12,
-                  backgroundColor: 'rgba(255,215,0,0.07)',
-                  borderRadius: 10,
-                  borderLeftWidth: 3,
-                  borderLeftColor: '#FFD700',
-                }}>
-                  <Text style={{ color: '#FFD700', fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                    ⚡ Boosted Pay
-                  </Text>
-                </View>
+                <SectionHeader
+                  title="⚡ BOOSTED PAY"
+                  count={boostedSection.length}
+                  sectionColor="#FFD700"
+                  sectionBg="rgba(255,215,0,0.10)"
+                />
                 {boostedSection.map((shift, i) => (
                   <ShiftCard
                     key={shift.id}
@@ -1351,23 +1325,12 @@ function WorkerDashboard() {
             {/* Upcoming section */}
             {upcomingSection.length > 0 && (
               <>
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 8,
-                  marginBottom: 10,
-                  marginTop: (emergencySection.length > 0 || boostedSection.length > 0) ? 6 : 0,
-                  paddingVertical: 6,
-                  paddingHorizontal: 12,
-                  backgroundColor: 'rgba(96,165,250,0.07)',
-                  borderRadius: 10,
-                  borderLeftWidth: 3,
-                  borderLeftColor: '#60A5FA',
-                }}>
-                  <Text style={{ color: '#60A5FA', fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                    📅 Upcoming Shifts
-                  </Text>
-                </View>
+                <SectionHeader
+                  title="UPCOMING SHIFTS"
+                  count={upcomingSection.length}
+                  sectionColor={COLORS.primary}
+                  sectionBg={COLORS.primaryMuted}
+                />
                 {upcomingSection.map((shift, i) => (
                   <ShiftCard
                     key={shift.id}

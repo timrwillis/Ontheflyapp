@@ -1,4 +1,4 @@
-// v3
+// v4
 import React, { useRef } from 'react';
 import {
   View,
@@ -23,7 +23,6 @@ const NEON_GLOW = 'rgba(0,255,133,0.12)';
 const INACTIVE_COLOR = 'rgba(255,255,255,0.35)';
 const CONTAINER_BG = 'rgba(10,10,12,0.96)';
 const CONTAINER_BG_ANDROID = 'rgba(10,10,12,0.98)';
-const BORDER_COLOR = 'rgba(255,255,255,0.08)';
 const MAX_TABS = 6;
 
 export interface TabBarItem {
@@ -167,7 +166,7 @@ export default function FloatingTabBar({
         ]}
       >
         {Platform.OS === 'ios' ? (
-          <BlurView intensity={20} tint="dark" style={[styles.blurContainer, { borderRadius }]}>
+          <BlurView intensity={30} tint="dark" style={[styles.blurContainer, { borderRadius }]}>
             <View style={[styles.iosOverlay, { borderRadius }]} />
             {tabBarContent}
           </BlurView>
@@ -206,7 +205,7 @@ const styles = StyleSheet.create({
   blurContainer: {
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: BORDER_COLOR,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   iosOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -215,11 +214,11 @@ const styles = StyleSheet.create({
   androidContainer: {
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: BORDER_COLOR,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   tabsContainer: {
     flexDirection: 'row',
-    height: 56,
+    height: 52,
     alignItems: 'center',
     paddingHorizontal: 4,
   },
@@ -237,13 +236,13 @@ const styles = StyleSheet.create({
   activeIconWrapper: {
     backgroundColor: NEON_GLOW,
     borderRadius: 12,
-    padding: 6,
+    padding: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
   inactiveIconWrapper: {
     borderRadius: 12,
-    padding: 6,
+    padding: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -22,12 +22,12 @@ function SegmentedControl({ options, selected, onSelect }: { options: string[]; 
         return (
           <AnimatedPressable key={opt} onPress={() => { console.log('[ShiftsTab] Segment selected:', opt); onSelect(opt); }} style={{ flex: 1 }}>
             <View style={{
-              backgroundColor: isActive ? COLORS.surface : 'transparent',
+              backgroundColor: isActive ? 'rgba(0,255,133,0.08)' : 'transparent',
               borderRadius: 9,
               paddingVertical: 8,
               alignItems: 'center',
               borderWidth: isActive ? 1 : 0,
-              borderColor: COLORS.border,
+              borderColor: isActive ? COLORS.border : 'transparent',
               borderBottomWidth: isActive ? 2 : 0,
               borderBottomColor: isActive ? COLORS.primary : 'transparent',
             }}>
@@ -102,6 +102,8 @@ export default function ShiftsScreen() {
   const scoreColor = score >= 95 ? COLORS.primary : score >= 85 ? COLORS.accent : COLORS.danger;
   const scoreBarWidth = Math.min(100, Math.max(0, score));
 
+  const titleText = currentRole === 'worker' ? 'My Shifts' : 'Shift Manager';
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: COLORS.background }}
@@ -111,21 +113,12 @@ export default function ShiftsScreen() {
     >
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <MaterialIcons name="calendar-today" size={22} color={COLORS.primary} />
-        <Text style={{ color: COLORS.text, fontSize: 24, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
-          {currentRole === 'worker' ? 'My Shifts' : 'Shifts'}
+        <Text style={{ color: COLORS.text, fontSize: 26, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5, flex: 1 }}>
+          {titleText}
         </Text>
         {shifts.length > 0 && (
-          <View style={{
-            marginLeft: 'auto',
-            backgroundColor: COLORS.primaryMuted,
-            borderRadius: 10,
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderWidth: 1,
-            borderColor: 'rgba(0, 255, 135, 0.2)',
-          }}>
-            <Text style={{ color: COLORS.primary, fontSize: 12, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+          <View style={{ backgroundColor: COLORS.primaryMuted, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
               {shifts.length}
             </Text>
           </View>
