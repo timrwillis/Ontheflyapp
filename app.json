@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "ShiftSlinger",
-    "slug": "shiftslinger",
+    "slug": "barfly-app-gultwva",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/1000012749.png",
@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.placeholder.app",
+      "bundleIdentifier": "com.barfly.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -23,7 +23,7 @@
         "foregroundImage": "./assets/images/1000012749.png",
         "backgroundColor": "#000000"
       },
-      "package": "com.placeholder.app"
+      "package": "com.barfly.app"
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",

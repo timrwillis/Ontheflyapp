@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, Platform } from 'react-native';
+import { View, Text, ScrollView, Platform, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
@@ -30,6 +30,61 @@ function getLevelInfo(completedShifts: number): { label: string; color: string; 
   if (completedShifts >= 21) return { label: 'Level 3 · Pro', color: COLORS.primary, bg: COLORS.primaryMuted };
   if (completedShifts >= 6) return { label: 'Level 2 · Regular', color: '#60A5FA', bg: 'rgba(96, 165, 250, 0.12)' };
   return { label: 'Level 1 · Newcomer', color: COLORS.textSecondary, bg: 'rgba(138, 138, 138, 0.12)' };
+}
+
+const sectionLabelStyle = {
+  color: COLORS.textSecondary,
+  fontSize: 11,
+  fontWeight: '600' as const,
+  fontFamily: 'SpaceGrotesk-SemiBold',
+  letterSpacing: 1.5,
+  marginBottom: 12,
+};
+
+function AccountSection() {
+  const handleSignOut = () => {
+    console.log('[Profile] Sign out tapped');
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: () => console.log('[Profile] Sign out pressed') },
+    ]);
+  };
+
+  const handleDeleteAccount = () => {
+    console.log('[Profile] Delete account tapped');
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all data. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete Account', style: 'destructive', onPress: () => console.log('[Profile] Delete account pressed') },
+      ],
+    );
+  };
+
+  return (
+    <View style={{ marginBottom: 32 }}>
+      <Text style={sectionLabelStyle}>ACCOUNT</Text>
+      <View style={glass}>
+        <AnimatedPressable onPress={handleSignOut}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.divider }}>
+            <MaterialIcons name="logout" size={18} color={COLORS.textSecondary} />
+            <Text style={{ color: COLORS.textSecondary, fontSize: 15, fontFamily: 'SpaceGrotesk-SemiBold' }}>
+              Sign Out
+            </Text>
+          </View>
+        </AnimatedPressable>
+        <AnimatedPressable onPress={handleDeleteAccount}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 }}>
+            <MaterialIcons name="delete-forever" size={18} color={COLORS.danger} />
+            <Text style={{ color: COLORS.danger, fontSize: 15, fontFamily: 'SpaceGrotesk-SemiBold' }}>
+              Delete Account
+            </Text>
+          </View>
+        </AnimatedPressable>
+      </View>
+    </View>
+  );
 }
 
 function RoleSwitcher() {
@@ -264,6 +319,7 @@ function WorkerProfileView() {
       </AnimatedPressable>
 
       <RoleSwitcher />
+      <AccountSection />
     </ScrollView>
   );
 }
@@ -343,6 +399,7 @@ function ManagerProfileView() {
       </View>
 
       <RoleSwitcher />
+      <AccountSection />
     </ScrollView>
   );
 }
@@ -407,6 +464,7 @@ function AdminProfileView() {
       </View>
 
       <RoleSwitcher />
+      <AccountSection />
     </ScrollView>
   );
 }
