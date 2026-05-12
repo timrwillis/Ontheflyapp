@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { useRole, Role } from '@/contexts/RoleContext';
+import { apiDelete } from '@/utils/api';
 import { ReliabilityScore } from '@/components/ReliabilityScore';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -42,11 +43,22 @@ const sectionLabelStyle = {
 };
 
 function AccountSection() {
+  const { setRole, currentRole } = useRole();
+  const router = useRouter();
+
   const handleSignOut = () => {
     console.log('[Profile] Sign out tapped');
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: () => console.log('[Profile] Sign out pressed') },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          console.log('[Profile] Sign out confirmed, clearing role');
+          await setRole(null);
+          router.replace('/');
+        },
+      },
     ]);
   };
 
@@ -57,7 +69,21 @@ function AccountSection() {
       'This will permanently delete your account and all data. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete Account', style: 'destructive', onPress: () => console.log('[Profile] Delete account pressed') },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            console.log('[Profile] Delete account confirmed, calling DELETE /api/users/me, role:', currentRole);
+            try {
+              await apiDelete(`/api/users/me?role=${currentRole}`);
+              console.log('[Profile] Delete account API call succeeded');
+            } catch (err) {
+              console.log('[Profile] Delete account API call failed (proceeding anyway):', err);
+            }
+            await setRole(null);
+            router.replace('/');
+          },
+        },
       ],
     );
   };
