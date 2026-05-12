@@ -691,7 +691,7 @@ function ManagerDashboard() {
         </ScrollView>
 
         {/* Available Now — upgraded header */}
-        <View style={{ marginBottom: 28 }}>
+        <View style={{ marginBottom: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
             {/* LIVE indicator */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginRight: 10 }}>
@@ -716,9 +716,14 @@ function ManagerDashboard() {
                 </Text>
               </View>
             )}
-            <Text style={{ color: COLORS.danger, fontSize: 11, fontFamily: 'SpaceGrotesk-SemiBold' }}>
+            <Text style={{ color: COLORS.danger, fontSize: 11, fontFamily: 'SpaceGrotesk-SemiBold', marginRight: 10 }}>
               {scarcityText}
             </Text>
+            <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Browse All workers pressed'); router.push('/nearby-workers'); }}>
+              <Text style={{ color: COLORS.primary, fontSize: 12, fontFamily: 'SpaceGrotesk-SemiBold' }}>
+                Browse All →
+              </Text>
+            </AnimatedPressable>
           </View>
           {nearbyWorkers.length === 0 ? (
             <View style={{ ...glass, padding: 20, alignItems: 'center' }}>
@@ -737,27 +742,65 @@ function ManagerDashboard() {
                 <WorkerMiniCard key={worker.id} worker={worker} />
               ))}
               {extraWorkers > 0 && (
-                <View style={{
-                  width: 110,
-                  backgroundColor: 'rgba(255,255,255,0.05)',
-                  borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.1)',
-                  borderRadius: 14,
-                  padding: 12,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <Text style={{ color: COLORS.primary, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                    {'+' + extraWorkers}
-                  </Text>
-                  <Text style={{ color: COLORS.textSecondary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', marginTop: 2 }}>
-                    more
-                  </Text>
-                </View>
+                <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] +more workers pressed'); router.push('/nearby-workers'); }}>
+                  <View style={{
+                    width: 110,
+                    backgroundColor: 'rgba(255,255,255,0.05)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderRadius: 14,
+                    padding: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Text style={{ color: COLORS.primary, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                      {'+' + extraWorkers}
+                    </Text>
+                    <Text style={{ color: COLORS.textSecondary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', marginTop: 2 }}>
+                      more
+                    </Text>
+                  </View>
+                </AnimatedPressable>
               )}
             </ScrollView>
           )}
         </View>
+
+        {/* Browse Marketplace Banner */}
+        <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Browse Marketplace banner pressed'); router.push('/nearby-workers'); }} style={{ marginBottom: 28 }}>
+          <View style={{
+            backgroundColor: 'rgba(255,255,255,0.04)',
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.08)',
+            borderRadius: 16,
+            padding: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 14,
+            borderLeftWidth: 4,
+            borderLeftColor: COLORS.primary,
+          }}>
+            <View style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: COLORS.primaryMuted,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <MaterialIcons name="people" size={22} color={COLORS.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: COLORS.text, fontSize: 15, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 2 }}>
+                Browse All Nearby Workers
+              </Text>
+              <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
+                {nearbyWorkers.length > 0 ? nearbyWorkers.length + ' verified workers available tonight' : 'Find verified workers available tonight'}
+              </Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={22} color={COLORS.primary} />
+          </View>
+        </AnimatedPressable>
 
         {/* Active Shifts */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>

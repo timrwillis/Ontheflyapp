@@ -198,6 +198,10 @@ export default function RootLayout() {
                         headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
                       }}
                     />
+                    <Stack.Screen
+                      name="nearby-workers"
+                      options={{ headerShown: false }}
+                    />
                   </Stack>
                 </Animated.View>
                 <SystemBars style="light" />
