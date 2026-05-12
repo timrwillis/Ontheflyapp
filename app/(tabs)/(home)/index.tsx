@@ -910,7 +910,7 @@ function ManagerDashboard() {
       </ScrollView>
 
       {/* Sticky Blast Shift FAB — premium */}
-      <View style={{ position: 'absolute', bottom: 100, left: 20, right: 20 }}>
+      <View style={{ position: 'absolute', bottom: 90, left: 20, right: 20 }}>
         <Animated.View style={{ transform: [{ scale: fabScale }] }}>
           <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Blast Shift FAB pressed'); router.push('/create-shift'); }}>
             <View style={{
