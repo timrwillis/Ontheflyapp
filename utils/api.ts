@@ -1,9 +1,25 @@
+import { authClient } from '@/utils/authClient';
+
 const BASE_URL = 'https://xn8u74za85ysyp6vewujtpsarhqy53na.app.specular.dev';
 
+export async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const session = await authClient.getSession();
+    const token = (session?.data as any)?.session?.token ?? (session?.data as any)?.token;
+    if (token) {
+      return { Authorization: `Bearer ${token}` };
+    }
+  } catch (e) {
+    console.warn('[API] Could not get auth token:', e);
+  }
+  return {};
+}
+
 export async function api<T = unknown>(path: string, options?: RequestInit): Promise<T> {
+  const authHeaders = await getAuthHeaders();
   console.log(`[API] ${options?.method ?? 'GET'} ${BASE_URL}${path}`);
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    headers: { 'Content-Type': 'application/json', ...authHeaders, ...options?.headers },
     ...options,
   });
   if (!res.ok) {

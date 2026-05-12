@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
 import { useRole } from '@/contexts/RoleContext';
-import { apiGet, apiPost, apiPatch } from '@/utils/api';
+import { apiGet, apiPost, apiPut } from '@/utils/api';
 import { Shift } from '@/components/ShiftCard';
 import { RoleBadge } from '@/components/RoleBadge';
 import { UrgencyBadge } from '@/components/UrgencyBadge';
@@ -200,7 +200,7 @@ export default function ShiftDetailScreen() {
     setActionLoading(appId);
     try {
       console.log('[ShiftDetail] Confirming application:', appId);
-      await apiPatch(`/api/applications/${appId}/confirm`, {});
+      await apiPut(`/api/applications/${appId}`, { status: 'confirmed' });
       loadData();
     } catch (err) {
       console.error('[ShiftDetail] Error confirming:', err);
@@ -214,7 +214,7 @@ export default function ShiftDetailScreen() {
     setActionLoading(appId);
     try {
       console.log('[ShiftDetail] Rejecting application:', appId);
-      await apiPatch(`/api/applications/${appId}/reject`, {});
+      await apiPut(`/api/applications/${appId}`, { status: 'rejected' });
       loadData();
     } catch (err) {
       console.error('[ShiftDetail] Error rejecting:', err);

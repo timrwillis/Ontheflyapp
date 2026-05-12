@@ -1,10 +1,10 @@
-import React from 'react';
-import { View, Text, ScrollView, Platform, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, Switch, Platform, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { useRole, Role } from '@/contexts/RoleContext';
-import { apiDelete } from '@/utils/api';
+import { apiDelete, apiPut } from '@/utils/api';
 import { ReliabilityScore } from '@/components/ReliabilityScore';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -42,6 +42,63 @@ const sectionLabelStyle = {
   marginBottom: 12,
 };
 
+function NotificationPreferencesSection() {
+  const { notificationPreferences } = useRole();
+  const router = useRouter();
+  const [shiftAlerts, setShiftAlerts] = useState(notificationPreferences.shift_alerts !== false);
+  const [appUpdates, setAppUpdates] = useState(notificationPreferences.application_updates !== false);
+  const [reminders, setReminders] = useState(notificationPreferences.reminders !== false);
+  const [marketing, setMarketing] = useState(notificationPreferences.marketing === true);
+  const [saving, setSaving] = useState(false);
+
+  const savePrefs = async (key: string, value: boolean) => {
+    setSaving(true);
+    const prefs = {
+      shift_alerts: key === 'shift_alerts' ? value : shiftAlerts,
+      application_updates: key === 'application_updates' ? value : appUpdates,
+      reminders: key === 'reminders' ? value : reminders,
+      marketing: key === 'marketing' ? value : marketing,
+    };
+    try {
+      console.log('[Profile] Saving notification preferences:', prefs);
+      await apiPut('/api/me', { notification_preferences: prefs });
+    } catch (err) {
+      console.error('[Profile] Error saving notification preferences:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggles = [
+    { key: 'shift_alerts', label: 'Shift Alerts', value: shiftAlerts, setter: setShiftAlerts },
+    { key: 'application_updates', label: 'Application Updates', value: appUpdates, setter: setAppUpdates },
+    { key: 'reminders', label: 'Reminders', value: reminders, setter: setReminders },
+    { key: 'marketing', label: 'Marketing', value: marketing, setter: setMarketing },
+  ];
+
+  return (
+    <View style={{ marginBottom: 20 }}>
+      <Text style={sectionLabelStyle}>NOTIFICATIONS</Text>
+      <View style={glass}>
+        {toggles.map((item, i) => (
+          <View key={item.key} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: i < toggles.length - 1 ? 1 : 0, borderBottomColor: COLORS.divider }}>
+            <Text style={{ color: COLORS.text, fontSize: 14, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
+              {item.label}
+            </Text>
+            <Switch
+              value={item.value}
+              onValueChange={(v) => { item.setter(v); savePrefs(item.key, v); }}
+              trackColor={{ false: COLORS.surfaceSecondary, true: COLORS.primaryMuted }}
+              thumbColor={item.value ? COLORS.primary : COLORS.textSecondary}
+              disabled={saving}
+            />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 function AccountSection() {
   const { setRole, currentRole } = useRole();
   const router = useRouter();
@@ -73,9 +130,9 @@ function AccountSection() {
           text: 'Delete Account',
           style: 'destructive',
           onPress: async () => {
-            console.log('[Profile] Delete account confirmed, calling DELETE /api/users/me, role:', currentRole);
+            console.log('[Profile] Delete account confirmed, calling DELETE /api/me');
             try {
-              await apiDelete(`/api/users/me?role=${currentRole}`);
+              await apiDelete('/api/me');
               console.log('[Profile] Delete account API call succeeded');
             } catch (err) {
               console.log('[Profile] Delete account API call failed (proceeding anyway):', err);
@@ -92,6 +149,33 @@ function AccountSection() {
     <View style={{ marginBottom: 32 }}>
       <Text style={sectionLabelStyle}>ACCOUNT</Text>
       <View style={glass}>
+        <AnimatedPressable onPress={() => { console.log('[Profile] Settings pressed'); router.push('/settings'); }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.divider }}>
+            <MaterialIcons name="settings" size={18} color={COLORS.textSecondary} />
+            <Text style={{ color: COLORS.text, fontSize: 15, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
+              Settings
+            </Text>
+            <MaterialIcons name="chevron-right" size={18} color={COLORS.textSecondary} />
+          </View>
+        </AnimatedPressable>
+        <AnimatedPressable onPress={() => { console.log('[Profile] Support pressed'); router.push('/support'); }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.divider }}>
+            <MaterialIcons name="support-agent" size={18} color={COLORS.textSecondary} />
+            <Text style={{ color: COLORS.text, fontSize: 15, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
+              Support
+            </Text>
+            <MaterialIcons name="chevron-right" size={18} color={COLORS.textSecondary} />
+          </View>
+        </AnimatedPressable>
+        <AnimatedPressable onPress={() => { console.log('[Profile] Notifications pressed'); router.push('/notifications'); }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.divider }}>
+            <MaterialIcons name="notifications" size={18} color={COLORS.textSecondary} />
+            <Text style={{ color: COLORS.text, fontSize: 15, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
+              Notifications
+            </Text>
+            <MaterialIcons name="chevron-right" size={18} color={COLORS.textSecondary} />
+          </View>
+        </AnimatedPressable>
         <AnimatedPressable onPress={handleSignOut}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.divider }}>
             <MaterialIcons name="logout" size={18} color={COLORS.textSecondary} />
@@ -344,6 +428,7 @@ function WorkerProfileView() {
         </View>
       </AnimatedPressable>
 
+      <NotificationPreferencesSection />
       <RoleSwitcher />
       <AccountSection />
     </ScrollView>

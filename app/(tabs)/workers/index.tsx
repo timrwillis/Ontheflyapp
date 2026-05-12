@@ -25,9 +25,21 @@ export default function WorkersScreen() {
 
   const loadWorkers = useCallback(async () => {
     try {
-      console.log('[WorkersTab] Loading workers...');
-      const data = await apiGet<WorkerProfile[]>('/api/worker-profiles');
-      setWorkers(Array.isArray(data) ? data : []);
+      console.log('[WorkersTab] Loading workers from /api/workers...');
+      const data = await apiGet<WorkerProfile[] | { workers: WorkerProfile[] }>('/api/workers');
+      const list = Array.isArray(data) ? data : (data as any)?.workers ?? [];
+      // Normalize field names
+      const normalized = list.map((w: any) => ({
+        ...w,
+        isAvailable: w.is_available ?? w.isAvailable,
+        isVerified: w.is_verified ?? w.isVerified,
+        isSuspended: w.is_suspended ?? w.isSuspended,
+        reliabilityScore: w.reliability_score ?? w.reliabilityScore ?? 0,
+        avgRating: w.avg_rating ?? w.avgRating ?? 0,
+        roles: w.roles ?? w.worker_roles?.map((r: any) => r.role) ?? [],
+      }));
+      setWorkers(normalized);
+      console.log('[WorkersTab] Loaded', normalized.length, 'workers');
     } catch (err) {
       console.error('[WorkersTab] Error loading workers:', err);
     } finally {

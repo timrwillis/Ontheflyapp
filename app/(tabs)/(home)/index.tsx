@@ -67,6 +67,7 @@ interface MarketplaceStats {
 
 function LandingScreen() {
   const { setRole } = useRole();
+  const router = useRouter();
   const tickerScrollRef = useRef<ScrollView>(null);
   const tickerOffset = useRef(0);
   const dotOpacity = useRef(new Animated.Value(1)).current;
@@ -114,7 +115,12 @@ function LandingScreen() {
 
   const handleRoleSelect = async (role: 'manager' | 'worker' | 'admin') => {
     console.log('[Landing] Role selected:', role);
-    await setRole(role);
+    if (role === 'admin') {
+      await setRole(role);
+      return;
+    }
+    // For worker/manager, go to onboarding role selector
+    router.push('/onboarding/worker/index' as any);
   };
 
   const workersAvailable = stats.workers_available ?? 31;
@@ -520,7 +526,7 @@ function ManagerDashboard() {
               <Text style={{ fontSize: 22 }}>👋</Text>
             </View>
           </View>
-          <AnimatedPressable onPress={() => console.log('[ManagerDashboard] Notifications pressed')}>
+          <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Notifications bell pressed'); router.push('/notifications'); }}>
             <View style={{ width: 44, height: 44, ...glass, borderRadius: 22, padding: 0, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialIcons name="notifications" size={20} color={COLORS.text} />
             </View>
@@ -1098,7 +1104,7 @@ function WorkerDashboard() {
               </Text>
             )}
           </View>
-          <AnimatedPressable onPress={() => console.log('[WorkerDashboard] Notifications pressed')}>
+          <AnimatedPressable onPress={() => { console.log('[WorkerDashboard] Notifications bell pressed'); router.push('/notifications'); }}>
             <View style={{ width: 44, height: 44, ...glass, borderRadius: 22, padding: 0, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialIcons name="notifications" size={20} color={COLORS.text} />
             </View>

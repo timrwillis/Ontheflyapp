@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Pressable, Text } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
@@ -84,10 +84,40 @@ function getContainerWidth(tabCount: number): number {
 }
 
 export default function TabLayout() {
-  const { currentRole } = useRole();
+  const { currentRole, isLoading, refreshOnboardingStatus } = useRole();
+  const router = useRouter();
   const tabs = getTabsForRole(currentRole);
   const showTabBar = currentRole !== null;
   const containerWidth = getContainerWidth(tabs.length);
+
+  useEffect(() => {
+    if (isLoading) return;
+    const checkOnboarding = async () => {
+      try {
+        const status = await refreshOnboardingStatus();
+        if (!status) return;
+        if (!status.onboarding_completed) {
+          const role = status.role ?? currentRole;
+          if (!role) {
+            router.replace('/onboarding/worker/index' as any);
+          } else if (role === 'worker') {
+            const step = status.onboarding_step;
+            if (!step || step === 'profile') router.replace('/onboarding/worker/profile' as any);
+            else if (step === 'roles') router.replace('/onboarding/worker/roles' as any);
+            else if (step === 'availability') router.replace('/onboarding/worker/availability' as any);
+          } else if (role === 'manager') {
+            const step = status.onboarding_step;
+            if (!step || step === 'profile') router.replace('/onboarding/manager/profile' as any);
+            else if (step === 'business') router.replace('/onboarding/manager/business' as any);
+          }
+        }
+      } catch (err) {
+        console.warn('[TabLayout iOS] Could not check onboarding status:', err);
+      }
+    };
+    checkOnboarding();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>

@@ -110,9 +110,18 @@ export default function WorkerDetailScreen() {
     try {
       console.log('[WorkerDetail] Loading worker:', id);
       const [workerData, ratingsData] = await Promise.all([
-        apiGet<WorkerDetail>(`/api/worker-profiles/${id}`),
+        apiGet<WorkerDetail>(`/api/workers/${id}`),
         apiGet<Rating[]>(`/api/ratings/worker/${id}`).catch(() => []),
       ]);
+      // Normalize field names
+      if (workerData) {
+        (workerData as any).isAvailable = (workerData as any).is_available ?? (workerData as any).isAvailable;
+        (workerData as any).isVerified = (workerData as any).is_verified ?? (workerData as any).isVerified;
+        (workerData as any).reliabilityScore = (workerData as any).reliability_score ?? (workerData as any).reliabilityScore ?? 0;
+        (workerData as any).avgRating = (workerData as any).avg_rating ?? (workerData as any).avgRating ?? 0;
+        (workerData as any).hasTransportation = (workerData as any).has_transportation ?? (workerData as any).hasTransportation;
+        (workerData as any).roles = (workerData as any).roles ?? (workerData as any).worker_roles?.map((r: any) => r.role) ?? [];
+      }
       setWorker(workerData);
       setRatings(Array.isArray(ratingsData) ? ratingsData : []);
     } catch (err) {

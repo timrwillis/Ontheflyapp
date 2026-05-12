@@ -58,20 +58,26 @@ export default function ShiftsScreen() {
 
   const loadShifts = useCallback(async () => {
     try {
-      if (currentRole === 'worker' && currentUser?.id) {
-        console.log('[ShiftsTab] Loading worker applications for user:', currentUser.id);
-        const data = await apiGet<{ shift?: Shift; status?: string }[]>(`/api/my-applications?user_id=${currentUser.id}`);
-        const list = Array.isArray(data) ? data : [];
-        const mapped: Shift[] = list.map((item) => ({
-          ...(item.shift ?? {}),
-          status: item.status ?? item.shift?.status,
-        } as Shift));
+      if (currentRole === 'worker') {
+        console.log('[ShiftsTab] Loading worker applications from /api/applications/my');
+        const [appsData, assignData] = await Promise.all([
+          apiGet<{ applications?: { shift?: Shift; status?: string }[]; data?: { shift?: Shift; status?: string }[] } | { shift?: Shift; status?: string }[]>('/api/applications/my').catch(() => []),
+          apiGet<{ assignments?: { shift?: Shift; status?: string }[] } | { shift?: Shift; status?: string }[]>('/api/assignments/my').catch(() => []),
+        ]);
+        const appList = Array.isArray(appsData) ? appsData : (appsData as any)?.applications ?? (appsData as any)?.data ?? [];
+        const assignList = Array.isArray(assignData) ? assignData : (assignData as any)?.assignments ?? [];
+        const mapped: Shift[] = [
+          ...appList.map((item: any) => ({ ...(item.shift ?? item), status: item.status ?? item.shift?.status, _type: 'application' } as Shift)),
+          ...assignList.map((item: any) => ({ ...(item.shift ?? item), status: item.status ?? item.shift?.status, _type: 'assignment', _assignment_id: item.id } as Shift)),
+        ];
         setShifts(mapped);
+        console.log('[ShiftsTab] Loaded', mapped.length, 'worker shifts');
       } else {
-        console.log('[ShiftsTab] Loading manager shifts...');
-        const data = await apiGet<{ shifts: Shift[] }>('/api/shifts?role=manager');
-        const shiftList = Array.isArray((data as any)?.shifts) ? (data as any).shifts : Array.isArray(data) ? data : [];
+        console.log('[ShiftsTab] Loading manager shifts from /api/shifts/my');
+        const data = await apiGet<{ shifts?: Shift[] } | Shift[]>('/api/shifts/my');
+        const shiftList = Array.isArray(data) ? data : (data as any)?.shifts ?? [];
         setShifts(shiftList);
+        console.log('[ShiftsTab] Loaded', shiftList.length, 'manager shifts');
       }
     } catch (err) {
       console.error('[ShiftsTab] Error loading shifts:', err);
