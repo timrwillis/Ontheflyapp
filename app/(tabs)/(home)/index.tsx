@@ -457,7 +457,7 @@ function ManagerDashboard() {
             </View>
           </View>
           <AnimatedPressable onPress={() => console.log('[ManagerDashboard] Notifications pressed')}>
-            <View style={{ width: 44, height: 44, borderRadius: 22, ...glass, padding: 0, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 44, height: 44, ...glass, borderRadius: 22, padding: 0, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialIcons name="notifications" size={20} color={COLORS.text} />
             </View>
           </AnimatedPressable>
@@ -717,6 +717,15 @@ function ManagerDashboard() {
 
 const FILTER_OPTIONS = ['All', 'Tonight', 'Tomorrow', 'This Week'];
 
+const WORKER_TICKER_ITEMS = [
+  '⚡ 3 workers accepted shifts in the last hour',
+  '1 shift just filled',
+  '2 new shifts posted',
+  '⚡ Bartender confirmed at Prime Social',
+  '✅ Server filled shift at Midtown Tavern',
+  '🔥 High demand tonight — 6 open shifts',
+];
+
 function WorkerDashboard() {
   const { currentUser, workerProfile, refreshWorkerProfile } = useRole();
   const router = useRouter();
@@ -728,6 +737,10 @@ function WorkerDashboard() {
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [applyingId, setApplyingId] = useState<string | null>(null);
 
+  const tickerScrollRef = useRef<ScrollView>(null);
+  const tickerOffset = useRef(0);
+  const liveDotOpacity = useRef(new Animated.Value(1)).current;
+
   const isAvailable = workerProfile?.isAvailable ?? false;
   const workerName = workerProfile?.name ?? currentUser?.name ?? null;
   const completedShifts = workerProfile?.completedShifts ?? 0;
@@ -735,6 +748,29 @@ function WorkerDashboard() {
   const scoreColor = score >= 95 ? COLORS.primary : score >= 85 ? COLORS.accent : COLORS.danger;
   const earningsEst = completedShifts * 6 * 28;
   const earningsDisplay = '$' + earningsEst.toLocaleString();
+
+  // Live dot pulse
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(liveDotOpacity, { toValue: 0.2, duration: 600, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(liveDotOpacity, { toValue: 1, duration: 600, useNativeDriver: Platform.OS !== 'web' }),
+      ])
+    ).start();
+  }, [liveDotOpacity]);
+
+  // Ticker auto-scroll
+  useEffect(() => {
+    const interval = setInterval(() => {
+      tickerOffset.current += 1;
+      tickerScrollRef.current?.scrollTo({ x: tickerOffset.current, animated: false });
+      if (tickerOffset.current > 1800) {
+        tickerOffset.current = 0;
+        tickerScrollRef.current?.scrollTo({ x: 0, animated: false });
+      }
+    }, 30);
+    return () => clearInterval(interval);
+  }, []);
 
   const loadShifts = useCallback(async () => {
     try {
@@ -800,6 +836,29 @@ function WorkerDashboard() {
       return Number(b.hourly_pay ?? b.hourlyPay ?? 0) - Number(a.hourly_pay ?? a.hourlyPay ?? 0);
     });
 
+  // Section grouping
+  const emergencySection = filteredShifts.filter(
+    (s) => s.urgency === 'emergency' || s.urgency === 'tonight'
+  );
+  const boostedSection = filteredShifts.filter(
+    (s) => !(s.urgency === 'emergency' || s.urgency === 'tonight') &&
+      Number(s.hourly_pay ?? s.hourlyPay ?? 0) >= 35
+  );
+  const upcomingSection = filteredShifts.filter(
+    (s) => !(s.urgency === 'emergency' || s.urgency === 'tonight') &&
+      Number(s.hourly_pay ?? s.hourlyPay ?? 0) < 35
+  );
+
+  // Earnings estimate from top 3 shifts
+  const top3Shifts = [...filteredShifts].slice(0, 3);
+  const earningsLow = top3Shifts.reduce((sum, s) => sum + Number(s.hourly_pay ?? s.hourlyPay ?? 0) * 6, 0);
+  const earningsHigh = Math.round(earningsLow * 1.2);
+  const earningsLowDisplay = '$' + Math.round(earningsLow).toLocaleString();
+  const earningsHighDisplay = '$' + earningsHigh.toLocaleString();
+  const showEarningsBanner = top3Shifts.length > 0 && earningsLow > 0;
+
+  const shiftCount = filteredShifts.length;
+
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <ScrollView
@@ -821,7 +880,7 @@ function WorkerDashboard() {
             )}
           </View>
           <AnimatedPressable onPress={() => console.log('[WorkerDashboard] Notifications pressed')}>
-            <View style={{ width: 44, height: 44, borderRadius: 22, ...glass, padding: 0, alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 44, height: 44, ...glass, borderRadius: 22, padding: 0, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialIcons name="notifications" size={20} color={COLORS.text} />
             </View>
           </AnimatedPressable>
@@ -852,6 +911,42 @@ function WorkerDashboard() {
             </View>
           ))}
         </View>
+
+        {/* Earnings estimate banner */}
+        {showEarningsBanner && (
+          <View style={{
+            borderRadius: 14,
+            borderWidth: 1,
+            borderColor: 'rgba(255,184,0,0.35)',
+            backgroundColor: 'rgba(255,184,0,0.07)',
+            padding: 16,
+            marginBottom: 20,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+          }}>
+            <Text style={{ fontSize: 22 }}>💰</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: COLORS.text, fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                Work 3 shifts this week
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
+                  Estimated earnings:
+                </Text>
+                <Text style={{ color: COLORS.accent, fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                  {earningsLowDisplay}
+                </Text>
+                <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
+                  –
+                </Text>
+                <Text style={{ color: COLORS.accent, fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                  {earningsHighDisplay}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Availability toggle */}
         <View style={{ marginBottom: 20 }}>
@@ -893,6 +988,56 @@ function WorkerDashboard() {
           })}
         </ScrollView>
 
+        {/* Live feed header bar */}
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 12,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Animated.View style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: COLORS.primary,
+              opacity: liveDotOpacity,
+            }} />
+            <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+              Live
+            </Text>
+            <View style={{ backgroundColor: COLORS.primaryMuted, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, marginLeft: 4 }}>
+              <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                {shiftCount} shifts
+              </Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
+              Sort: Highest Pay
+            </Text>
+            <MaterialIcons name="keyboard-arrow-down" size={14} color={COLORS.textSecondary} />
+          </View>
+        </View>
+
+        {/* Shifts moving fast ticker */}
+        <View style={{ overflow: 'hidden', marginBottom: 16, marginHorizontal: -20 }}>
+          <ScrollView
+            ref={tickerScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            scrollEnabled={false}
+            contentContainerStyle={{ gap: 16, paddingHorizontal: 20 }}
+          >
+            {[...WORKER_TICKER_ITEMS, ...WORKER_TICKER_ITEMS].map((item, i) => (
+              <Text key={i} style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular' }}>
+                {item}
+                <Text style={{ color: COLORS.textTertiary }}>  ·  </Text>
+              </Text>
+            ))}
+          </ScrollView>
+        </View>
+
         {/* Shifts list */}
         {loading ? (
           <>
@@ -913,17 +1058,108 @@ function WorkerDashboard() {
             </Text>
           </View>
         ) : (
-          filteredShifts.map((shift, i) => (
-            <ShiftCard
-              key={shift.id}
-              shift={shift}
-              index={i}
-              showAcceptButton
-              onAccept={() => handleAcceptShift(shift.id)}
-              acceptLoading={applyingId === shift.id}
-              onPress={() => { console.log('[WorkerDashboard] Shift card pressed:', shift.id); router.push(`/shift/${shift.id}`); }}
-            />
-          ))
+          <>
+            {/* Emergency section */}
+            {emergencySection.length > 0 && (
+              <>
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginBottom: 10,
+                  paddingVertical: 6,
+                  paddingHorizontal: 12,
+                  backgroundColor: 'rgba(255,68,68,0.08)',
+                  borderRadius: 10,
+                  borderLeftWidth: 3,
+                  borderLeftColor: COLORS.danger,
+                }}>
+                  <Text style={{ color: COLORS.danger, fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                    🚨 Emergency — Fill Tonight
+                  </Text>
+                </View>
+                {emergencySection.map((shift, i) => (
+                  <ShiftCard
+                    key={shift.id}
+                    shift={shift}
+                    index={i}
+                    showAcceptButton
+                    onAccept={() => handleAcceptShift(shift.id)}
+                    acceptLoading={applyingId === shift.id}
+                    onPress={() => { console.log('[WorkerDashboard] Emergency shift pressed:', shift.id); router.push(`/shift/${shift.id}`); }}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Boosted pay section */}
+            {boostedSection.length > 0 && (
+              <>
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginBottom: 10,
+                  marginTop: emergencySection.length > 0 ? 6 : 0,
+                  paddingVertical: 6,
+                  paddingHorizontal: 12,
+                  backgroundColor: 'rgba(255,215,0,0.07)',
+                  borderRadius: 10,
+                  borderLeftWidth: 3,
+                  borderLeftColor: '#FFD700',
+                }}>
+                  <Text style={{ color: '#FFD700', fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                    ⚡ Boosted Pay
+                  </Text>
+                </View>
+                {boostedSection.map((shift, i) => (
+                  <ShiftCard
+                    key={shift.id}
+                    shift={shift}
+                    index={emergencySection.length + i}
+                    showAcceptButton
+                    onAccept={() => handleAcceptShift(shift.id)}
+                    acceptLoading={applyingId === shift.id}
+                    onPress={() => { console.log('[WorkerDashboard] Boosted shift pressed:', shift.id); router.push(`/shift/${shift.id}`); }}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Upcoming section */}
+            {upcomingSection.length > 0 && (
+              <>
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginBottom: 10,
+                  marginTop: (emergencySection.length > 0 || boostedSection.length > 0) ? 6 : 0,
+                  paddingVertical: 6,
+                  paddingHorizontal: 12,
+                  backgroundColor: 'rgba(96,165,250,0.07)',
+                  borderRadius: 10,
+                  borderLeftWidth: 3,
+                  borderLeftColor: '#60A5FA',
+                }}>
+                  <Text style={{ color: '#60A5FA', fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                    📅 Upcoming Shifts
+                  </Text>
+                </View>
+                {upcomingSection.map((shift, i) => (
+                  <ShiftCard
+                    key={shift.id}
+                    shift={shift}
+                    index={emergencySection.length + boostedSection.length + i}
+                    showAcceptButton
+                    onAccept={() => handleAcceptShift(shift.id)}
+                    acceptLoading={applyingId === shift.id}
+                    onPress={() => { console.log('[WorkerDashboard] Upcoming shift pressed:', shift.id); router.push(`/shift/${shift.id}`); }}
+                  />
+                ))}
+              </>
+            )}
+          </>
         )}
       </ScrollView>
     </View>

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, Platform } from 'react-native';
+import { View, Text, Animated, Platform, ScrollView } from 'react-native';
 import { COLORS } from '@/constants/Colors';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { RoleBadge } from '@/components/RoleBadge';
@@ -63,6 +63,113 @@ function formatPayNumber(pay?: number | string): string {
   return `$${num.toFixed(0)}/hr`;
 }
 
+function getViewerCount(id: string): number {
+  const hash = id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return (hash % 6) + 2; // 2–7
+}
+
+// Fixed "now" of 6:00 PM so urgency shifts always show a useful countdown
+function getMinutesUntilStart(startTime?: string): number | null {
+  if (!startTime) return null;
+  try {
+    const now = new Date();
+    now.setHours(18, 0, 0, 0); // fixed 6:00 PM
+    const [timePart, meridiem] = startTime.split(' ');
+    if (!timePart) return null;
+    const [hourStr, minStr] = timePart.split(':');
+    let hour = parseInt(hourStr, 10);
+    const min = parseInt(minStr ?? '0', 10);
+    if (meridiem?.toLowerCase() === 'pm' && hour !== 12) hour += 12;
+    if (meridiem?.toLowerCase() === 'am' && hour === 12) hour = 0;
+    const target = new Date(now);
+    target.setHours(hour, min, 0, 0);
+    const diff = Math.round((target.getTime() - now.getTime()) / 60000);
+    return diff > 0 ? diff : null;
+  } catch {
+    return null;
+  }
+}
+
+interface LiveSignal {
+  label: string;
+  color: string;
+  bgColor: string;
+  pulse?: boolean;
+}
+
+function buildLiveSignals(shift: Shift): LiveSignal[] {
+  const signals: LiveSignal[] = [];
+  const urgency = shift.urgency ?? '';
+  const isUrgent = urgency === 'emergency' || urgency === 'tonight';
+  const pay = Number(shift.hourly_pay ?? shift.hourlyPay ?? 0);
+  const workersNeeded = shift.workers_needed ?? shift.workersNeeded ?? 0;
+  const businessName = (shift.business_name ?? shift.business?.name ?? '').toLowerCase();
+  const notes = (shift.notes ?? '').toLowerCase();
+
+  // Rush Coverage (emergency only — replaces Just Posted)
+  if (urgency === 'emergency') {
+    signals.push({ label: 'Rush Coverage 🚨', color: COLORS.danger, bgColor: 'rgba(255,68,68,0.15)', pulse: true });
+  } else if (urgency === 'tonight') {
+    // Just Posted for tonight
+    signals.push({ label: 'Just Posted', color: COLORS.primary, bgColor: 'rgba(0,255,135,0.12)' });
+  }
+
+  // X workers viewing
+  const viewerCount = getViewerCount(shift.id);
+  signals.push({ label: `${viewerCount} viewing`, color: '#FF8C00', bgColor: 'rgba(255,140,0,0.12)', pulse: true });
+
+  // High Demand
+  if (workersNeeded > 1 || isUrgent) {
+    signals.push({ label: 'High Demand', color: COLORS.danger, bgColor: 'rgba(255,68,68,0.12)' });
+  }
+
+  // Starts in X min
+  if (isUrgent) {
+    const mins = getMinutesUntilStart(shift.start_time ?? shift.startTime);
+    if (mins !== null) {
+      signals.push({ label: `Starts in ${mins}min`, color: COLORS.accent, bgColor: 'rgba(255,184,0,0.12)' });
+    }
+  }
+
+  // Boosted Pay
+  if (pay >= 35) {
+    signals.push({ label: 'Boosted Pay ⚡', color: '#FFD700', bgColor: 'rgba(255,215,0,0.12)' });
+  }
+
+  // VIP Event
+  const vipKeywords = ['vip', 'lounge', 'luna', 'velvet'];
+  const isVip = vipKeywords.some((kw) => businessName.includes(kw)) || notes.includes('vip');
+  if (isVip) {
+    signals.push({ label: 'VIP Event 👑', color: '#C084FC', bgColor: 'rgba(192,132,252,0.12)' });
+  }
+
+  // Cap at 3 signals
+  return signals.slice(0, 3);
+}
+
+function SignalBadge({ label, color, bgColor, pulse }: { label: string; color: string; bgColor: string; pulse?: boolean }) {
+  const dotOpacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!pulse) return;
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(dotOpacity, { toValue: 0.2, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(dotOpacity, { toValue: 1, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
+      ])
+    ).start();
+  }, [pulse, dotOpacity]);
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: bgColor, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+      {pulse && (
+        <Animated.View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: color, opacity: dotOpacity }} />
+      )}
+      <Text style={{ color, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>{label}</Text>
+    </View>
+  );
+}
+
 const primaryGlow = Platform.select({
   web: { boxShadow: '0 0 24px rgba(0, 255, 135, 0.35)' },
   default: { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 10 },
@@ -77,6 +184,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(12)).current;
   const emergencyDotOpacity = useRef(new Animated.Value(0.3)).current;
+  const fillBarWidth = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!shift?.id) return;
@@ -97,11 +205,27 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
     ).start();
   }, [emergencyDotOpacity, shift?.urgency]);
 
+  useEffect(() => {
+    const confirmed = shift?.workers_confirmed ?? 0;
+    const needed = shift?.workers_needed ?? 0;
+    if (needed <= 0) return;
+    const ratio = Math.min(confirmed / needed, 1);
+    Animated.timing(fillBarWidth, {
+      toValue: ratio,
+      duration: 800,
+      delay: index * 60 + 300,
+      useNativeDriver: false,
+    }).start();
+  }, [fillBarWidth, shift?.workers_confirmed, shift?.workers_needed, index]);
+
   if (!shift?.id) return null;
 
   const isEmergency = shift.urgency === 'emergency' || shift.urgency === 'tonight';
   const dateDisplay = formatDate(shift.date);
+  const pay = Number(shift.hourly_pay ?? shift.hourlyPay ?? 0);
   const payDisplay = formatPayNumber(shift.hourly_pay ?? shift.hourlyPay);
+  const isHighPay = pay >= 35;
+  const payColor = isHighPay ? '#FFD700' : COLORS.accent;
   const timeDisplay = shift.start_time && shift.end_time
     ? `${shift.start_time} – ${shift.end_time}`
     : shift.start_time ?? '';
@@ -111,6 +235,13 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
   const expRequired = shift.experience_required ?? shift.experienceRequired ?? '';
   const hasDressOrExp = dressCode || expRequired;
   const dressExpText = [dressCode, expRequired].filter(Boolean).join(' · ');
+
+  const workersNeeded = shift.workers_needed ?? 0;
+  const workersConfirmed = shift.workers_confirmed ?? 0;
+  const showFillBar = workersNeeded > 0;
+  const fillLabel = `${workersConfirmed}/${workersNeeded} filled`;
+
+  const liveSignals = buildLiveSignals(shift);
 
   const urgencyBorderColor =
     shift.urgency === 'emergency' ? 'rgba(255, 68, 68, 0.5)' :
@@ -134,11 +265,28 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
             borderRadius: 20,
             borderWidth: 1,
             borderColor: urgencyBorderColor,
+            borderLeftWidth: isEmergency ? 4 : 1,
+            borderLeftColor: isEmergency ? COLORS.danger : urgencyBorderColor,
             padding: 18,
             marginBottom: 14,
+            overflow: 'hidden',
             ...cardShadow,
           }}
         >
+          {/* Live signal badges row */}
+          {liveSignals.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 12 }}
+              contentContainerStyle={{ gap: 6 }}
+            >
+              {liveSignals.map((sig, i) => (
+                <SignalBadge key={i} label={sig.label} color={sig.color} bgColor={sig.bgColor} pulse={sig.pulse} />
+              ))}
+            </ScrollView>
+          )}
+
           {/* Top row: role badge + urgency + pulsing dot */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <RoleBadge role={roleLabel} />
@@ -159,7 +307,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
           {/* Pay + Business name row */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 12 }}>
             <Text style={{
-              color: COLORS.accent,
+              color: payColor,
               fontSize: 34,
               fontWeight: '800',
               fontFamily: 'SpaceGrotesk-Bold',
@@ -230,7 +378,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Text style={{ fontSize: 12 }}>👥</Text>
                 <Text style={{ color: COLORS.textTertiary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
-                  {shift.workers_confirmed ?? 0}
+                  {workersConfirmed}
                 </Text>
                 <Text style={{ color: COLORS.textTertiary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
                   /
@@ -256,12 +404,14 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
                     backgroundColor: COLORS.primary,
                     borderRadius: 12,
                     paddingHorizontal: 20,
-                    paddingVertical: 12,
+                    paddingVertical: 14,
                     minWidth: 120,
                     minHeight: 44,
                     alignItems: 'center',
                     justifyContent: 'center',
                     opacity: acceptLoading ? 0.6 : 1,
+                    borderWidth: 1,
+                    borderColor: COLORS.primary,
                     ...primaryGlow,
                   }}
                 >
@@ -283,6 +433,25 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
               <StatusBadge status={shift.status} />
             )}
           </View>
+
+          {/* Fill bar */}
+          {showFillBar && (
+            <View style={{ marginTop: 14 }}>
+              <View style={{ height: 4, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+                <Animated.View
+                  style={{
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: COLORS.primary,
+                    width: fillBarWidth.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+                  }}
+                />
+              </View>
+              <Text style={{ color: COLORS.textTertiary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', marginTop: 4 }}>
+                {fillLabel}
+              </Text>
+            </View>
+          )}
         </View>
       </AnimatedPressable>
     </Animated.View>
