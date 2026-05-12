@@ -149,4 +149,122 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
       return user;
     }
   );
+
+  fastify.delete(
+    '/api/users/me',
+    {
+      schema: {
+        description: 'Delete a demo account (no auth required)',
+        tags: ['users'],
+        querystring: {
+          type: 'object',
+          required: ['role'],
+          properties: {
+            role: { type: 'string', enum: ['manager', 'worker', 'admin'] },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              message: { type: 'string' },
+            },
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { role } = request.query as { role: string };
+
+      app.logger.info({ role }, 'Deleting demo account');
+
+      // Find the demo user by role
+      const user = await app.db.query.users.findFirst({
+        where: eq(schema.users.role, role as any),
+      });
+
+      if (!user) {
+        app.logger.warn({ role }, 'User not found');
+        return reply.status(404).send({ error: 'User not found' });
+      }
+
+      // Delete based on role
+      if (role === 'worker') {
+        app.logger.info({ userId: user.id }, 'Deleting worker profile and related data');
+
+        // Get all worker profile IDs for this user
+        const workerProfiles = await app.db
+          .select()
+          .from(schema.workerProfiles)
+          .where(eq(schema.workerProfiles.userId, user.id));
+
+        // Delete shift applications for all worker profiles
+        for (const profile of workerProfiles) {
+          await app.db
+            .delete(schema.shiftApplications)
+            .where(eq(schema.shiftApplications.workerId, profile.id));
+        }
+
+        // Delete worker profiles
+        await app.db
+          .delete(schema.workerProfiles)
+          .where(eq(schema.workerProfiles.userId, user.id));
+
+        // Delete notifications
+        await app.db
+          .delete(schema.notifications)
+          .where(eq(schema.notifications.userId, user.id));
+      } else if (role === 'manager') {
+        app.logger.info({ userId: user.id }, 'Deleting manager business and related data');
+
+        // Get all businesses for this user
+        const businesses = await app.db
+          .select()
+          .from(schema.businesses)
+          .where(eq(schema.businesses.userId, user.id));
+
+        // For each business, delete shifts and cascade delete shift applications
+        for (const business of businesses) {
+          const shifts = await app.db
+            .select()
+            .from(schema.shifts)
+            .where(eq(schema.shifts.businessId, business.id));
+
+          for (const shift of shifts) {
+            await app.db
+              .delete(schema.shiftApplications)
+              .where(eq(schema.shiftApplications.shiftId, shift.id));
+          }
+
+          await app.db
+            .delete(schema.shifts)
+            .where(eq(schema.shifts.businessId, business.id));
+        }
+
+        // Delete businesses
+        await app.db
+          .delete(schema.businesses)
+          .where(eq(schema.businesses.userId, user.id));
+
+        // Delete notifications
+        await app.db
+          .delete(schema.notifications)
+          .where(eq(schema.notifications.userId, user.id));
+      }
+      // For admin, just delete the user (no cascading deletions needed)
+
+      // Delete the user
+      await app.db.delete(schema.users).where(eq(schema.users.id, user.id));
+
+      app.logger.info({ userId: user.id, role }, 'Demo account deleted');
+      return { success: true, message: 'Account deleted' };
+    }
+  );
 }

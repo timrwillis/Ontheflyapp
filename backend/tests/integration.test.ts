@@ -547,4 +547,22 @@ describe("API Integration Tests", () => {
     expect(data.shifts_filled_this_week).toBeDefined();
     expect(typeof data.shifts_filled_this_week).toBe("number");
   });
+
+  // ===== Delete User Endpoints =====
+  test("DELETE /api/users/me - Delete account with role parameter", async () => {
+    const res = await api("/api/users/me?role=admin", {
+      method: "DELETE",
+    });
+    await expectStatus(res, 200);
+    const data = await res.json();
+    expect(data.success).toBeDefined();
+    expect(data.message).toBeDefined();
+  });
+
+  test("DELETE /api/users/me - Missing required role parameter returns 400", async () => {
+    const res = await api("/api/users/me", {
+      method: "DELETE",
+    });
+    await expectStatus(res, 400);
+  });
 });
