@@ -7,6 +7,7 @@ import {
   Alert,
   Platform,
   Animated,
+  Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -886,7 +887,7 @@ function ManagerDashboard() {
       </ScrollView>
 
       {/* BLAST SHIFT FAB */}
-      <AnimatedPressable
+      <Pressable
         onPress={() => {
           console.log('[ManagerDashboard] Blast Shift FAB pressed');
           router.push('/create-shift');
@@ -916,7 +917,7 @@ function ManagerDashboard() {
           <Text style={{ color: '#000', fontFamily: 'SpaceGrotesk-Bold', fontSize: 15, letterSpacing: 1 }}>BLAST SHIFT</Text>
           <Text style={{ color: 'rgba(0,0,0,0.55)', fontFamily: 'SpaceGrotesk-Regular', fontSize: 10 }}>avg 4 min fill</Text>
         </View>
-      </AnimatedPressable>
+      </Pressable>
 
     </View>
   );

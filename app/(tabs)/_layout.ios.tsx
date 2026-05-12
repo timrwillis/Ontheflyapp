@@ -1,10 +1,12 @@
 import React from 'react';
-import { View } from 'react-native';
-import { Stack } from 'expo-router';
+import { View, Pressable, Text } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
 import { useRole } from '@/contexts/RoleContext';
 import { COLORS } from '@/constants/Colors';
 import { Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -33,6 +35,46 @@ function getTabsForRole(role: string | null): TabBarItem[] {
   if (role === 'worker') return WORKER_TABS;
   if (role === 'admin') return ADMIN_TABS;
   return [];
+}
+
+function BlastShiftFAB() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { currentRole } = useRole();
+  if (currentRole !== 'manager') return null;
+  return (
+    <Pressable
+      onPress={() => {
+        console.log('[BlastShiftFAB] Blast Shift FAB pressed (iOS)');
+        router.push('/create-shift');
+      }}
+      style={{
+        position: 'absolute',
+        left: 24,
+        right: 24,
+        bottom: insets.bottom + 88,
+        height: 64,
+        zIndex: 999,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: '#00FF85',
+        borderRadius: 30,
+        shadowColor: '#00FF85',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.5,
+        shadowRadius: 16,
+        elevation: 999,
+      }}
+    >
+      <MaterialIcons name="bolt" size={20} color="#000" />
+      <View>
+        <Text style={{ color: '#000', fontFamily: 'SpaceGrotesk-Bold', fontSize: 15, letterSpacing: 1 }}>BLAST SHIFT</Text>
+        <Text style={{ color: 'rgba(0,0,0,0.55)', fontFamily: 'SpaceGrotesk-Regular', fontSize: 10 }}>avg 4 min fill</Text>
+      </View>
+    </Pressable>
+  );
 }
 
 function getContainerWidth(tabCount: number): number {
@@ -66,6 +108,7 @@ export default function TabLayout() {
           bottomMargin={20}
         />
       )}
+      <BlastShiftFAB />
     </View>
   );
 }
