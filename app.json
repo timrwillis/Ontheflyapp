@@ -4,10 +4,10 @@
     "slug": "shiftslinger",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/app-icon-edd.png",
+    "icon": "./assets/images/1000012749.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/app-icon-edd.png",
+      "image": "./assets/images/1000012749.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
@@ -20,7 +20,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/app-icon-edd.png",
+        "foregroundImage": "./assets/images/1000012749.png",
         "backgroundColor": "#000000"
       },
       "package": "com.placeholder.app"
