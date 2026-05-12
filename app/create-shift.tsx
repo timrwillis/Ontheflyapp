@@ -32,9 +32,7 @@ const ROLES: { label: string; icon: string; value: string }[] = [
   { label: 'Server',      icon: 'room-service',     value: 'Server' },
   { label: 'Line Cook',   icon: 'outdoor-grill',    value: 'Line Cook' },
   { label: 'Dishwasher',  icon: 'water-drop',       value: 'Dishwasher' },
-  { label: 'Host',        icon: 'emoji-people',     value: 'Host' },
   { label: 'Event Staff', icon: 'celebration',      value: 'Event Staff' },
-  { label: 'Barback',     icon: 'sports-bar',       value: 'Barback' },
   { label: 'Security',    icon: 'security',         value: 'Security' },
 ];
 
@@ -792,7 +790,8 @@ const styles = StyleSheet.create({
   roleGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    justifyContent: 'space-between',
+    rowGap: 10,
   },
   roleCard: {
     width: ROLE_CARD_SIZE,
@@ -804,6 +803,7 @@ const styles = StyleSheet.create({
     gap: 7,
     paddingVertical: 12,
     paddingHorizontal: 8,
+    flexShrink: 0,
   },
   roleCardActive: {
     backgroundColor: COLORS.primary,

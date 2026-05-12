@@ -109,6 +109,7 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
     zIndex: 2000,
+    elevation: 25,
   },
   fab: {
     flexDirection: 'row',
@@ -122,7 +123,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 16,
-    elevation: 12,
+    elevation: 20,
   },
   fabLabel: {
     color: '#000',
