@@ -26,12 +26,9 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       photoUrl: worker.photoUrl,
       phone: worker.phone,
       city: worker.city,
-      roles: worker.roles,
-      yearsExperience: worker.yearsExperience,
-      certifications: worker.certifications,
+      bio: worker.bio,
       hasTransportation: worker.hasTransportation,
       preferredRadiusMiles: worker.preferredRadiusMiles,
-      bio: worker.bio,
       isAvailable: worker.isAvailable,
       reliabilityScore: worker.reliabilityScore,
       isVerified: worker.isVerified,
@@ -86,14 +83,8 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
         workers = workers.filter((w) => w.isAvailable === true);
       }
 
-      // Filter by role (case-insensitive)
-      if (role) {
-        workers = workers.filter(
-          (w) =>
-            w.roles &&
-            w.roles.some((r) => r.toLowerCase() === role.toLowerCase())
-        );
-      }
+      // Note: role filtering requires joining with workerRoles table
+      // This would be implemented in a more advanced query
 
       // Sort: is_available DESC, reliability_score DESC
       workers.sort((a, b) => {

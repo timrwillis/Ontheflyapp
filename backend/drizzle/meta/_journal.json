@@ -50,6 +50,13 @@
       "when": 1778558475314,
       "tag": "20260512040115_eminent_kitty_pryde",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1778613166251,
+      "tag": "20260512191246_furry_payback",
+      "breakpoints": true
     }
   ]
 }

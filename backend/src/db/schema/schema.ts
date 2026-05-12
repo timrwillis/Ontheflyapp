@@ -1,13 +1,12 @@
 import {
   pgTable,
   pgEnum,
-  uuid,
   text,
   timestamp,
   numeric,
   integer,
   boolean,
-  varchar,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 
 // Enums
@@ -22,6 +21,7 @@ export const businessTypeEnum = pgEnum('business_type', [
   'bar',
   'catering',
   'venue',
+  'hotel',
 ]);
 
 export const shiftUrgencyEnum = pgEnum('shift_urgency', [
@@ -60,38 +60,123 @@ export const notificationTypeEnum = pgEnum('notification_type', [
   'rating',
 ]);
 
+export const workerRoleEnum = pgEnum('worker_role', [
+  'bartender',
+  'server',
+  'cook',
+  'dishwasher',
+  'event_staff',
+  'security',
+  'barback',
+  'host',
+  'runner',
+  'busser',
+]);
+
+export const documentTypeEnum = pgEnum('document_type', [
+  'id_front',
+  'id_back',
+  'food_handler',
+  'liquor_license',
+  'certification',
+  'other',
+]);
+
+export const documentStatusEnum = pgEnum('document_status', [
+  'pending',
+  'approved',
+  'rejected',
+]);
+
+export const supportTicketStatusEnum = pgEnum('support_ticket_status', [
+  'open',
+  'in_progress',
+  'resolved',
+  'closed',
+]);
+
+export const supportTicketPriorityEnum = pgEnum('support_ticket_priority', [
+  'low',
+  'medium',
+  'high',
+  'urgent',
+]);
+
+export const supportTicketCategoryEnum = pgEnum('support_ticket_category', [
+  'account',
+  'shift',
+  'payment',
+  'technical',
+  'other',
+]);
+
+export const assignmentStatusEnum = pgEnum('assignment_status', [
+  'assigned',
+  'checked_in',
+  'completed',
+  'no_show',
+  'cancelled',
+]);
+
 // Tables
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
+  phone: text('phone'),
   role: userRoleEnum('role').notNull(),
+  onboardingStep: integer('onboarding_step').default(0).notNull(),
+  profileCompleted: boolean('profile_completed').default(false).notNull(),
+  notificationPreferences: jsonb('notification_preferences').default({
+    shift_alerts: true,
+    application_updates: true,
+    reminders: true,
+    marketing: false,
+  }).notNull(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const businesses = pgTable('businesses', {
   id: text('id').primaryKey(),
-  userId: text('user_id').notNull(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   type: businessTypeEnum('type').notNull(),
   city: text('city').notNull(),
   address: text('address').notNull(),
+  phone: text('phone'),
+  description: text('description'),
+  website: text('website'),
+  logoUrl: text('logo_url'),
+  isVerified: boolean('is_verified').default(false).notNull(),
+  isSuspended: boolean('is_suspended').default(false).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const managerProfiles = pgTable('manager_profiles', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  businessId: text('business_id').references(() => businesses.id, { onDelete: 'set null' }),
+  phone: text('phone'),
+  isVerified: boolean('is_verified').default(false).notNull(),
+  isSuspended: boolean('is_suspended').default(false).notNull(),
+  onboardingCompleted: boolean('onboarding_completed').default(false).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const workerProfiles = pgTable('worker_profiles', {
   id: text('id').primaryKey(),
-  userId: text('user_id').notNull(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   photoUrl: text('photo_url'),
   phone: text('phone').notNull(),
   city: text('city').notNull(),
-  roles: text('roles').array(),
-  yearsExperience: integer('years_experience'),
-  certifications: text('certifications').array(),
+  bio: text('bio'),
   hasTransportation: boolean('has_transportation').default(false).notNull(),
   preferredRadiusMiles: integer('preferred_radius_miles'),
-  bio: text('bio'),
+  availabilityDays: text('availability_days').array(),
+  availabilityStart: text('availability_start'),
+  availabilityEnd: text('availability_end'),
   isAvailable: boolean('is_available').default(false).notNull(),
   reliabilityScore: integer('reliability_score').default(75).notNull(),
   isVerified: boolean('is_verified').default(false).notNull(),
@@ -99,6 +184,28 @@ export const workerProfiles = pgTable('worker_profiles', {
   responseTimeMinutes: integer('response_time_minutes'),
   distanceMiles: numeric('distance_miles', { precision: 4, scale: 1 }),
   avgRating: numeric('avg_rating', { precision: 3, scale: 2 }),
+  onboardingCompleted: boolean('onboarding_completed').default(false).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const workerRoles = pgTable('worker_roles', {
+  id: text('id').primaryKey(),
+  workerId: text('worker_id').notNull().references(() => workerProfiles.id, { onDelete: 'cascade' }),
+  role: workerRoleEnum('role').notNull(),
+  yearsExperience: integer('years_experience'),
+  isPrimary: boolean('is_primary').default(false).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const workerCertifications = pgTable('worker_certifications', {
+  id: text('id').primaryKey(),
+  workerId: text('worker_id').notNull().references(() => workerProfiles.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  issuingOrg: text('issuing_org').notNull(),
+  issuedDate: text('issued_date'),
+  expiryDate: text('expiry_date'),
+  documentUrl: text('document_url'),
+  isVerified: boolean('is_verified').default(false).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -131,6 +238,17 @@ export const shiftApplications = pgTable('shift_applications', {
   confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
 });
 
+export const shiftAssignments = pgTable('shift_assignments', {
+  id: text('id').primaryKey(),
+  shiftId: text('shift_id').notNull().references(() => shifts.id, { onDelete: 'cascade' }),
+  workerId: text('worker_id').notNull().references(() => workerProfiles.id, { onDelete: 'cascade' }),
+  assignedAt: timestamp('assigned_at', { withTimezone: true }).defaultNow().notNull(),
+  status: assignmentStatusEnum('status').default('assigned').notNull(),
+  checkInTime: timestamp('check_in_time', { withTimezone: true }),
+  checkOutTime: timestamp('check_out_time', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const ratings = pgTable('ratings', {
   id: text('id').primaryKey(),
   shiftId: text('shift_id').notNull().references(() => shifts.id, { onDelete: 'cascade' }),
@@ -141,6 +259,32 @@ export const ratings = pgTable('ratings', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const documents = pgTable('documents', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: documentTypeEnum('type').notNull(),
+  url: text('url').notNull(),
+  status: documentStatusEnum('status').default('pending').notNull(),
+  rejectionReason: text('rejection_reason'),
+  reviewedBy: text('reviewed_by'),
+  reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const supportTickets = pgTable('support_tickets', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  subject: text('subject').notNull(),
+  body: text('body').notNull(),
+  status: supportTicketStatusEnum('status').default('open').notNull(),
+  priority: supportTicketPriorityEnum('priority').default('medium').notNull(),
+  category: supportTicketCategoryEnum('category').notNull(),
+  adminNotes: text('admin_notes'),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const certifications = pgTable('certifications', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -149,7 +293,7 @@ export const certifications = pgTable('certifications', {
 
 export const notifications = pgTable('notifications', {
   id: text('id').primaryKey(),
-  userId: text('user_id').notNull(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   body: text('body').notNull(),
   type: notificationTypeEnum('type').notNull(),

@@ -2,6 +2,7 @@ import { createApplication } from "@specific-dev/framework";
 import * as appSchema from './db/schema/schema.js';
 import * as authSchema from './db/schema/auth-schema.js';
 import { seedDatabase } from './db/seed.js';
+import { registerOnboardingRoutes } from './routes/onboarding.js';
 import { registerUserRoutes } from './routes/users.js';
 import { registerBusinessRoutes } from './routes/businesses.js';
 import { registerWorkerRoutes } from './routes/workers.js';
@@ -28,6 +29,7 @@ app.withAuth();
 await seedDatabase(app);
 
 // Register routes
+registerOnboardingRoutes(app, app.fastify);
 registerUserRoutes(app, app.fastify);
 registerBusinessRoutes(app, app.fastify);
 registerWorkerRoutes(app, app.fastify);
