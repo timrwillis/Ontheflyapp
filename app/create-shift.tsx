@@ -23,17 +23,16 @@ import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 // ─── Layout constants ────────────────────────────────────────────────────────
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const ROLE_CARD_SIZE = (SCREEN_WIDTH - 20 * 2 - 10) / 2; // 2 columns, 20px side padding, 10px gap
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 const ROLES: { label: string; icon: string; value: string }[] = [
-  { label: 'Bartender',   icon: 'local-bar',        value: 'Bartender' },
-  { label: 'Server',      icon: 'room-service',     value: 'Server' },
-  { label: 'Line Cook',   icon: 'outdoor-grill',    value: 'Line Cook' },
-  { label: 'Dishwasher',  icon: 'water-drop',       value: 'Dishwasher' },
-  { label: 'Event Staff', icon: 'celebration',      value: 'Event Staff' },
-  { label: 'Security',    icon: 'security',         value: 'Security' },
+  { label: 'Bartender',   icon: 'local-bar',     value: 'Bartender' },
+  { label: 'Server',      icon: 'room-service',  value: 'Server' },
+  { label: 'Cook',        icon: 'outdoor-grill', value: 'Cook' },
+  { label: 'Dishwasher',  icon: 'water-drop',    value: 'Dishwasher' },
+  { label: 'Event Staff', icon: 'celebration',   value: 'Event Staff' },
+  { label: 'Security',    icon: 'security',      value: 'Security' },
 ];
 
 const URGENCY_OPTIONS: { label: string; icon: string; sublabel: string; value: string }[] = [
@@ -790,20 +789,17 @@ const styles = StyleSheet.create({
   roleGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 10,
+    gap: 10,
   },
   roleCard: {
-    width: ROLE_CARD_SIZE,
-    height: ROLE_CARD_SIZE * 0.68,
+    width: '47%',
+    height: 96,
     borderRadius: 14,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    flexShrink: 0,
+    flexDirection: 'column',
+    gap: 8,
   },
   roleCardActive: {
     backgroundColor: COLORS.primary,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Modal } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
 import { useRole } from '@/contexts/RoleContext';
@@ -51,24 +51,33 @@ const FAB_GAP = 16;
 function BlastShiftFAB() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const fabBottom = insets.bottom + TAB_HEIGHT + TAB_BOTTOM_MARGIN + FAB_GAP;
+  const fabBottom = insets.bottom + 52 + 20 + 24; // tab height + tab margin + gap
 
   return (
-    <View style={[styles.fabContainer, { bottom: fabBottom }]}>
-      <AnimatedPressable
-        onPress={() => {
-          console.log('[TabLayout] Blast Shift FAB pressed');
-          router.push('/create-shift');
-        }}
-        style={styles.fab}
-      >
-        <MaterialIcons name="bolt" size={20} color="#000" />
-        <View>
-          <Text style={styles.fabLabel}>BLAST SHIFT</Text>
-          <Text style={styles.fabSub}>avg 4 min fill</Text>
+    <Modal
+      visible={true}
+      transparent={true}
+      animationType="none"
+      statusBarTranslucent={true}
+    >
+      <View pointerEvents="box-none" style={{ flex: 1 }}>
+        <View style={[styles.fabContainer, { bottom: fabBottom }]} pointerEvents="box-none">
+          <AnimatedPressable
+            onPress={() => {
+              console.log('[TabLayout] Blast Shift FAB pressed');
+              router.push('/create-shift');
+            }}
+            style={styles.fab}
+          >
+            <MaterialIcons name="bolt" size={20} color="#000" />
+            <View>
+              <Text style={styles.fabLabel}>BLAST SHIFT</Text>
+              <Text style={styles.fabSub}>avg 4 min fill</Text>
+            </View>
+          </AnimatedPressable>
         </View>
-      </AnimatedPressable>
-    </View>
+      </View>
+    </Modal>
   );
 }
 
