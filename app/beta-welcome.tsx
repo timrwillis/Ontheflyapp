@@ -27,7 +27,7 @@ export default function BetaWelcome() {
     } catch (e) {
       console.warn('[BetaWelcome] Failed to set AsyncStorage flag:', e);
     }
-    router.replace('/(tabs)');
+    router.replace('/(tabs)/(home)');
   };
 
   const handleFeedback = () => {
