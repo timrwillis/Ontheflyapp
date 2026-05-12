@@ -4,10 +4,10 @@
     "slug": "shiftslinger",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/1000012749.png",
+    "icon": "./assets/images/1000012766.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/1000012749.png",
+      "image": "./assets/images/1000012766.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
@@ -20,7 +20,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/1000012749.png",
+        "foregroundImage": "./assets/images/1000012766.png",
         "backgroundColor": "#000000"
       },
       "package": "com.onthefly.app"
