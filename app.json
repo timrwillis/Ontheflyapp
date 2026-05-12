@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ShiftSlinger",
-    "slug": "shiftslinger",
+    "name": "On The Fly",
+    "slug": "on-the-fly",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/1000012767.png",
@@ -35,7 +35,7 @@
       "expo-web-browser",
       "expo-secure-store"
     ],
-    "scheme": "shiftslinger",
+    "scheme": "onthefly",
     "experiments": {
       "typedRoutes": true
     },
