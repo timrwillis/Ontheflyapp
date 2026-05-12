@@ -40,13 +40,21 @@ const URGENCY_OPTIONS: { label: string; emoji: string; sublabel: string; value: 
   { label: 'Future Shift', emoji: '📅', sublabel: 'Plan ahead', value: 'future' },
 ];
 
+const URGENCY_COLORS: Record<string, string> = {
+  asap: '#FF3B30',
+  tonight: '#FF9500',
+  rush: '#FF6B35',
+  weekend: '#AF52DE',
+  future: '#00FF87',
+};
+
 const PAY_PRESETS = [22, 28, 32, 38, 45, 55];
 
 const TIME_PRESETS: { label: string; value: string }[] = [
-  { label: 'Now', value: 'Now' },
-  { label: 'In 1 hr', value: 'In 1 hr' },
-  { label: 'Tonight 6PM', value: 'Tonight 6PM' },
-  { label: 'Tonight 9PM', value: 'Tonight 9PM' },
+  { label: '🔴 Now', value: 'Now' },
+  { label: '⏱ In 1 hr', value: 'In 1 hr' },
+  { label: '🌆 Tonight 6PM', value: 'Tonight 6PM' },
+  { label: '🌙 Tonight 9PM', value: 'Tonight 9PM' },
 ];
 
 const CERT_OPTIONS = ['TIPS', 'ServSafe', 'Food Handler', 'Alcohol Awareness'];
@@ -55,7 +63,10 @@ const CERT_OPTIONS = ['TIPS', 'ServSafe', 'Food Handler', 'Alcohol Awareness'];
 
 function SectionLabel({ text }: { text: string }) {
   return (
-    <Text style={styles.sectionLabel}>{text}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+      <View style={{ width: 3, height: 14, backgroundColor: COLORS.primary, borderRadius: 2 }} />
+      <Text style={styles.sectionLabel}>{text}</Text>
+    </View>
   );
 }
 
@@ -63,15 +74,28 @@ function ProgressBar({ step }: { step: number }) {
   // step: 0-4 (how many of the 4 required fields are filled)
   return (
     <View style={styles.progressContainer}>
-      {[0, 1, 2, 3].map((i) => (
-        <View
-          key={i}
-          style={[
-            styles.progressSegment,
-            { backgroundColor: i < step ? COLORS.primary : COLORS.surfaceSecondary },
-          ]}
-        />
-      ))}
+      {[0, 1, 2, 3].map((i) => {
+        const isActive = i < step;
+        return (
+          <View
+            key={i}
+            style={[
+              styles.progressSegment,
+              {
+                backgroundColor: isActive ? COLORS.primary : COLORS.surfaceSecondary,
+                ...(isActive
+                  ? {
+                      shadowColor: COLORS.primary,
+                      shadowOpacity: 0.8,
+                      shadowRadius: 4,
+                      elevation: 3,
+                    }
+                  : {}),
+              },
+            ]}
+          />
+        );
+      })}
     </View>
   );
 }
@@ -312,6 +336,9 @@ export default function CreateShiftScreen() {
             >
               {URGENCY_OPTIONS.map((u) => {
                 const isActive = selectedUrgency === u.value;
+                const accentColor = URGENCY_COLORS[u.value];
+                const activeBg = accentColor + '22';
+                const activeSublabel = accentColor + 'AA';
                 return (
                   <AnimatedPressable
                     key={u.value}
@@ -321,14 +348,24 @@ export default function CreateShiftScreen() {
                     }}
                     style={[
                       styles.urgencyPill,
-                      isActive ? styles.urgencyPillActive : styles.urgencyPillInactive,
+                      isActive
+                        ? {
+                            backgroundColor: activeBg,
+                            borderColor: accentColor,
+                            borderWidth: 1.5,
+                            shadowColor: accentColor,
+                            shadowOpacity: 0.4,
+                            shadowRadius: 12,
+                            elevation: 8,
+                          }
+                        : styles.urgencyPillInactive,
                     ]}
                   >
                     <Text style={styles.urgencyEmoji}>{u.emoji}</Text>
                     <Text
                       style={[
                         styles.urgencyPillLabel,
-                        { color: isActive ? '#000' : COLORS.text },
+                        { color: isActive ? accentColor : COLORS.text },
                       ]}
                     >
                       {u.label}
@@ -336,7 +373,7 @@ export default function CreateShiftScreen() {
                     <Text
                       style={[
                         styles.urgencyPillSublabel,
-                        { color: isActive ? 'rgba(0,0,0,0.6)' : COLORS.textTertiary },
+                        { color: isActive ? activeSublabel : COLORS.textTertiary },
                       ]}
                     >
                       {u.sublabel}
@@ -350,47 +387,50 @@ export default function CreateShiftScreen() {
           {/* ── Step 3: Pay Rate ─────────────────────────────────── */}
           <View style={styles.section}>
             <SectionLabel text="STEP 3 — HOURLY PAY" />
-            <View style={styles.payInputRow}>
-              <Text style={styles.payDollar}>$</Text>
-              <TextInput
-                value={hourlyPay}
-                onChangeText={(t) => {
-                  console.log('[CreateShift] Pay rate changed:', t);
-                  setHourlyPay(t);
-                }}
-                placeholder="0"
-                placeholderTextColor={COLORS.textTertiary}
-                keyboardType="decimal-pad"
-                style={styles.payInput}
-              />
-              <Text style={styles.payHr}>/hr</Text>
-            </View>
-            <View style={styles.payPresets}>
-              {PAY_PRESETS.map((p) => {
-                const isActive = hourlyPay === String(p);
-                return (
-                  <AnimatedPressable
-                    key={p}
-                    onPress={() => {
-                      console.log('[CreateShift] Pay preset tapped:', p);
-                      setHourlyPay(String(p));
-                    }}
-                    style={[
-                      styles.payPresetBtn,
-                      isActive ? styles.payPresetActive : styles.payPresetInactive,
-                    ]}
-                  >
-                    <Text
+            <View style={styles.payCard}>
+              <Text style={styles.payCardLabel}>💰 SET YOUR PAY RATE</Text>
+              <View style={styles.payInputRow}>
+                <Text style={styles.payDollar}>$</Text>
+                <TextInput
+                  value={hourlyPay}
+                  onChangeText={(t) => {
+                    console.log('[CreateShift] Pay rate changed:', t);
+                    setHourlyPay(t);
+                  }}
+                  placeholder="0"
+                  placeholderTextColor={COLORS.textTertiary}
+                  keyboardType="decimal-pad"
+                  style={styles.payInput}
+                />
+                <Text style={styles.payHr}>/hr</Text>
+              </View>
+              <View style={styles.payPresets}>
+                {PAY_PRESETS.map((p) => {
+                  const isActive = hourlyPay === String(p);
+                  return (
+                    <AnimatedPressable
+                      key={p}
+                      onPress={() => {
+                        console.log('[CreateShift] Pay preset tapped:', p);
+                        setHourlyPay(String(p));
+                      }}
                       style={[
-                        styles.payPresetText,
-                        { color: isActive ? '#000' : COLORS.textSecondary },
+                        styles.payPresetBtn,
+                        isActive ? styles.payPresetActive : styles.payPresetInactive,
                       ]}
                     >
-                      ${p}
-                    </Text>
-                  </AnimatedPressable>
-                );
-              })}
+                      <Text
+                        style={[
+                          styles.payPresetText,
+                          { color: isActive ? '#000' : COLORS.textSecondary },
+                        ]}
+                      >
+                        ${p}
+                      </Text>
+                    </AnimatedPressable>
+                  );
+                })}
+              </View>
             </View>
           </View>
 
@@ -415,7 +455,7 @@ export default function CreateShiftScreen() {
                     <Text
                       style={[
                         styles.timePresetText,
-                        { color: isActive ? '#000' : COLORS.text },
+                        { color: isActive ? COLORS.primary : COLORS.text },
                       ]}
                     >
                       {t.label}
@@ -447,7 +487,7 @@ export default function CreateShiftScreen() {
                 }}
                 style={styles.stepperBtn}
               >
-                <MaterialIcons name="remove" size={22} color={COLORS.text} />
+                <MaterialIcons name="remove" size={22} color={COLORS.primary} />
               </AnimatedPressable>
               <Text style={styles.stepperValue}>{workersNeeded}</Text>
               <AnimatedPressable
@@ -457,7 +497,7 @@ export default function CreateShiftScreen() {
                 }}
                 style={styles.stepperBtn}
               >
-                <MaterialIcons name="add" size={22} color={COLORS.text} />
+                <MaterialIcons name="add" size={22} color={COLORS.primary} />
               </AnimatedPressable>
             </View>
           </View>
@@ -598,9 +638,14 @@ export default function CreateShiftScreen() {
               disabled={loading}
               style={[styles.blastBtn, { opacity: blastButtonOpacity }]}
             >
-              <Text style={styles.blastBtnText}>
-                {loading ? 'Blasting...' : '⚡ BLAST SHIFT'}
-              </Text>
+              <View style={{ alignItems: 'center', gap: 2 }}>
+                <Text style={styles.blastBtnText}>
+                  {loading ? 'Blasting...' : '⚡ BLAST SHIFT'}
+                </Text>
+                {!loading && (
+                  <Text style={styles.blastBtnSub}>Workers nearby will be notified instantly</Text>
+                )}
+              </View>
             </AnimatedPressable>
           </View>
         </ScrollView>
@@ -626,7 +671,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: COLORS.background,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: 'rgba(0,255,135,0.3)',
   },
   headerBack: {
     width: 44,
@@ -639,7 +684,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    color: COLORS.text,
+    color: COLORS.primary,
     fontSize: 16,
     fontWeight: '700',
     fontFamily: 'SpaceGrotesk-Bold',
@@ -687,12 +732,12 @@ const styles = StyleSheet.create({
   // Progress bar
   progressContainer: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 6,
     marginBottom: 28,
   },
   progressSegment: {
     flex: 1,
-    height: 3,
+    height: 4,
     borderRadius: 2,
   },
 
@@ -701,12 +746,11 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   sectionLabel: {
-    color: COLORS.textTertiary,
-    fontSize: 11,
+    color: COLORS.primary,
+    fontSize: 10,
     fontFamily: 'SpaceGrotesk-SemiBold',
     fontWeight: '600',
-    letterSpacing: 1.2,
-    marginBottom: 12,
+    letterSpacing: 2.0,
   },
 
   // Role grid
@@ -721,7 +765,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     borderRadius: 14,
-    paddingVertical: 14,
+    paddingVertical: 18,
     paddingHorizontal: 14,
     borderWidth: 1,
   },
@@ -730,13 +774,13 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
     shadowColor: '#00FF87',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOpacity: 0.7,
+    shadowRadius: 16,
+    elevation: 12,
   },
   roleChipInactive: {
-    backgroundColor: COLORS.surface,
-    borderColor: COLORS.border,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   roleEmoji: {
     fontSize: 20,
@@ -756,18 +800,18 @@ const styles = StyleSheet.create({
   urgencyPill: {
     alignItems: 'center',
     borderRadius: 14,
-    paddingVertical: 12,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     borderWidth: 1,
-    minWidth: 100,
+    minWidth: 110,
   },
   urgencyPillActive: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
   },
   urgencyPillInactive: {
-    backgroundColor: COLORS.surface,
-    borderColor: COLORS.border,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   urgencyEmoji: {
     fontSize: 22,
@@ -785,6 +829,28 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 
+  // Pay card
+  payCard: {
+    backgroundColor: 'rgba(0,255,135,0.04)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,255,135,0.2)',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#00FF87',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  payCardLabel: {
+    color: COLORS.primary,
+    fontSize: 10,
+    fontFamily: 'SpaceGrotesk-Bold',
+    fontWeight: '700',
+    letterSpacing: 2,
+    marginBottom: 12,
+  },
+
   // Pay
   payInputRow: {
     flexDirection: 'row',
@@ -795,19 +861,19 @@ const styles = StyleSheet.create({
   },
   payDollar: {
     color: COLORS.primary,
-    fontSize: 36,
+    fontSize: 42,
     fontFamily: 'SpaceGrotesk-Bold',
     fontWeight: '700',
     lineHeight: 56,
   },
   payInput: {
     color: COLORS.text,
-    fontSize: 48,
+    fontSize: 56,
     fontFamily: 'SpaceGrotesk-Bold',
     fontWeight: '700',
     minWidth: 100,
     textAlign: 'center',
-    lineHeight: 56,
+    lineHeight: 64,
   },
   payHr: {
     color: COLORS.textSecondary,
@@ -833,10 +899,14 @@ const styles = StyleSheet.create({
   payPresetActive: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
+    shadowColor: '#00FF87',
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 6,
   },
   payPresetInactive: {
-    backgroundColor: COLORS.surface,
-    borderColor: COLORS.border,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   payPresetText: {
     fontSize: 14,
@@ -858,12 +928,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   timePresetActive: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primaryMuted,
     borderColor: COLORS.primary,
   },
   timePresetInactive: {
-    backgroundColor: COLORS.surface,
-    borderColor: COLORS.border,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   timePresetText: {
     fontSize: 14,
@@ -873,10 +943,10 @@ const styles = StyleSheet.create({
 
   // Text input
   textInput: {
-    backgroundColor: COLORS.surfaceSecondary,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: 'rgba(255,255,255,0.1)',
     paddingHorizontal: 14,
     paddingVertical: 12,
     color: COLORS.text,
@@ -899,23 +969,23 @@ const styles = StyleSheet.create({
     gap: 28,
   },
   stepperBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: COLORS.surface,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepperValue: {
     color: COLORS.primary,
-    fontSize: 48,
+    fontSize: 56,
     fontFamily: 'SpaceGrotesk-Bold',
     fontWeight: '700',
     minWidth: 64,
     textAlign: 'center',
-    lineHeight: 56,
+    lineHeight: 64,
   },
 
   // Advanced
@@ -923,10 +993,10 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   advancedInner: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: 'rgba(255,255,255,0.03)',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: 'rgba(255,255,255,0.08)',
     padding: 16,
     marginBottom: 28,
     gap: 16,
@@ -977,22 +1047,22 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: 16,
+    borderRadius: 18,
     backgroundColor: COLORS.primary,
     ...(Platform.OS !== 'web'
       ? {
           shadowColor: '#00FF87',
           shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.8,
-          shadowRadius: 20,
+          shadowOpacity: 1.0,
+          shadowRadius: 28,
           elevation: 16,
         }
       : {}),
   },
   blastBtn: {
     backgroundColor: COLORS.primary,
-    borderRadius: 16,
-    height: 64,
+    borderRadius: 18,
+    height: 72,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1002,5 +1072,10 @@ const styles = StyleSheet.create({
     fontFamily: 'SpaceGrotesk-Bold',
     fontWeight: '700',
     letterSpacing: 1,
+  },
+  blastBtnSub: {
+    color: 'rgba(0,0,0,0.55)',
+    fontSize: 11,
+    fontFamily: 'SpaceGrotesk-Regular',
   },
 });
