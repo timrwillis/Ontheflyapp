@@ -1,10 +1,13 @@
 import React from 'react';
-import { View } from 'react-native';
-import { Stack } from 'expo-router';
+import { View, Text, StyleSheet } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
 import { useRole } from '@/contexts/RoleContext';
 import { COLORS } from '@/constants/Colors';
 import { Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AnimatedPressable } from '@/components/AnimatedPressable';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -41,6 +44,34 @@ function getContainerWidth(tabCount: number): number {
   return screenWidth * 0.88;
 }
 
+const TAB_HEIGHT = 52;
+const TAB_BOTTOM_MARGIN = 20;
+const FAB_GAP = 16;
+
+function BlastShiftFAB() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const fabBottom = insets.bottom + TAB_HEIGHT + TAB_BOTTOM_MARGIN + FAB_GAP;
+
+  return (
+    <View style={[styles.fabContainer, { bottom: fabBottom }]}>
+      <AnimatedPressable
+        onPress={() => {
+          console.log('[TabLayout] Blast Shift FAB pressed');
+          router.push('/create-shift');
+        }}
+        style={styles.fab}
+      >
+        <MaterialIcons name="bolt" size={20} color="#000" />
+        <View>
+          <Text style={styles.fabLabel}>BLAST SHIFT</Text>
+          <Text style={styles.fabSub}>avg 4 min fill</Text>
+        </View>
+      </AnimatedPressable>
+    </View>
+  );
+}
+
 export default function TabLayout() {
   const { currentRole } = useRole();
   const tabs = getTabsForRole(currentRole);
@@ -66,6 +97,42 @@ export default function TabLayout() {
           bottomMargin={20}
         />
       )}
+      {currentRole === 'manager' && <BlastShiftFAB />}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  fabContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 2000,
+  },
+  fab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#00FF85',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 30,
+    shadowColor: '#00FF85',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  fabLabel: {
+    color: '#000',
+    fontFamily: 'SpaceGrotesk-Bold',
+    fontSize: 15,
+    letterSpacing: 1,
+  },
+  fabSub: {
+    color: 'rgba(0,0,0,0.55)',
+    fontFamily: 'SpaceGrotesk-Regular',
+    fontSize: 10,
+  },
+});

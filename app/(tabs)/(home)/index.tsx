@@ -885,44 +885,6 @@ function ManagerDashboard() {
         </View>
       </ScrollView>
 
-      {/* Blast Shift FAB */}
-      <View
-        style={{
-          position: 'absolute',
-          bottom: insets.bottom + 84,
-          left: 0,
-          right: 0,
-          alignItems: 'center',
-          zIndex: 999,
-          pointerEvents: 'box-none',
-        }}
-      >
-        <AnimatedPressable
-          onPress={() => { console.log('[ManagerDashboard] Blast Shift FAB pressed'); router.push('/create-shift'); }}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            backgroundColor: '#00FF85',
-            paddingHorizontal: 28,
-            paddingVertical: 16,
-            borderRadius: 32,
-            shadowColor: '#00FF85',
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.6,
-            shadowRadius: 20,
-            elevation: 16,
-          }}
-        >
-          <MaterialIcons name="bolt" size={20} color="#000" />
-          <Text style={{ color: '#000', fontFamily: 'SpaceGrotesk-Bold', fontSize: 15, letterSpacing: 1 }}>
-            BLAST SHIFT
-          </Text>
-        </AnimatedPressable>
-        <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10, marginTop: 6, fontFamily: 'SpaceGrotesk-Regular' }}>
-          avg 4 min fill time
-        </Text>
-      </View>
     </View>
   );
 }
