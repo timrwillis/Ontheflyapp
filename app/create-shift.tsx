@@ -313,12 +313,13 @@ export default function CreateShiftScreen() {
               {ROLES.map((r) => {
                 const isActive = selectedRole === r.value;
                 return (
-                  <AnimatedPressable
+                  <TouchableOpacity
                     key={r.value}
                     onPress={() => {
                       console.log('[CreateShift] Role selected:', r.value);
                       setSelectedRole(r.value);
                     }}
+                    activeOpacity={0.8}
                     style={[
                       styles.roleCard,
                       isActive ? styles.roleCardActive : styles.roleCardInactive,
@@ -340,7 +341,7 @@ export default function CreateShiftScreen() {
                     >
                       {r.label}
                     </Text>
-                  </AnimatedPressable>
+                  </TouchableOpacity>
                 );
               })}
             </View>
