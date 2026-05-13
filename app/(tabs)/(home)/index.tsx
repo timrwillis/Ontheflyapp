@@ -517,7 +517,7 @@ function ManagerDashboard() {
               ⚡ ON THE FLY
             </Text>
             <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
-              {greeting},
+              {`${greeting},`}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
@@ -1163,7 +1163,7 @@ function WorkerDashboard() {
                   {earningsLowDisplay}
                 </Text>
                 <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
-                  –
+                  {'–'}
                 </Text>
                 <Text style={{ color: COLORS.accent, fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
                   {earningsHighDisplay}
@@ -1256,8 +1256,7 @@ function WorkerDashboard() {
           >
             {[...WORKER_TICKER_ITEMS, ...WORKER_TICKER_ITEMS].map((item, i) => (
               <Text key={i} style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular' }}>
-                {item}
-                <Text style={{ color: COLORS.textTertiary }}>  ·  </Text>
+                {`${item}  ·  `}
               </Text>
             ))}
           </ScrollView>
