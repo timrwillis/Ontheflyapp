@@ -28,12 +28,10 @@ export function IconSymbol({
   testID?: any;
   accessibilityLabel?: any;
 }) {
+  // onClick, onMouseOver, onMouseLeave are web-only DOM events — omit them on iOS native
   return (
     <SymbolView
       onPress={onPress}
-      onClick={onClick}
-      onMouseOver={onMouseOver}
-      onMouseLeave={onMouseLeave}
       testID={testID}
       accessibilityLabel={accessibilityLabel}
       weight={weight}

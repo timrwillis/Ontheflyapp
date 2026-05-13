@@ -231,7 +231,15 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     const init = async () => {
       try {
         // Check for an active auth session first — if none, skip fetchMe
-        const session = await authClient.getSession();
+        let session = null;
+        try {
+          session = await authClient.getSession();
+        } catch (sessionErr) {
+          // getSession throws on web when no session exists — treat as no session
+          console.log('[RoleContext] No active session:', JSON.stringify(sessionErr) || (sessionErr as Error)?.message || 'unknown error');
+          setIsLoading(false);
+          return;
+        }
         console.log('[RoleContext] Auth session check:', session?.data?.session ? 'active' : 'none');
         if (!session?.data?.session) {
           console.log('[RoleContext] No active session — skipping fetchMe, auth screen will handle redirect');
@@ -246,7 +254,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         }
         await fetchMe();
       } catch (err) {
-        console.error('[RoleContext] Init error:', err);
+        console.error('[RoleContext] Init error:', JSON.stringify(err) || (err as Error)?.message || 'unknown error');
       } finally {
         setIsLoading(false);
       }

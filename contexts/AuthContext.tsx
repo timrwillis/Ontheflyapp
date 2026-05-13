@@ -92,7 +92,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUser = async () => {
     try {
       setLoading(true);
-      const session = await authClient.getSession();
+      let session = null;
+      try {
+        session = await authClient.getSession();
+      } catch (sessionErr) {
+        // getSession throws on web when no session exists — treat as no session
+        console.log("No active session:", JSON.stringify(sessionErr) || (sessionErr as Error)?.message || 'unknown error');
+      }
       if (session?.data?.user) {
         setUser(session.data.user as User);
         if (session.data.session?.token) {
@@ -103,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await clearAuthTokens();
       }
     } catch (error) {
-      console.error("Failed to fetch user:", error);
+      console.error("Failed to fetch user:", JSON.stringify(error) || (error as Error)?.message || 'unknown error');
       setUser(null);
     } finally {
       setLoading(false);

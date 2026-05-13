@@ -4,6 +4,7 @@ import React from "react";
 import { SymbolWeight } from "expo-symbols";
 import {
   OpaqueColorValue,
+  Platform,
   StyleProp,
   TextStyle,
   ViewStyle,
@@ -42,12 +43,12 @@ export function IconSymbol({
   testID?: any;
   accessibilityLabel?: any;
 }) {
+  // On web, pass mouse/click events as DOM props; on native, omit them to avoid unknown prop warnings
+  const webProps = Platform.OS === 'web' ? { onClick, onMouseOver, onMouseLeave } : {};
   return (
     <MaterialIcons
       onPress={onPress}
-      onClick={onClick}
-      onMouseOver={onMouseOver}
-      onMouseLeave={onMouseLeave}
+      {...webProps}
       testID={testID}
       accessibilityLabel={accessibilityLabel}
       color={color}
