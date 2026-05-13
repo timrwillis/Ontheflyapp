@@ -438,8 +438,8 @@ function ManagerDashboard() {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(emergencyPulse, { toValue: 1.0, duration: 700, useNativeDriver: true }),
-        Animated.timing(emergencyPulse, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+        Animated.timing(emergencyPulse, { toValue: 1.0, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(emergencyPulse, { toValue: 0.4, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
       ])
     ).start();
   }, [emergencyPulse]);
@@ -447,8 +447,8 @@ function ManagerDashboard() {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(liveGreenPulse, { toValue: 1.0, duration: 800, useNativeDriver: true }),
-        Animated.timing(liveGreenPulse, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+        Animated.timing(liveGreenPulse, { toValue: 1.0, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(liveGreenPulse, { toValue: 0.4, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
       ])
     ).start();
   }, [liveGreenPulse]);

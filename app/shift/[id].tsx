@@ -121,8 +121,8 @@ function PulseButton({ onPress, disabled, label }: { onPress: () => void; disabl
     if (disabled) return;
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(scale, { toValue: 1.02, duration: 900, useNativeDriver: true }),
-        Animated.timing(scale, { toValue: 1.0, duration: 900, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1.02, duration: 900, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(scale, { toValue: 1.0, duration: 900, useNativeDriver: Platform.OS !== 'web' }),
       ])
     );
     loop.start();
