@@ -95,13 +95,13 @@ export default function FloatingTabBar({
     Animated.sequence([
       Animated.spring(scaleVal, {
         toValue: 0.88,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
         speed: 50,
         bounciness: 0,
       }),
       Animated.spring(scaleVal, {
         toValue: 1,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
         speed: 20,
         bounciness: 10,
       }),

@@ -29,12 +29,12 @@ export function AvailabilityToggle({ isAvailable, onToggle, loading }: Availabil
     const pulse = Animated.loop(
       Animated.sequence([
         Animated.parallel([
-          Animated.timing(pulseOpacity, { toValue: 0, duration: 800, useNativeDriver: true }),
-          Animated.timing(pulseScale, { toValue: 2.2, duration: 800, useNativeDriver: true }),
+          Animated.timing(pulseOpacity, { toValue: 0, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
+          Animated.timing(pulseScale, { toValue: 2.2, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
         ]),
         Animated.parallel([
-          Animated.timing(pulseOpacity, { toValue: 0.6, duration: 0, useNativeDriver: true }),
-          Animated.timing(pulseScale, { toValue: 1, duration: 0, useNativeDriver: true }),
+          Animated.timing(pulseOpacity, { toValue: 0.6, duration: 0, useNativeDriver: Platform.OS !== 'web' }),
+          Animated.timing(pulseScale, { toValue: 1, duration: 0, useNativeDriver: Platform.OS !== 'web' }),
         ]),
       ])
     );
