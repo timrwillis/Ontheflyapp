@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "On The Fly",
+    "slug": "on-the-fly",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/1000012773.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/1000012773.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.onthefly.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/1000012773.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.onthefly.app"
+    },
+    "web": {
+      "favicon": "./assets/images/final_quest_240x240.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-router",
+      "expo-web-browser",
+      "expo-secure-store"
+    ],
+    "scheme": "onthefly",
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "backendUrl": "https://xn8u74za85ysyp6vewujtpsarhqy53na.app.specular.dev"
+    }
+  }
+}

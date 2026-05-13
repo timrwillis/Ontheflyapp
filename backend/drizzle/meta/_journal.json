@@ -1,0 +1,62 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1778277449186,
+      "tag": "20260508215729_milky_thundra",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778277693396,
+      "tag": "20260508220133_wide_firebird",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778277814759,
+      "tag": "20260508220334_fancy_betty_brant",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778450177042,
+      "tag": "20260510215617_fine_songbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778450230028,
+      "tag": "20260510215710_chubby_toad_men",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778552941721,
+      "tag": "20260512022901_curly_agent_brand",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778558475314,
+      "tag": "20260512040115_eminent_kitty_pryde",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1778613166251,
+      "tag": "20260512191246_furry_payback",
+      "breakpoints": true
+    }
+  ]
+}
