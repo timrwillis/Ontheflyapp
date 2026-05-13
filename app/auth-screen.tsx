@@ -54,11 +54,11 @@ function AnimatedPressable({
   const scale = useRef(new Animated.Value(1)).current;
 
   const animateIn = useCallback(() => {
-    Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
+    Animated.spring(scale, { toValue: 0.97, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start();
   }, [scale]);
 
   const animateOut = useCallback(() => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 4 }).start();
+    Animated.spring(scale, { toValue: 1, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start();
   }, [scale]);
 
   return (
@@ -94,6 +94,7 @@ export default function AuthScreen() {
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [nameError, setNameError] = useState('');
 
   // Fade-in entrance animation
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -101,8 +102,8 @@ export default function AuthScreen() {
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: Platform.OS !== 'web' }),
     ]).start();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -119,6 +120,7 @@ export default function AuthScreen() {
     setError('');
     setEmailError('');
     setPasswordError('');
+    setNameError('');
   };
 
   const validateEmail = (val: string) => {
@@ -147,6 +149,10 @@ export default function AuthScreen() {
     const pErr = validatePassword(password);
     if (eErr) setEmailError(eErr);
     if (pErr) setPasswordError(pErr);
+    if (activeTab === 'signup' && !name.trim()) {
+      setNameError('Full name is required');
+      return;
+    }
     if (eErr || pErr) return;
 
     setSubmitting(true);
@@ -276,6 +282,7 @@ export default function AuthScreen() {
                   returnKeyType="next"
                   editable={!isAnyLoading}
                 />
+                {!!nameError && <Text style={styles.fieldError}>{nameError}</Text>}
               </View>
             )}
 
