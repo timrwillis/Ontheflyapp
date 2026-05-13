@@ -96,12 +96,9 @@ function ProgressBar({ step }: { step: number }) {
               {
                 backgroundColor: isActive ? COLORS.primary : COLORS.surfaceSecondary,
                 ...(isActive
-                  ? {
-                      shadowColor: COLORS.primary,
-                      shadowOpacity: 0.8,
-                      shadowRadius: 4,
-                      elevation: 3,
-                    }
+                  ? (Platform.OS === 'web'
+                      ? { boxShadow: '0 0 4px rgba(0,255,135,0.8)' }
+                      : { shadowColor: COLORS.primary, shadowOpacity: 0.8, shadowRadius: 4, elevation: 3 })
                   : {}),
               },
             ]}
@@ -374,10 +371,9 @@ export default function CreateShiftScreen() {
                             backgroundColor: activeBg,
                             borderColor: accentColor,
                             borderWidth: 1.5,
-                            shadowColor: accentColor,
-                            shadowOpacity: 0.4,
-                            shadowRadius: 12,
-                            elevation: 8,
+                            ...(Platform.OS === 'web'
+                              ? { boxShadow: '0 0 12px rgba(0,0,0,0.4)' }
+                              : { shadowColor: accentColor, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }),
                           }
                         : styles.urgencyPillInactive,
                     ]}
@@ -806,11 +802,9 @@ const styles = StyleSheet.create({
   roleCardActive: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
-    shadowColor: '#00FF87',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 16,
-    elevation: 12,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 0 16px rgba(0,255,135,0.7)' }
+      : { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 16, elevation: 12 }),
   },
   roleCardInactive: {
     backgroundColor: 'rgba(255,255,255,0.04)',
@@ -872,11 +866,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,255,135,0.2)',
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#00FF87',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 5,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 0 16px rgba(0,255,135,0.12)' }
+      : { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.12, shadowRadius: 16, elevation: 5 }),
   },
   payCardLabel: {
     color: COLORS.primary,
@@ -935,10 +927,9 @@ const styles = StyleSheet.create({
   payPresetActive: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
-    shadowColor: '#00FF87',
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 6,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 0 8px rgba(0,255,135,0.5)' }
+      : { shadowColor: '#00FF87', shadowOpacity: 0.5, shadowRadius: 8, elevation: 6 }),
   },
   payPresetInactive: {
     backgroundColor: 'rgba(255,255,255,0.05)',

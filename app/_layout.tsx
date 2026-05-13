@@ -24,6 +24,20 @@ import { RoleProvider } from "@/contexts/RoleContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
+// Suppress Babel inject-source-location dev prop warning on web
+if (Platform.OS === 'web' && typeof console !== 'undefined') {
+  const _origConsoleError = console.error.bind(console);
+  console.error = (...args: unknown[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('__sourceLocation')
+    ) {
+      return;
+    }
+    _origConsoleError(...args);
+  };
+}
+
 const DevErrorBoundary = __DEV__
   ? ErrorBoundary
   : ({ children }: { children: React.ReactNode }) => <>{children}</>;

@@ -911,10 +911,9 @@ function ManagerDashboard() {
           gap: 8,
           backgroundColor: '#00FF85',
           borderRadius: 30,
-          shadowColor: '#00FF85',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.5,
-          shadowRadius: 16,
+          ...(Platform.OS === 'web'
+            ? { boxShadow: '0 4px 16px rgba(0,255,133,0.5)' }
+            : { shadowColor: '#00FF85', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 16 }),
           elevation: 999,
         }}
       >
