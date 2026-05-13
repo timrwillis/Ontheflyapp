@@ -21,6 +21,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { RoleProvider } from "@/contexts/RoleContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const DevErrorBoundary = __DEV__
@@ -178,163 +179,168 @@ export default function RootLayout() {
       <StatusBar style="light" animated />
       <ThemeProvider value={OnTheFlyDarkTheme}>
         <SafeAreaProvider>
-          <RoleProvider>
-            <WidgetProvider>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <Animated.View style={{ flex: 1, opacity: appOpacity }}>
-                  <Stack>
-                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                    <Stack.Screen
-                      name="shift/[id]"
-                      options={{
-                        headerShown: true,
-                        headerStyle: { backgroundColor: '#141414' },
-                        headerTintColor: '#F0F0F0',
-                        headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
-                        headerBackButtonDisplayMode: 'minimal',
-                      }}
-                    />
-                    <Stack.Screen
-                      name="worker/[id]"
-                      options={{
-                        headerShown: true,
-                        headerStyle: { backgroundColor: '#141414' },
-                        headerTintColor: '#F0F0F0',
-                        headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
-                        headerBackButtonDisplayMode: 'minimal',
-                      }}
-                    />
-                    <Stack.Screen
-                      name="create-shift"
-                      options={{
-                        presentation: 'formSheet',
-                        headerShown: true,
-                        title: 'Blast a Shift',
-                        headerStyle: { backgroundColor: '#141414' },
-                        headerTintColor: '#F0F0F0',
-                        headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
-                      }}
-                    />
-                    <Stack.Screen
-                      name="edit-profile"
-                      options={{
-                        presentation: 'formSheet',
-                        headerShown: true,
-                        title: 'Edit Profile',
-                        headerStyle: { backgroundColor: '#141414' },
-                        headerTintColor: '#F0F0F0',
-                        headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
-                      }}
-                    />
-                    <Stack.Screen
-                      name="nearby-workers"
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                      name="beta-welcome"
-                      options={{ headerShown: false, gestureEnabled: false }}
-                    />
-                    <Stack.Screen
-                      name="notifications"
-                      options={{
-                        headerShown: true,
-                        title: 'Notifications',
-                        headerStyle: { backgroundColor: '#141414' },
-                        headerTintColor: '#F0F0F0',
-                        headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
-                      }}
-                    />
-                    <Stack.Screen
-                      name="support"
-                      options={{
-                        headerShown: true,
-                        title: 'Support',
-                        headerStyle: { backgroundColor: '#141414' },
-                        headerTintColor: '#F0F0F0',
-                        headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
-                      }}
-                    />
-                    <Stack.Screen
-                      name="settings"
-                      options={{
-                        headerShown: true,
-                        title: 'Settings',
-                        headerStyle: { backgroundColor: '#141414' },
-                        headerTintColor: '#F0F0F0',
-                        headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
-                      }}
-                    />
-                    <Stack.Screen
-                      name="onboarding/worker/index"
-                      options={{ headerShown: false, gestureEnabled: false }}
-                    />
-                    <Stack.Screen
-                      name="onboarding/worker/profile"
-                      options={{
-                        headerShown: true,
-                        title: 'Worker Setup',
-                        headerStyle: { backgroundColor: '#0A0A0A' },
-                        headerTintColor: '#F0F0F0',
-                        headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
-                      }}
-                    />
-                    <Stack.Screen
-                      name="onboarding/worker/roles"
-                      options={{
-                        headerShown: true,
-                        title: 'Your Roles',
-                        headerStyle: { backgroundColor: '#0A0A0A' },
-                        headerTintColor: '#F0F0F0',
-                        headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
-                      }}
-                    />
-                    <Stack.Screen
-                      name="onboarding/worker/availability"
-                      options={{
-                        headerShown: true,
-                        title: 'Availability',
-                        headerStyle: { backgroundColor: '#0A0A0A' },
-                        headerTintColor: '#F0F0F0',
-                        headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
-                      }}
-                    />
-                    <Stack.Screen
-                      name="onboarding/worker/complete"
-                      options={{ headerShown: false, gestureEnabled: false }}
-                    />
-                    <Stack.Screen
-                      name="onboarding/manager/profile"
-                      options={{
-                        headerShown: true,
-                        title: 'Manager Setup',
-                        headerStyle: { backgroundColor: '#0A0A0A' },
-                        headerTintColor: '#F0F0F0',
-                        headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
-                      }}
-                    />
-                    <Stack.Screen
-                      name="onboarding/manager/business"
-                      options={{
-                        headerShown: true,
-                        title: 'Your Business',
-                        headerStyle: { backgroundColor: '#0A0A0A' },
-                        headerTintColor: '#F0F0F0',
-                        headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
-                      }}
-                    />
-                    <Stack.Screen
-                      name="onboarding/manager/complete"
-                      options={{ headerShown: false, gestureEnabled: false }}
-                    />
-                  </Stack>
-                </Animated.View>
-                {Platform.OS !== 'web' && <SystemBars style="light" />}
-                {!splashDone && (
-                  <SplashOverlay onFadeComplete={handleSplashFadeComplete} />
-                )}
-              </GestureHandlerRootView>
-            </WidgetProvider>
-          </RoleProvider>
+          <AuthProvider>
+            <RoleProvider>
+              <WidgetProvider>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <Animated.View style={{ flex: 1, opacity: appOpacity }}>
+                    <Stack>
+                      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                      <Stack.Screen name="auth-screen" options={{ headerShown: false }} />
+                      <Stack.Screen name="auth-popup" options={{ headerShown: false }} />
+                      <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
+                      <Stack.Screen
+                        name="shift/[id]"
+                        options={{
+                          headerShown: true,
+                          headerStyle: { backgroundColor: '#141414' },
+                          headerTintColor: '#F0F0F0',
+                          headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
+                          headerBackButtonDisplayMode: 'minimal',
+                        }}
+                      />
+                      <Stack.Screen
+                        name="worker/[id]"
+                        options={{
+                          headerShown: true,
+                          headerStyle: { backgroundColor: '#141414' },
+                          headerTintColor: '#F0F0F0',
+                          headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
+                          headerBackButtonDisplayMode: 'minimal',
+                        }}
+                      />
+                      <Stack.Screen
+                        name="create-shift"
+                        options={{
+                          presentation: 'formSheet',
+                          headerShown: true,
+                          title: 'Blast a Shift',
+                          headerStyle: { backgroundColor: '#141414' },
+                          headerTintColor: '#F0F0F0',
+                          headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
+                        }}
+                      />
+                      <Stack.Screen
+                        name="edit-profile"
+                        options={{
+                          presentation: 'formSheet',
+                          headerShown: true,
+                          title: 'Edit Profile',
+                          headerStyle: { backgroundColor: '#141414' },
+                          headerTintColor: '#F0F0F0',
+                          headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
+                        }}
+                      />
+                      <Stack.Screen
+                        name="nearby-workers"
+                        options={{ headerShown: false }}
+                      />
+                      <Stack.Screen
+                        name="beta-welcome"
+                        options={{ headerShown: false, gestureEnabled: false }}
+                      />
+                      <Stack.Screen
+                        name="notifications"
+                        options={{
+                          headerShown: true,
+                          title: 'Notifications',
+                          headerStyle: { backgroundColor: '#141414' },
+                          headerTintColor: '#F0F0F0',
+                          headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
+                        }}
+                      />
+                      <Stack.Screen
+                        name="support"
+                        options={{
+                          headerShown: true,
+                          title: 'Support',
+                          headerStyle: { backgroundColor: '#141414' },
+                          headerTintColor: '#F0F0F0',
+                          headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
+                        }}
+                      />
+                      <Stack.Screen
+                        name="settings"
+                        options={{
+                          headerShown: true,
+                          title: 'Settings',
+                          headerStyle: { backgroundColor: '#141414' },
+                          headerTintColor: '#F0F0F0',
+                          headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
+                        }}
+                      />
+                      <Stack.Screen
+                        name="onboarding/worker/index"
+                        options={{ headerShown: false, gestureEnabled: false }}
+                      />
+                      <Stack.Screen
+                        name="onboarding/worker/profile"
+                        options={{
+                          headerShown: true,
+                          title: 'Worker Setup',
+                          headerStyle: { backgroundColor: '#0A0A0A' },
+                          headerTintColor: '#F0F0F0',
+                          headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
+                        }}
+                      />
+                      <Stack.Screen
+                        name="onboarding/worker/roles"
+                        options={{
+                          headerShown: true,
+                          title: 'Your Roles',
+                          headerStyle: { backgroundColor: '#0A0A0A' },
+                          headerTintColor: '#F0F0F0',
+                          headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
+                        }}
+                      />
+                      <Stack.Screen
+                        name="onboarding/worker/availability"
+                        options={{
+                          headerShown: true,
+                          title: 'Availability',
+                          headerStyle: { backgroundColor: '#0A0A0A' },
+                          headerTintColor: '#F0F0F0',
+                          headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
+                        }}
+                      />
+                      <Stack.Screen
+                        name="onboarding/worker/complete"
+                        options={{ headerShown: false, gestureEnabled: false }}
+                      />
+                      <Stack.Screen
+                        name="onboarding/manager/profile"
+                        options={{
+                          headerShown: true,
+                          title: 'Manager Setup',
+                          headerStyle: { backgroundColor: '#0A0A0A' },
+                          headerTintColor: '#F0F0F0',
+                          headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
+                        }}
+                      />
+                      <Stack.Screen
+                        name="onboarding/manager/business"
+                        options={{
+                          headerShown: true,
+                          title: 'Your Business',
+                          headerStyle: { backgroundColor: '#0A0A0A' },
+                          headerTintColor: '#F0F0F0',
+                          headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold', color: '#F0F0F0' },
+                        }}
+                      />
+                      <Stack.Screen
+                        name="onboarding/manager/complete"
+                        options={{ headerShown: false, gestureEnabled: false }}
+                      />
+                    </Stack>
+                  </Animated.View>
+                  {Platform.OS !== 'web' && <SystemBars style="light" />}
+                  {!splashDone && (
+                    <SplashOverlay onFadeComplete={handleSplashFadeComplete} />
+                  )}
+                </GestureHandlerRootView>
+              </WidgetProvider>
+            </RoleProvider>
+          </AuthProvider>
         </SafeAreaProvider>
       </ThemeProvider>
     </DevErrorBoundary>

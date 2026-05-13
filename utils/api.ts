@@ -1,62 +1,156 @@
-import { authClient } from '@/utils/authClient';
+import Constants from "expo-constants";
+import { Platform } from "react-native";
+import * as SecureStore from "expo-secure-store";
+import { BEARER_TOKEN_KEY } from "@/lib/auth";
 
-const BASE_URL = 'https://xn8u74za85ysyp6vewujtpsarhqy53na.app.specular.dev';
+const HARDCODED_URL = "https://xn8u74za85ysyp6vewujtpsarhqy53na.app.specular.dev";
 
-export async function getAuthHeaders(): Promise<Record<string, string>> {
+export const BACKEND_URL: string =
+  (Constants.expoConfig?.extra?.backendUrl as string) || HARDCODED_URL;
+
+export const BASE_URL = BACKEND_URL;
+
+export const isBackendConfigured = (): boolean => {
+  return !!BACKEND_URL && BACKEND_URL.length > 0;
+};
+
+export const getBearerToken = async (): Promise<string | null> => {
   try {
-    const session = await authClient.getSession();
-    const token = (session?.data as any)?.session?.token ?? (session?.data as any)?.token;
-    if (token) {
-      return { Authorization: `Bearer ${token}` };
+    if (Platform.OS === "web") {
+      return localStorage.getItem(BEARER_TOKEN_KEY);
+    } else {
+      return await SecureStore.getItemAsync(BEARER_TOKEN_KEY);
     }
-  } catch (e) {
-    console.warn('[API] Could not get auth token:', e);
+  } catch (error) {
+    console.error("[API] Error retrieving bearer token:", error);
+    return null;
+  }
+};
+
+export const apiCall = async <T = unknown>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<T> => {
+  const url = `${BACKEND_URL}${endpoint}`;
+  console.log(`[API] ${options?.method ?? "GET"} ${url}`);
+
+  const fetchOptions: RequestInit = {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
+  };
+
+  const token = await getBearerToken();
+  if (token) {
+    fetchOptions.headers = {
+      ...fetchOptions.headers,
+      Authorization: `Bearer ${token}`,
+    };
+  }
+
+  const response = await fetch(url, fetchOptions);
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error(`[API] Error ${response.status} for ${endpoint}:`, text);
+    throw new Error(`API error ${response.status}: ${text}`);
+  }
+
+  const data = await response.json();
+  console.log(`[API] Response for ${endpoint}:`, data);
+  return data as T;
+};
+
+// Primary named export used throughout the app
+export const api = apiCall;
+
+export const apiGet = async <T = unknown>(endpoint: string): Promise<T> => {
+  return apiCall<T>(endpoint, { method: "GET" });
+};
+
+export const apiPost = async <T = unknown>(endpoint: string, data: unknown): Promise<T> => {
+  return apiCall<T>(endpoint, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+};
+
+export const apiPut = async <T = unknown>(endpoint: string, data: unknown): Promise<T> => {
+  return apiCall<T>(endpoint, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+};
+
+export const apiPatch = async <T = unknown>(endpoint: string, data: unknown): Promise<T> => {
+  return apiCall<T>(endpoint, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+};
+
+export const apiDelete = async <T = unknown>(endpoint: string, data: unknown = {}): Promise<T> => {
+  return apiCall<T>(endpoint, {
+    method: "DELETE",
+    body: JSON.stringify(data),
+  });
+};
+
+export const getAuthHeaders = async (): Promise<Record<string, string>> => {
+  const token = await getBearerToken();
+  if (token) {
+    return { Authorization: `Bearer ${token}` };
   }
   return {};
-}
+};
 
-export async function api<T = unknown>(path: string, options?: RequestInit): Promise<T> {
-  const authHeaders = await getAuthHeaders();
-  console.log(`[API] ${options?.method ?? 'GET'} ${BASE_URL}${path}`);
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...authHeaders, ...options?.headers },
-    ...options,
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    console.error(`[API] Error ${res.status} for ${path}:`, text);
-    throw new Error(`API error ${res.status}: ${text}`);
+export const authenticatedApiCall = async <T = unknown>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<T> => {
+  const token = await getBearerToken();
+  if (!token) {
+    throw new Error("Authentication token not found. Please sign in.");
   }
-  const data = await res.json();
-  console.log(`[API] Response for ${path}:`, data);
-  return data as T;
-}
-
-export async function apiGet<T = unknown>(path: string): Promise<T> {
-  return api<T>(path, { method: 'GET' });
-}
-
-export async function apiPost<T = unknown>(path: string, body: unknown): Promise<T> {
-  return api<T>(path, {
-    method: 'POST',
-    body: JSON.stringify(body),
+  return apiCall<T>(endpoint, {
+    ...options,
+    headers: {
+      ...options?.headers,
+      Authorization: `Bearer ${token}`,
+    },
   });
-}
+};
 
-export async function apiPatch<T = unknown>(path: string, body: unknown): Promise<T> {
-  return api<T>(path, {
-    method: 'PATCH',
-    body: JSON.stringify(body),
+export const authenticatedGet = async <T = unknown>(endpoint: string): Promise<T> => {
+  return authenticatedApiCall<T>(endpoint, { method: "GET" });
+};
+
+export const authenticatedPost = async <T = unknown>(endpoint: string, data: unknown): Promise<T> => {
+  return authenticatedApiCall<T>(endpoint, {
+    method: "POST",
+    body: JSON.stringify(data),
   });
-}
+};
 
-export async function apiPut<T = unknown>(path: string, body: unknown): Promise<T> {
-  return api<T>(path, {
-    method: 'PUT',
-    body: JSON.stringify(body),
+export const authenticatedPut = async <T = unknown>(endpoint: string, data: unknown): Promise<T> => {
+  return authenticatedApiCall<T>(endpoint, {
+    method: "PUT",
+    body: JSON.stringify(data),
   });
-}
+};
 
-export async function apiDelete<T = unknown>(path: string): Promise<T> {
-  return api<T>(path, { method: 'DELETE' });
-}
+export const authenticatedPatch = async <T = unknown>(endpoint: string, data: unknown): Promise<T> => {
+  return authenticatedApiCall<T>(endpoint, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+};
+
+export const authenticatedDelete = async <T = unknown>(endpoint: string, data: unknown = {}): Promise<T> => {
+  return authenticatedApiCall<T>(endpoint, {
+    method: "DELETE",
+    body: JSON.stringify(data),
+  });
+};

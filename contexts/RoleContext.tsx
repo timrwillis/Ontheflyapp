@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiGet } from '@/utils/api';
+import { authClient } from '@/lib/auth';
 
 export type Role = 'manager' | 'worker' | 'admin' | null;
 
@@ -155,9 +156,9 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         role: String(data.role ?? ''),
         phone: data.phone as string | undefined,
         business_id: data.business_id as string | undefined,
-        business_name: (data.business as any)?.name ?? (data.business_name as string | undefined),
-        business_type: (data.business as any)?.type ?? (data.business_type as string | undefined),
-        city: (data.worker_profile as any)?.city ?? (data.city as string | undefined),
+        business_name: (data.business as Record<string, unknown>)?.name as string ?? (data.business_name as string | undefined),
+        business_type: (data.business as Record<string, unknown>)?.type as string ?? (data.business_type as string | undefined),
+        city: (data.worker_profile as Record<string, unknown>)?.city as string ?? (data.city as string | undefined),
         onboarding_step: data.onboarding_step as string | undefined,
         profile_completed: Boolean(data.profile_completed),
         notification_preferences: (data.notification_preferences as NotificationPreferences) ?? {},
@@ -229,6 +230,15 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const init = async () => {
       try {
+        // Check for an active auth session first — if none, skip fetchMe
+        const session = await authClient.getSession();
+        console.log('[RoleContext] Auth session check:', session?.data?.session ? 'active' : 'none');
+        if (!session?.data?.session) {
+          console.log('[RoleContext] No active session — skipping fetchMe, auth screen will handle redirect');
+          setIsLoading(false);
+          return;
+        }
+
         const stored = await AsyncStorage.getItem(ROLE_STORAGE_KEY);
         console.log('[RoleContext] Stored role:', stored);
         if (stored && (stored === 'manager' || stored === 'worker' || stored === 'admin')) {
