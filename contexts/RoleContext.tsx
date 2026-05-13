@@ -189,6 +189,8 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 
   const refreshOnboardingStatus = useCallback(async () => {
     try {
+      const session = await authClient.getSession().catch(() => null);
+      if (!session?.data?.session) return null;
       console.log('[RoleContext] Fetching onboarding status...');
       const data = await apiGet<OnboardingStatus>('/api/onboarding/status');
       console.log('[RoleContext] Onboarding status:', data);

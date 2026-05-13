@@ -6,7 +6,7 @@ export const authClient = createAuthClient({
   baseURL: 'https://u8y8kzvzgndjkymacqmf8v9manbx8fwa.app.specular.dev',
   plugins: [
     expoClient({
-      scheme: 'on-the-fly',
+      scheme: 'onthefly',
       storagePrefix: 'onthefly',
       storage: SecureStore,
     }),
