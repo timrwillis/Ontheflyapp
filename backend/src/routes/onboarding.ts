@@ -28,7 +28,33 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
       const { role } = request.body as { role: string };
       app.logger.info({ userId: session.user.id, role }, 'Setting user role');
 
-      await app.db.update(schema.users).set({ role: role as any, onboardingStep: 1 }).where(eq(schema.users.id, session.user.id));
+      // Check if user exists
+      let user = await app.db.query.users.findFirst({
+        where: eq(schema.users.id, session.user.id),
+      });
+
+      if (!user) {
+        // Auto-create user if doesn't exist
+        app.logger.info({ userId: session.user.id }, 'User not found, creating in users table');
+        const newUser = {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.name || 'User',
+          role: role as any,
+          onboardingStep: 1,
+          profileCompleted: false,
+          notificationPreferences: {
+            shift_alerts: true,
+            application_updates: true,
+            reminders: true,
+            marketing: false,
+          },
+        };
+        await app.db.insert(schema.users).values(newUser);
+      } else {
+        // Update existing user
+        await app.db.update(schema.users).set({ role: role as any, onboardingStep: 1 }).where(eq(schema.users.id, session.user.id));
+      }
 
       app.logger.info({ userId: session.user.id, role }, 'User role set');
       return { success: true, role };
@@ -67,6 +93,30 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
 
       const body = request.body as any;
       app.logger.info({ userId: session.user.id, name: body.name }, 'Creating worker profile');
+
+      // Ensure user exists in app's users table
+      let appUser = await app.db.query.users.findFirst({
+        where: eq(schema.users.id, session.user.id),
+      });
+
+      if (!appUser) {
+        app.logger.info({ userId: session.user.id }, 'User not found, creating in users table');
+        const newUser = {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.name || 'User',
+          role: 'worker' as const,
+          onboardingStep: 0,
+          profileCompleted: false,
+          notificationPreferences: {
+            shift_alerts: true,
+            application_updates: true,
+            reminders: true,
+            marketing: false,
+          },
+        };
+        await app.db.insert(schema.users).values(newUser);
+      }
 
       const existing = await app.db.query.workerProfiles.findFirst({ where: eq(schema.workerProfiles.userId, session.user.id) });
 
@@ -204,6 +254,31 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
       if (!session) return reply.status(401).send({ error: 'Unauthorized' });
 
       const { phone } = request.body as { phone: string };
+
+      // Ensure user exists in app's users table
+      let appUser = await app.db.query.users.findFirst({
+        where: eq(schema.users.id, session.user.id),
+      });
+
+      if (!appUser) {
+        app.logger.info({ userId: session.user.id }, 'User not found, creating in users table');
+        const newUser = {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.name || 'User',
+          role: 'manager' as const,
+          onboardingStep: 0,
+          profileCompleted: false,
+          notificationPreferences: {
+            shift_alerts: true,
+            application_updates: true,
+            reminders: true,
+            marketing: false,
+          },
+        };
+        await app.db.insert(schema.users).values(newUser);
+      }
+
       const existing = await app.db.query.managerProfiles.findFirst({ where: eq(schema.managerProfiles.userId, session.user.id) });
 
       const profileId = existing?.id || `mp_${Date.now()}`;
@@ -253,6 +328,31 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
       if (!session) return reply.status(401).send({ error: 'Unauthorized' });
 
       const body = request.body as any;
+
+      // Ensure user exists in app's users table
+      let appUser = await app.db.query.users.findFirst({
+        where: eq(schema.users.id, session.user.id),
+      });
+
+      if (!appUser) {
+        app.logger.info({ userId: session.user.id }, 'User not found, creating in users table');
+        const newUser = {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.name || 'User',
+          role: 'manager' as const,
+          onboardingStep: 0,
+          profileCompleted: false,
+          notificationPreferences: {
+            shift_alerts: true,
+            application_updates: true,
+            reminders: true,
+            marketing: false,
+          },
+        };
+        await app.db.insert(schema.users).values(newUser);
+      }
+
       const existing = await app.db.query.businesses.findFirst({ where: eq(schema.businesses.userId, session.user.id) });
 
       const businessId = existing?.id || `biz_${Date.now()}`;
