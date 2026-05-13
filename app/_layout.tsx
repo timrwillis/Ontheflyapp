@@ -12,7 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useColorScheme, Animated, View, Text, StyleSheet } from "react-native";
+import { useColorScheme, Animated, View, Text, StyleSheet, Platform } from "react-native";
 import {
   DarkTheme,
   Theme,
@@ -328,7 +328,7 @@ export default function RootLayout() {
                     />
                   </Stack>
                 </Animated.View>
-                <SystemBars style="light" />
+                {Platform.OS !== 'web' && <SystemBars style="light" />}
                 {!splashDone && (
                   <SplashOverlay onFadeComplete={handleSplashFadeComplete} />
                 )}
