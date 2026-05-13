@@ -24,6 +24,20 @@ import { RoleProvider } from "@/contexts/RoleContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
+// Suppress Babel inject-source-location dev prop warning on web
+if (Platform.OS === 'web' && typeof console !== 'undefined') {
+  const _origConsoleError = console.error.bind(console);
+  console.error = (...args: unknown[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      args[0].includes('__sourceLocation')
+    ) {
+      return;
+    }
+    _origConsoleError(...args);
+  };
+}
+
 const DevErrorBoundary = __DEV__
   ? ErrorBoundary
   : ({ children }: { children: React.ReactNode }) => <>{children}</>;
@@ -42,8 +56,8 @@ function SplashOverlay({ onFadeComplete }: { onFadeComplete: () => void }) {
     // Pulsing glow on logo
     const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseOpacity, { toValue: 1.0, duration: 900, useNativeDriver: true }),
-        Animated.timing(pulseOpacity, { toValue: 0.7, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulseOpacity, { toValue: 1.0, duration: 900, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(pulseOpacity, { toValue: 0.7, duration: 900, useNativeDriver: Platform.OS !== 'web' }),
       ])
     );
     pulse.start();
@@ -54,7 +68,7 @@ function SplashOverlay({ onFadeComplete }: { onFadeComplete: () => void }) {
       Animated.timing(opacity, {
         toValue: 0,
         duration: 400,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }).start(() => onFadeComplete());
     }, 1200);
 

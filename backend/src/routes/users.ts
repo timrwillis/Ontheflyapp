@@ -6,6 +6,93 @@ import type { App } from '../index.js';
 
 export function registerUserRoutes(app: App, fastify: FastifyInstance) {
   fastify.get(
+    '/api/me',
+    {
+      schema: {
+        description: 'Get current user profile from app users table',
+        tags: ['users'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              email: { type: 'string' },
+              name: { type: 'string' },
+              role: { type: 'string' },
+              phone: { type: ['string', 'null'] },
+              onboarding_step: { type: 'integer' },
+              profile_completed: { type: 'boolean' },
+              notification_preferences: { type: 'object' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      // Get authenticated user
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) {
+          headers.append(key, Array.isArray(value) ? value[0] : value);
+        }
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const authEmail = session.user.email;
+      app.logger.info({ email: authEmail }, 'Getting user profile');
+
+      // Look up user in app users table by email
+      let user = await app.db.query.users.findFirst({
+        where: eq(schema.users.email, authEmail),
+      });
+
+      if (!user) {
+        app.logger.info({ email: authEmail, userId: session.user.id }, 'User not found, creating in users table');
+        // Auto-create user in app's users table
+        const newUser = {
+          id: session.user.id,
+          email: authEmail,
+          name: session.user.name || 'User',
+          role: 'worker' as const,
+          onboardingStep: 0,
+          profileCompleted: false,
+          notificationPreferences: {
+            shift_alerts: true,
+            application_updates: true,
+            reminders: true,
+            marketing: false,
+          },
+        };
+        await app.db.insert(schema.users).values(newUser);
+        user = newUser as any;
+      }
+
+      app.logger.info({ userId: user.id }, 'User profile retrieved');
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        phone: user.phone || null,
+        onboarding_step: user.onboardingStep,
+        profile_completed: user.profileCompleted,
+        notification_preferences: user.notificationPreferences,
+      };
+    }
+  );
+
+  fastify.get(
     '/api/users/me',
     {
       schema: {
@@ -92,7 +179,7 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
     '/api/users/switch-role',
     {
       schema: {
-        description: 'Switch user role for demo purposes',
+        description: 'Switch user role',
         tags: ['users'],
         body: {
           type: 'object',
@@ -109,7 +196,14 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
               email: { type: 'string' },
               name: { type: 'string' },
               role: { type: 'string' },
-              createdAt: { type: 'string', format: 'date-time' },
+              onboarding_step: { type: 'integer' },
+              profile_completed: { type: 'boolean' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
             },
           },
           404: {
@@ -124,28 +218,67 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
     async (request, reply) => {
       const { role } = request.body as { role: string };
 
-      app.logger.info({ role }, 'Switching role');
+      // Get authenticated user
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) {
+          headers.append(key, Array.isArray(value) ? value[0] : value);
+        }
+      });
 
+      const session = await app.auth.api.getSession({ headers });
+
+      // If authenticated, use authenticated user; otherwise use demo mode
       let userId: string;
-
-      if (role === 'admin') {
-        userId = 'u-admin-1';
-      } else if (role === 'worker') {
-        userId = 'u-wrk-1';
+      if (session?.user?.id) {
+        userId = session.user.id;
+        app.logger.info({ userId, role }, 'Switching authenticated user role');
       } else {
-        userId = 'u-mgr-1';
+        // Demo mode - find user by role
+        if (role === 'admin') {
+          userId = 'u-admin-1';
+        } else if (role === 'worker') {
+          userId = 'u-wrk-1';
+        } else {
+          userId = 'u-mgr-1';
+        }
+        app.logger.info({ userId, role }, 'Switching demo user role');
       }
 
-      const user = await app.db.query.users.findFirst({
+      // Get the user
+      let user = await app.db.query.users.findFirst({
         where: eq(schema.users.id, userId),
       });
 
-      if (!user) {
+      if (!user && session?.user?.id) {
+        // Auto-create user if authenticated but doesn't exist
+        app.logger.info({ userId }, 'User not found, creating in users table');
+        const newUser = {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.name || 'User',
+          role: role as any,
+          onboardingStep: 0,
+          profileCompleted: false,
+          notificationPreferences: {
+            shift_alerts: true,
+            application_updates: true,
+            reminders: true,
+            marketing: false,
+          },
+        };
+        await app.db.insert(schema.users).values(newUser);
+        user = newUser as any;
+      } else if (user) {
+        // Update existing user's role
+        await app.db.update(schema.users).set({ role: role as any }).where(eq(schema.users.id, userId));
+        user = { ...user, role: role as any };
+      } else {
         app.logger.warn({ userId }, 'User not found');
         return reply.status(404).send({ error: 'User not found' });
       }
 
-      app.logger.info({ userId }, 'Role switched');
+      app.logger.info({ userId, role }, 'Role switched');
       return user;
     }
   );

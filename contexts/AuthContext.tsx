@@ -25,6 +25,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function openOAuthPopup(provider: string): Promise<string> {
   return new Promise((resolve, reject) => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') {
+      reject(new Error('OAuth popup not supported on native'));
+      return;
+    }
+
     const popupUrl = `${window.location.origin}/auth-popup?provider=${provider}`;
     const width = 500;
     const height = 600;
@@ -128,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
     try {
-      await authClient.signUp.email({ email, password, name: name ?? '' });
+      await authClient.signUp.email({ email, password, name: name || email.split('@')[0] });
       await fetchUser();
     } catch (error) {
       console.error("Email sign up failed:", error);

@@ -67,8 +67,8 @@ function SkeletonCard() {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
       ])
     ).start();
   }, []);
@@ -94,8 +94,8 @@ function PulsingDot({ size = 8, color = COLORS.primary }: { size?: number; color
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 1.0, duration: 700, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1.0, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
       ])
     ).start();
   }, []);
@@ -121,8 +121,8 @@ function AnimatedListItem({ index, children }: { index: number; children: React.
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 350, delay: index * 60, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 350, delay: index * 60, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 350, delay: index * 60, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.timing(translateY, { toValue: 0, duration: 350, delay: index * 60, useNativeDriver: Platform.OS !== 'web' }),
     ]).start();
   }, []);
 
@@ -482,8 +482,8 @@ export default function NearbyWorkersScreen() {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(headerPulse, { toValue: 1.0, duration: 800, useNativeDriver: true }),
-        Animated.timing(headerPulse, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+        Animated.timing(headerPulse, { toValue: 1.0, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(headerPulse, { toValue: 0.4, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
       ])
     ).start();
   }, []);

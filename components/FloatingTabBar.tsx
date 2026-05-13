@@ -95,13 +95,13 @@ export default function FloatingTabBar({
     Animated.sequence([
       Animated.spring(scaleVal, {
         toValue: 0.88,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
         speed: 50,
         bounciness: 0,
       }),
       Animated.spring(scaleVal, {
         toValue: 1,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
         speed: 20,
         bounciness: 10,
       }),
@@ -198,11 +198,9 @@ const styles = StyleSheet.create({
   },
   container: {
     alignSelf: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.6,
-    shadowRadius: 24,
-    elevation: 20,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }
+      : { shadowColor: '#000000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.6, shadowRadius: 24, elevation: 20 }),
   },
   blurContainer: {
     overflow: 'hidden',

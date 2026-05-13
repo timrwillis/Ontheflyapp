@@ -149,13 +149,12 @@ export function registerBusinessRoutes(app: App, fastify: FastifyInstance) {
         type: type as any,
         city,
         address,
-        createdAt: new Date(),
       };
 
-      await app.db.insert(schema.businesses).values(businessData);
+      const [created] = await app.db.insert(schema.businesses).values(businessData).returning();
 
-      app.logger.info({ businessId: businessData.id }, 'Business created');
-      return reply.status(201).send(businessData);
+      app.logger.info({ businessId: created.id }, 'Business created');
+      return reply.status(201).send(created);
     }
   );
 

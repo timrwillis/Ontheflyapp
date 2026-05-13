@@ -438,8 +438,8 @@ function ManagerDashboard() {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(emergencyPulse, { toValue: 1.0, duration: 700, useNativeDriver: true }),
-        Animated.timing(emergencyPulse, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+        Animated.timing(emergencyPulse, { toValue: 1.0, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(emergencyPulse, { toValue: 0.4, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
       ])
     ).start();
   }, [emergencyPulse]);
@@ -447,8 +447,8 @@ function ManagerDashboard() {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(liveGreenPulse, { toValue: 1.0, duration: 800, useNativeDriver: true }),
-        Animated.timing(liveGreenPulse, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+        Animated.timing(liveGreenPulse, { toValue: 1.0, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(liveGreenPulse, { toValue: 0.4, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
       ])
     ).start();
   }, [liveGreenPulse]);
@@ -517,7 +517,7 @@ function ManagerDashboard() {
               ⚡ ON THE FLY
             </Text>
             <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
-              {greeting},
+              {`${greeting},`}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
@@ -911,10 +911,9 @@ function ManagerDashboard() {
           gap: 8,
           backgroundColor: '#00FF85',
           borderRadius: 30,
-          shadowColor: '#00FF85',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.5,
-          shadowRadius: 16,
+          ...(Platform.OS === 'web'
+            ? { boxShadow: '0 4px 16px rgba(0,255,133,0.5)' }
+            : { shadowColor: '#00FF85', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 16 }),
           elevation: 999,
         }}
       >
@@ -1163,7 +1162,7 @@ function WorkerDashboard() {
                   {earningsLowDisplay}
                 </Text>
                 <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
-                  –
+                  {'–'}
                 </Text>
                 <Text style={{ color: COLORS.accent, fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
                   {earningsHighDisplay}
@@ -1256,8 +1255,7 @@ function WorkerDashboard() {
           >
             {[...WORKER_TICKER_ITEMS, ...WORKER_TICKER_ITEMS].map((item, i) => (
               <Text key={i} style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular' }}>
-                {item}
-                <Text style={{ color: COLORS.textTertiary }}>  ·  </Text>
+                {`${item}  ·  `}
               </Text>
             ))}
           </ScrollView>

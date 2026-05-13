@@ -236,8 +236,8 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
     if (!isEmergencyUrgency) return;
     Animated.loop(
       Animated.sequence([
-        Animated.timing(emergencyDotOpacity, { toValue: 1.0, duration: 600, useNativeDriver: true }),
-        Animated.timing(emergencyDotOpacity, { toValue: 0.3, duration: 600, useNativeDriver: true }),
+        Animated.timing(emergencyDotOpacity, { toValue: 1.0, duration: 600, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(emergencyDotOpacity, { toValue: 0.3, duration: 600, useNativeDriver: Platform.OS !== 'web' }),
       ])
     ).start();
   }, [emergencyDotOpacity, shift?.urgency]);

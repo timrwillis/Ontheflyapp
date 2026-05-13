@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity, Linking, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Animated, TouchableOpacity, Linking, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -15,7 +15,7 @@ export default function BetaWelcome() {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 600,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== 'web',
     }).start();
   }, [fadeAnim]);
 
@@ -133,20 +133,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   boltIcon: {
-    shadowColor: '#00FF87',
-    shadowRadius: 20,
-    shadowOpacity: 0.4,
-    shadowOffset: { width: 0, height: 0 },
+    ...(Platform.OS === 'web'
+      ? { textShadow: '0 0 20px rgba(0,255,135,0.4)' }
+      : { shadowColor: '#00FF87', shadowRadius: 20, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 0 } }),
   },
   logoText: {
     color: '#00FF87',
     fontSize: 44,
     fontFamily: 'SpaceGrotesk-Bold',
     letterSpacing: -1.5,
-    shadowColor: '#00FF87',
-    shadowRadius: 20,
-    shadowOpacity: 0.4,
-    shadowOffset: { width: 0, height: 0 },
+    ...(Platform.OS === 'web'
+      ? { textShadow: '0 0 20px rgba(0,255,135,0.4)' }
+      : { shadowColor: '#00FF87', shadowRadius: 20, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 0 } }),
   },
   divider: {
     width: 60,
@@ -201,11 +199,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#00FF87',
-    shadowRadius: 16,
-    shadowOpacity: 0.45,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0 4px 16px rgba(0,255,135,0.45)' }
+      : { shadowColor: '#00FF87', shadowRadius: 16, shadowOpacity: 0.45, shadowOffset: { width: 0, height: 4 }, elevation: 8 }),
   },
   primaryButtonLabel: {
     color: '#0A0A0A',
