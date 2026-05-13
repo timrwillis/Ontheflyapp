@@ -42,8 +42,8 @@ function SplashOverlay({ onFadeComplete }: { onFadeComplete: () => void }) {
     // Pulsing glow on logo
     const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseOpacity, { toValue: 1.0, duration: 900, useNativeDriver: true }),
-        Animated.timing(pulseOpacity, { toValue: 0.7, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulseOpacity, { toValue: 1.0, duration: 900, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(pulseOpacity, { toValue: 0.7, duration: 900, useNativeDriver: Platform.OS !== 'web' }),
       ])
     );
     pulse.start();
@@ -54,7 +54,7 @@ function SplashOverlay({ onFadeComplete }: { onFadeComplete: () => void }) {
       Animated.timing(opacity, {
         toValue: 0,
         duration: 400,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== 'web',
       }).start(() => onFadeComplete());
     }, 1200);
 
