@@ -34,6 +34,10 @@ export function AnimatedPressable({
     }).start();
   }, [scale]);
 
+  const cleanProps = Object.fromEntries(
+    Object.entries(props).filter(([key]) => !key.startsWith('__'))
+  ) as typeof props;
+
   return (
     <Animated.View style={[{ transform: [{ scale }] }, disabled && { opacity: 0.5 }]}>
       <Pressable
@@ -42,6 +46,7 @@ export function AnimatedPressable({
         onPress={onPress}
         disabled={disabled}
         style={style}
+        {...cleanProps}
       >
         {children}
       </Pressable>
