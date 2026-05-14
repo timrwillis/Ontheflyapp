@@ -1,4 +1,4 @@
-import { Pressable, Animated, PressableProps, ViewStyle, StyleProp, Platform } from 'react-native';
+import { Pressable, Animated, View, PressableProps, ViewStyle, StyleProp, Platform } from 'react-native';
 import { useRef, useCallback } from 'react';
 
 interface AnimatedPressableProps extends PressableProps {
@@ -37,6 +37,23 @@ export function AnimatedPressable({
   const cleanProps = Object.fromEntries(
     Object.entries(props).filter(([key]) => !key.startsWith('__'))
   ) as typeof props;
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={disabled ? { opacity: 0.5 } : undefined}>
+        <Pressable
+          onPressIn={animateIn}
+          onPressOut={animateOut}
+          onPress={onPress}
+          disabled={disabled}
+          style={style}
+          {...cleanProps}
+        >
+          {children}
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <Animated.View style={[{ transform: [{ scale }] }, disabled && { opacity: 0.5 }]}>
