@@ -127,7 +127,6 @@ const splashStyles = StyleSheet.create({
 
 export default function RootLayout() {
   const [loaded] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
     "SpaceGrotesk-Regular": SpaceGrotesk_400Regular,
     "SpaceGrotesk-Bold": SpaceGrotesk_700Bold,
     "SpaceGrotesk-SemiBold": SpaceGrotesk_600SemiBold,
