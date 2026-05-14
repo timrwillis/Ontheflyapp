@@ -42,7 +42,7 @@ const emergencyGlow = Platform.select({
 
 // ─── Landing Screen ───────────────────────────────────────────────────────────
 
-const ACTIVITY_FEED = [
+const FALLBACK_ACTIVITY_FEED = [
   '⚡ Bartender accepted at Prime Social KC',
   '✅ Server filled shift at Midtown Tavern',
   '🎯 VIP event staffed in 4 minutes',
@@ -51,7 +51,7 @@ const ACTIVITY_FEED = [
   '⚡ Host confirmed at Rooftop Lounge',
 ];
 
-const LIVE_FEED_ITEMS = [
+const FALLBACK_LIVE_FEED_ITEMS = [
   { iconName: 'check-circle' as const, iconColor: COLORS.primary, text: 'Bartender confirmed at Prime Social KC', time: 'just now' },
   { iconName: 'bolt' as const, iconColor: '#FFB800', text: 'Server accepted shift at Midtown Tavern', time: '2m' },
   { iconName: 'star' as const, iconColor: '#60A5FA', text: 'VIP event fully staffed in 4 minutes', time: '8m' },
@@ -59,10 +59,17 @@ const LIVE_FEED_ITEMS = [
   { iconName: 'bolt' as const, iconColor: '#FFB800', text: 'Rush coverage filled at Velvet Room', time: '22m' },
 ];
 
+const FEED_ICONS = [
+  { iconName: 'check-circle' as const, iconColor: COLORS.primary },
+  { iconName: 'bolt' as const, iconColor: '#FFB800' },
+  { iconName: 'star' as const, iconColor: '#60A5FA' },
+];
+
 interface MarketplaceStats {
   workers_available?: number;
   restaurants_hiring?: number;
   shifts_filled_week?: number;
+  recent_activity?: { text: string; time: string }[];
 }
 
 function LandingScreen() {
@@ -130,6 +137,18 @@ function LandingScreen() {
   const restaurantsHiring = stats.restaurants_hiring ?? 14;
   const shiftsFilled = stats.shifts_filled_week ?? 127;
 
+  const activityFeed = stats.recent_activity?.length
+    ? stats.recent_activity.map((item, i) => (i % 2 === 0 ? '✅ ' : '⚡ ') + item.text)
+    : FALLBACK_ACTIVITY_FEED;
+
+  const liveFeedItems = stats.recent_activity?.length
+    ? stats.recent_activity.slice(0, 5).map((item, i) => ({
+        ...FEED_ICONS[i % FEED_ICONS.length],
+        text: item.text,
+        time: item.time,
+      }))
+    : FALLBACK_LIVE_FEED_ITEMS;
+
   const statRows = [
     { value: String(workersAvailable), label: 'workers online' },
     { value: String(restaurantsHiring), label: 'venues hiring' },
@@ -180,7 +199,7 @@ function LandingScreen() {
             scrollEnabled={false}
             contentContainerStyle={{ gap: 12, paddingHorizontal: 4 }}
           >
-            {[...ACTIVITY_FEED, ...ACTIVITY_FEED].map((item, i) => {
+            {[...activityFeed, ...activityFeed].map((item, i) => {
               const firstSpace = item.indexOf(' ');
               const firstWord = firstSpace > -1 ? item.slice(0, firstSpace) : item;
               const rest = firstSpace > -1 ? item.slice(firstSpace) : '';
@@ -253,14 +272,14 @@ function LandingScreen() {
           LIVE ACTIVITY
         </Text>
         <View style={{ ...glass, padding: 0, overflow: 'hidden' }}>
-          {LIVE_FEED_ITEMS.map((item, i) => (
+          {liveFeedItems.map((item, i) => (
             <View key={i} style={{
               flexDirection: 'row',
               alignItems: 'center',
               gap: 12,
               paddingVertical: 12,
               paddingHorizontal: 16,
-              borderBottomWidth: i < LIVE_FEED_ITEMS.length - 1 ? 1 : 0,
+              borderBottomWidth: i < liveFeedItems.length - 1 ? 1 : 0,
               borderBottomColor: 'rgba(255,255,255,0.05)',
             }}>
               <MaterialIcons name={item.iconName} size={18} color={item.iconColor} />

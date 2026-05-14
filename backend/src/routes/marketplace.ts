@@ -18,6 +18,16 @@ export function registerMarketplaceRoutes(app: App, fastify: FastifyInstance) {
               restaurants_hiring: { type: 'number' },
               shifts_filled_this_week: { type: 'number' },
               active_shifts: { type: 'number' },
+              recent_activity: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    text: { type: 'string' },
+                    time: { type: 'string' },
+                  },
+                },
+              },
             },
           },
         },
@@ -68,12 +78,42 @@ export function registerMarketplaceRoutes(app: App, fastify: FastifyInstance) {
         (s) => s.status === 'open' || s.status === 'pending'
       );
 
+      // Build recent activity feed from filled/completed shifts
+      const recentShifts = filledShifts
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 8);
+
+      const activityBusinessIds = [...new Set(recentShifts.map((s) => s.businessId))];
+      const activityBusinesses = activityBusinessIds.length > 0
+        ? await app.db.select().from(schema.businesses).where(inArray(schema.businesses.id, activityBusinessIds))
+        : [];
+      const businessMap = new Map(activityBusinesses.map((b) => [b.id, b]));
+
+      function timeAgo(date: Date): string {
+        const diffMins = Math.floor((Date.now() - date.getTime()) / 60000);
+        if (diffMins < 1) return 'just now';
+        if (diffMins < 60) return `${diffMins}m`;
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `${diffHours}h`;
+        return `${Math.floor(diffHours / 24)}d`;
+      }
+
+      const recentActivity = recentShifts.map((shift) => {
+        const biz = businessMap.get(shift.businessId);
+        const verb = shift.status === 'completed' ? 'completed at' : 'confirmed at';
+        return {
+          text: `${shift.roleNeeded} ${verb} ${biz?.name ?? 'a local venue'}`,
+          time: timeAgo(new Date(shift.createdAt)),
+        };
+      });
+
       app.logger.info(
         {
           workersAvailable: availableWorkers.length,
           restaurantsHiring,
           shiftsFilledThisWeek: filledThisWeek.length,
           activeShifts: activeShifts.length,
+          recentActivityCount: recentActivity.length,
         },
         'Marketplace statistics retrieved'
       );
@@ -83,6 +123,7 @@ export function registerMarketplaceRoutes(app: App, fastify: FastifyInstance) {
         restaurants_hiring: restaurantsHiring,
         shifts_filled_this_week: filledThisWeek.length,
         active_shifts: activeShifts.length,
+        recent_activity: recentActivity,
       };
     }
   );
