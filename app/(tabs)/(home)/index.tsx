@@ -119,8 +119,16 @@ function LandingScreen() {
       await setRole(role);
       return;
     }
-    // For worker/manager, go to onboarding role selector
-    router.push('/onboarding/worker/index' as any);
+    try {
+      await setRole(role);
+      if (role === 'manager') {
+        router.push('/onboarding/manager/profile' as any);
+      } else {
+        router.push('/onboarding/worker/index' as any);
+      }
+    } catch (error) {
+      console.error('[Landing] Failed to set role:', error);
+    }
   };
 
   const workersAvailable = stats.workers_available ?? 31;
