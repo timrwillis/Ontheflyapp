@@ -119,8 +119,11 @@ function LandingScreen() {
       await setRole(role);
       return;
     }
-    // For worker/manager, go to onboarding role selector
-    router.push('/onboarding/worker/index' as any);
+    if (role === 'manager') {
+      router.push('/onboarding/manager/profile' as any);
+    } else {
+      router.push('/onboarding/worker/index' as any);
+    }
   };
 
   const workersAvailable = stats.workers_available ?? 31;
