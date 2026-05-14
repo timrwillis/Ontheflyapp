@@ -26,10 +26,14 @@ export default function WorkerOnboardingComplete() {
   const insets = useSafeAreaInsets();
   const { workerProfile, currentUser, refreshWorkerProfile, refreshOnboardingStatus } = useRole();
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     console.log('[WorkerOnboarding] Complete screen mounted — refreshing worker profile');
-    refreshWorkerProfile();
+    refreshWorkerProfile().finally(() => {
+      console.log('[WorkerOnboarding] Worker profile refresh complete');
+      setProfileLoading(false);
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -106,9 +110,11 @@ export default function WorkerOnboardingComplete() {
           { icon: 'calendar-today' as const, label: 'Available', value: daysDisplay },
         ].map((item, i) => (
           <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: i < 3 ? 1 : 0, borderBottomColor: 'rgba(255,255,255,0.05)', gap: 12 }}>
-            <MaterialIcons name={item.icon} size={16} color={COLORS.primary} />
+            <MaterialIcons name={item.icon} size={16} color={profileLoading ? 'rgba(0,255,135,0.3)' : COLORS.primary} />
             <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular', width: 70 }}>{item.label}</Text>
-            <Text style={{ color: COLORS.text, fontSize: 13, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }} numberOfLines={1}>{item.value}</Text>
+            <Text style={{ color: profileLoading ? 'rgba(255,255,255,0.2)' : COLORS.text, fontSize: 13, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }} numberOfLines={1}>
+              {profileLoading ? '···' : item.value}
+            </Text>
           </View>
         ))}
       </View>
