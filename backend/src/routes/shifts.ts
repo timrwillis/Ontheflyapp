@@ -284,6 +284,102 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
   );
 
   fastify.get(
+    '/api/shifts/my',
+    {
+      schema: {
+        description: "Get shifts for the authenticated manager's business",
+        tags: ['shifts'],
+        response: {
+          200: {
+            type: 'array',
+            items: { type: 'object', additionalProperties: true },
+          },
+          401: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+          404: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) {
+          headers.append(key, Array.isArray(value) ? value[0] : value);
+        }
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const userId = session.user.id;
+      app.logger.info({ userId }, 'Getting my shifts');
+
+      const managerProfile = await app.db.query.managerProfiles.findFirst({
+        where: eq(schema.managerProfiles.userId, userId),
+      });
+
+      if (!managerProfile?.businessId) {
+        app.logger.warn({ userId }, 'Manager profile or business not found');
+        return reply.status(404).send({ error: 'Business profile not found' });
+      }
+
+      const shifts = await app.db
+        .select()
+        .from(schema.shifts)
+        .where(eq(schema.shifts.businessId, managerProfile.businessId));
+
+      const business = await app.db.query.businesses.findFirst({
+        where: eq(schema.businesses.id, managerProfile.businessId),
+      });
+
+      shifts.sort((a, b) => {
+        const priorityA = getUrgencyPriority(a.urgency);
+        const priorityB = getUrgencyPriority(b.urgency);
+        if (priorityA !== priorityB) return priorityA - priorityB;
+        return a.date.localeCompare(b.date);
+      });
+
+      const result = shifts.map((shift) => ({
+        id: shift.id,
+        role: shift.roleNeeded,
+        role_needed: shift.roleNeeded,
+        business_name: business?.name || '',
+        business_type: business?.type || '',
+        business: business ? {
+          name: business.name,
+          type: business.type,
+          city: business.city,
+          address: business.address,
+        } : null,
+        date: shift.date,
+        start_time: shift.startTime,
+        end_time: shift.endTime,
+        hourly_pay: shift.hourlyPay,
+        location: shift.location,
+        dress_code: shift.dressCode,
+        experience_required: shift.experienceRequired,
+        certifications_required: shift.certificationsRequired || [],
+        notes: shift.notes,
+        urgency: shift.urgency,
+        status: shift.status,
+        workers_needed: shift.workersNeeded,
+        workers_confirmed: shift.workersConfirmed,
+      }));
+
+      app.logger.info({ count: result.length, businessId: managerProfile.businessId }, 'My shifts retrieved');
+      return result;
+    }
+  );
+
+  fastify.get(
     '/api/shifts/:id',
     {
       schema: {
