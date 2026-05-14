@@ -183,12 +183,6 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
       schema: {
         description: 'Get all applications for current worker',
         tags: ['applications'],
-        querystring: {
-          type: 'object',
-          properties: {
-            user_id: { type: 'string' },
-          },
-        },
         response: {
           200: {
             type: 'object',
@@ -197,6 +191,12 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
                 type: 'array',
                 items: { type: 'object' },
               },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
             },
           },
           404: {
@@ -209,8 +209,6 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { user_id: qsUserId } = request.query as { user_id?: string };
-
       // Try to get authenticated user
       const headers = new Headers();
       Object.entries(request.headers).forEach(([key, value]) => {
@@ -220,8 +218,12 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
       });
 
       const session = await app.auth.api.getSession({ headers });
-      const userId = session?.user?.id || qsUserId || 'u-wrk-1';
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
+      const userId = session.user.id;
       app.logger.info({ userId }, 'Getting my applications');
 
       const worker = await app.db.query.workerProfiles.findFirst({

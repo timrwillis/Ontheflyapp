@@ -87,12 +87,6 @@ export function registerBusinessRoutes(app: App, fastify: FastifyInstance) {
       schema: {
         description: 'Create a new business',
         tags: ['businesses'],
-        querystring: {
-          type: 'object',
-          properties: {
-            user_id: { type: 'string' },
-          },
-        },
         body: {
           type: 'object',
           required: ['name', 'type', 'city', 'address'],
@@ -116,6 +110,12 @@ export function registerBusinessRoutes(app: App, fastify: FastifyInstance) {
               createdAt: { type: 'string', format: 'date-time' },
             },
           },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
         },
       },
     },
@@ -126,7 +126,6 @@ export function registerBusinessRoutes(app: App, fastify: FastifyInstance) {
         city: string;
         address: string;
       };
-      const { user_id: qsUserId } = request.query as { user_id?: string };
 
       // Try to get authenticated user
       const headers = new Headers();
@@ -137,7 +136,12 @@ export function registerBusinessRoutes(app: App, fastify: FastifyInstance) {
       });
 
       const session = await app.auth.api.getSession({ headers });
-      const userId = session?.user?.id || qsUserId || 'u-mgr-1';
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const userId = session.user.id;
 
       app.logger.info({ name, type, userId }, 'Creating business');
 

@@ -98,13 +98,6 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
       schema: {
         description: 'Get current user profile',
         tags: ['users'],
-        querystring: {
-          type: 'object',
-          properties: {
-            role: { type: 'string', enum: ['manager', 'worker', 'admin'] },
-            user_id: { type: 'string' },
-          },
-        },
         response: {
           200: {
             type: 'object',
@@ -114,6 +107,12 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
               name: { type: 'string' },
               role: { type: 'string' },
               createdAt: { type: 'string', format: 'date-time' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
             },
           },
           404: {
@@ -126,11 +125,9 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { role, user_id } = request.query as { role?: string; user_id?: string };
+      app.logger.info({}, 'Getting user');
 
-      app.logger.info({ role, user_id }, 'Getting user');
-
-      // Try to get authenticated user from session
+      // Get authenticated user from session
       const headers = new Headers();
       Object.entries(request.headers).forEach(([key, value]) => {
         if (value) {
@@ -140,38 +137,13 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
 
       const session = await app.auth.api.getSession({ headers });
 
-      let user: any;
-
-      if (session?.user) {
-        // Return authenticated user from Better Auth
-        app.logger.info({ userId: session.user.id }, 'Returning authenticated user');
-        return session.user;
+      if (!session?.user) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
       }
 
-      // Fall back to demo mode
-      let userId: string;
-
-      if (user_id) {
-        userId = user_id;
-      } else if (role === 'admin') {
-        userId = 'u-admin-1';
-      } else if (role === 'worker') {
-        userId = 'u-wrk-1';
-      } else {
-        userId = 'u-mgr-1';
-      }
-
-      user = await app.db.query.users.findFirst({
-        where: eq(schema.users.id, userId),
-      });
-
-      if (!user) {
-        app.logger.warn({ userId }, 'User not found');
-        return reply.status(404).send({ error: 'User not found' });
-      }
-
-      app.logger.info({ userId }, 'User retrieved');
-      return user;
+      app.logger.info({ userId: session.user.id }, 'Returning authenticated user');
+      return session.user;
     }
   );
 
@@ -228,22 +200,13 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
 
       const session = await app.auth.api.getSession({ headers });
 
-      // If authenticated, use authenticated user; otherwise use demo mode
-      let userId: string;
-      if (session?.user?.id) {
-        userId = session.user.id;
-        app.logger.info({ userId, role }, 'Switching authenticated user role');
-      } else {
-        // Demo mode - find user by role
-        if (role === 'admin') {
-          userId = 'u-admin-1';
-        } else if (role === 'worker') {
-          userId = 'u-wrk-1';
-        } else {
-          userId = 'u-mgr-1';
-        }
-        app.logger.info({ userId, role }, 'Switching demo user role');
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
       }
+
+      const userId = session.user.id;
+      app.logger.info({ userId, role }, 'Switching authenticated user role');
 
       // Get the user
       let user = await app.db.query.users.findFirst({

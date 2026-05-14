@@ -17,12 +17,6 @@ export function registerRatingRoutes(app: App, fastify: FastifyInstance) {
       schema: {
         description: 'Create a rating for a worker',
         tags: ['ratings'],
-        querystring: {
-          type: 'object',
-          properties: {
-            user_id: { type: 'string' },
-          },
-        },
         body: {
           type: 'object',
           required: ['shift_id', 'worker_id', 'score'],
@@ -46,6 +40,12 @@ export function registerRatingRoutes(app: App, fastify: FastifyInstance) {
               createdAt: { type: 'string', format: 'date-time' },
             },
           },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
           404: {
             type: 'object',
             properties: {
@@ -57,7 +57,6 @@ export function registerRatingRoutes(app: App, fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const body = request.body as RatingInput;
-      const { user_id: qsUserId } = request.query as { user_id?: string };
 
       // Try to get authenticated user
       const headers = new Headers();
@@ -68,8 +67,12 @@ export function registerRatingRoutes(app: App, fastify: FastifyInstance) {
       });
 
       const session = await app.auth.api.getSession({ headers });
-      const userId = session?.user?.id || qsUserId || 'u-mgr-1';
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
+      const userId = session.user.id;
       app.logger.info({ shift_id: body.shift_id, worker_id: body.worker_id }, 'Creating rating');
 
       const shift = await app.db.query.shifts.findFirst({

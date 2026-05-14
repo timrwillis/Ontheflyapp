@@ -54,6 +54,12 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
             type: 'array',
             items: { type: 'object', additionalProperties: true },
           },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
           404: {
             type: 'object',
             properties: {
@@ -64,12 +70,11 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { status, role, urgency, business_id: queryBusinessId, user_id: qsUserId } = request.query as {
+      const { status, role, urgency, business_id: queryBusinessId } = request.query as {
         status?: string;
         role?: string;
         urgency?: string;
         business_id?: string;
-        user_id?: string;
       };
 
       // Try to get authenticated user
@@ -81,8 +86,12 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       });
 
       const session = await app.auth.api.getSession({ headers });
-      const userId = session?.user?.id || qsUserId || 'u-mgr-1';
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
+      const userId = session.user.id;
       app.logger.info({ userId, status, role, urgency, business_id: queryBusinessId }, 'Getting shifts');
 
       let allShifts = await app.db.select().from(schema.shifts);
@@ -445,12 +454,6 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
             id: { type: 'string' },
           },
         },
-        querystring: {
-          type: 'object',
-          properties: {
-            user_id: { type: 'string' },
-          },
-        },
         response: {
           201: {
             type: 'object',
@@ -461,6 +464,12 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
               status: { type: 'string' },
               appliedAt: { type: 'string', format: 'date-time' },
               confirmedAt: { type: ['string', 'null'], format: 'date-time' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
             },
           },
           404: {
@@ -474,7 +483,6 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const { user_id: qsUserId } = request.query as { user_id?: string };
 
       // Try to get authenticated user
       const headers = new Headers();
@@ -485,8 +493,12 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       });
 
       const session = await app.auth.api.getSession({ headers });
-      const userId = session?.user?.id || qsUserId || 'u-wrk-1';
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
+      const userId = session.user.id;
       app.logger.info({ shiftId: id, userId }, 'Applying for shift');
 
       const shift = await app.db.query.shifts.findFirst({

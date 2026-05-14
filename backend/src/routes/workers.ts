@@ -111,12 +111,6 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       schema: {
         description: 'Create a new worker profile',
         tags: ['workers'],
-        querystring: {
-          type: 'object',
-          properties: {
-            user_id: { type: 'string' },
-          },
-        },
         body: {
           type: 'object',
           required: ['name', 'phone', 'city'],
@@ -156,12 +150,17 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
               createdAt: { type: 'string', format: 'date-time' },
             },
           },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
         },
       },
     },
     async (request, reply) => {
       const body = request.body as WorkerProfileInput;
-      const { user_id: qsUserId } = request.query as { user_id?: string };
 
       // Try to get authenticated user
       const headers = new Headers();
@@ -172,8 +171,12 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       });
 
       const session = await app.auth.api.getSession({ headers });
-      const userId = session?.user?.id || qsUserId || 'u-wrk-1';
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
+      const userId = session.user.id;
       app.logger.info({ name: body.name, userId }, 'Creating worker profile');
 
       const newId = `wp-${Date.now()}`;
@@ -210,16 +213,16 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       schema: {
         description: 'Get current worker profile',
         tags: ['workers'],
-        querystring: {
-          type: 'object',
-          properties: {
-            user_id: { type: 'string' },
-          },
-        },
         response: {
           200: {
             type: 'object',
             additionalProperties: true,
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
           },
           404: {
             type: 'object',
@@ -231,8 +234,6 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { user_id: qsUserId } = request.query as { user_id?: string };
-
       // Try to get authenticated user
       const headers = new Headers();
       Object.entries(request.headers).forEach(([key, value]) => {
@@ -242,8 +243,12 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       });
 
       const session = await app.auth.api.getSession({ headers });
-      const userId = session?.user?.id || qsUserId || 'u-wrk-1';
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
+      const userId = session.user.id;
       app.logger.info({ userId }, 'Getting worker profile');
 
       const profile = await app.db.query.workerProfiles.findFirst({
@@ -266,12 +271,6 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       schema: {
         description: 'Update current worker profile',
         tags: ['workers'],
-        querystring: {
-          type: 'object',
-          properties: {
-            user_id: { type: 'string' },
-          },
-        },
         body: {
           type: 'object',
           properties: {
@@ -291,6 +290,12 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
           200: {
             type: 'object',
           },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
           404: {
             type: 'object',
             properties: {
@@ -302,7 +307,6 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const body = request.body as Partial<WorkerProfileInput>;
-      const { user_id: qsUserId } = request.query as { user_id?: string };
 
       // Try to get authenticated user
       const headers = new Headers();
@@ -313,8 +317,12 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       });
 
       const session = await app.auth.api.getSession({ headers });
-      const userId = session?.user?.id || qsUserId || 'u-wrk-1';
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
 
+      const userId = session.user.id;
       app.logger.info({ userId }, 'Updating worker profile');
 
       const profile = await app.db.query.workerProfiles.findFirst({
