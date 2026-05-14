@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, ReactNode } from "react";
 import { Platform } from "react-native";
 import * as Linking from "expo-linking";
 import { authClient, setBearerToken, clearAuthTokens } from "@/lib/auth";
@@ -73,51 +73,45 @@ function openOAuthPopup(provider: string): Promise<string> {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Use better-auth's reactive session hook instead of polling
+  const { data: sessionData, isPending } = authClient.useSession();
 
+  const user = (sessionData?.user as User | null) ?? null;
+  const loading = isPending;
+
+  // Sync bearer token whenever session state changes
   useEffect(() => {
-    fetchUser();
+    if (sessionData?.session?.token) {
+      setBearerToken(sessionData.session.token);
+    } else if (!isPending) {
+      clearAuthTokens();
+    }
+  }, [sessionData, isPending]);
 
-    const subscription = Linking.addEventListener("url", (event) => {
+  // Re-check session on deep link (OAuth callbacks)
+  useEffect(() => {
+    const subscription = Linking.addEventListener("url", () => {
       console.log("Deep link received, refreshing user session");
       fetchUser();
     });
-
-    const intervalId = setInterval(() => {
-      fetchUser();
-    }, 5 * 60 * 1000);
-
-    return () => {
-      subscription.remove();
-      clearInterval(intervalId);
-    };
+    return () => subscription.remove();
   }, []);
 
   const fetchUser = async () => {
     try {
-      setLoading(true);
       let session = null;
       try {
         session = await authClient.getSession();
       } catch (sessionErr) {
-        // getSession throws on web when no session exists — treat as no session
         console.log("No active session:", JSON.stringify(sessionErr) || (sessionErr as Error)?.message || 'unknown error');
       }
-      if (session?.data?.user) {
-        setUser(session.data.user as User);
-        if (session.data.session?.token) {
-          await setBearerToken(session.data.session.token);
-        }
+      if (session?.data?.session?.token) {
+        await setBearerToken(session.data.session.token);
       } else {
-        setUser(null);
         await clearAuthTokens();
       }
     } catch (error) {
       console.error("Failed to fetch user:", JSON.stringify(error) || (error as Error)?.message || 'unknown error');
-      setUser(null);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -162,7 +156,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithApple = async () => {
     if (Platform.OS === "ios") {
-      // Native Apple Sign In on iOS — shows the system Face ID / password modal
       const AppleAuthentication = require("expo-apple-authentication");
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
@@ -182,7 +175,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       await fetchUser();
     } else {
-      // Web / Android: OAuth redirect flow
       await signInWithSocial("apple");
     }
   };
@@ -193,7 +185,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Sign out failed (API):", error);
     } finally {
-      setUser(null);
       await clearAuthTokens();
     }
   };
