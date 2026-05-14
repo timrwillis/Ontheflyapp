@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,8 +24,14 @@ const primaryGlow = Platform.select({
 export default function WorkerOnboardingComplete() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { workerProfile, currentUser, refreshWorkerProfile } = useRole();
+  const { workerProfile, currentUser, refreshWorkerProfile, refreshOnboardingStatus } = useRole();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    console.log('[WorkerOnboarding] Complete screen mounted — refreshing worker profile');
+    refreshWorkerProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const name = workerProfile?.name ?? currentUser?.name ?? 'Worker';
   const city = workerProfile?.city ?? '—';
@@ -38,7 +44,8 @@ export default function WorkerOnboardingComplete() {
     try {
       await apiPost('/api/onboarding/complete', {});
       console.log('[WorkerOnboarding] Onboarding marked complete');
-      await refreshWorkerProfile();
+      await Promise.all([refreshWorkerProfile(), refreshOnboardingStatus()]);
+      console.log('[WorkerOnboarding] Profile and onboarding status refreshed — navigating to home');
       router.replace('/(tabs)/(home)');
     } catch (err) {
       console.error('[WorkerOnboarding] Error completing onboarding:', err);
