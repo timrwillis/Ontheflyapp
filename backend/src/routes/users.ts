@@ -9,7 +9,7 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
     '/api/me',
     {
       schema: {
-        description: 'Get current user profile from app users table',
+        description: 'Get current user profile with worker/manager profile and roles',
         tags: ['users'],
         response: {
           200: {
@@ -18,11 +18,47 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
               id: { type: 'string' },
               email: { type: 'string' },
               name: { type: 'string' },
-              role: { type: 'string' },
-              phone: { type: ['string', 'null'] },
+              role: { type: 'string', enum: ['worker', 'manager'] },
               onboarding_step: { type: 'integer' },
               profile_completed: { type: 'boolean' },
-              notification_preferences: { type: 'object' },
+              worker_profile: {
+                type: ['object', 'null'],
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  photo_url: { type: ['string', 'null'] },
+                  phone: { type: 'string' },
+                  city: { type: 'string' },
+                  bio: { type: ['string', 'null'] },
+                  is_available: { type: 'boolean' },
+                  reliability_score: { type: 'integer' },
+                  onboarding_completed: { type: 'boolean' },
+                  availability_days: { type: 'array', items: { type: 'string' } },
+                  availability_start: { type: ['string', 'null'] },
+                  availability_end: { type: ['string', 'null'] },
+                  worker_roles: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        role: { type: 'string' },
+                        years_experience: { type: ['integer', 'null'] },
+                        is_primary: { type: 'boolean' },
+                      },
+                    },
+                  },
+                },
+              },
+              manager_profile: {
+                type: ['object', 'null'],
+                properties: {
+                  id: { type: 'string' },
+                  phone: { type: ['string', 'null'] },
+                  is_verified: { type: 'boolean' },
+                  onboarding_completed: { type: 'boolean' },
+                },
+              },
             },
           },
           401: {
@@ -78,16 +114,68 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
         user = newUser as any;
       }
 
-      app.logger.info({ userId: user.id }, 'User profile retrieved');
+      // Fetch profile data based on role
+      let workerProfile: any = null;
+      let managerProfile: any = null;
+
+      if (user.role === 'worker') {
+        const profile = await app.db.query.workerProfiles.findFirst({
+          where: eq(schema.workerProfiles.userId, user.id),
+        });
+
+        if (profile) {
+          // Fetch worker roles for this worker profile
+          const roles = await app.db.query.workerRoles.findMany({
+            where: eq(schema.workerRoles.workerId, profile.id),
+          });
+
+          workerProfile = {
+            id: profile.id,
+            name: profile.name,
+            photo_url: profile.photoUrl,
+            phone: profile.phone,
+            city: profile.city,
+            bio: profile.bio,
+            is_available: profile.isAvailable,
+            reliability_score: profile.reliabilityScore,
+            onboarding_completed: profile.onboardingCompleted,
+            availability_days: profile.availabilityDays || [],
+            availability_start: profile.availabilityStart,
+            availability_end: profile.availabilityEnd,
+            worker_roles: roles.map((r) => ({
+              id: r.id,
+              role: r.role,
+              years_experience: r.yearsExperience,
+              is_primary: r.isPrimary,
+            })),
+          };
+        }
+      } else if (user.role === 'manager') {
+        const profile = await app.db.query.managerProfiles.findFirst({
+          where: eq(schema.managerProfiles.userId, user.id),
+        });
+
+        if (profile) {
+          managerProfile = {
+            id: profile.id,
+            phone: profile.phone,
+            is_verified: profile.isVerified,
+            onboarding_completed: profile.onboardingCompleted,
+          };
+        }
+      }
+
+      app.logger.info({ userId: user.id, role: user.role }, 'User profile retrieved');
+
       return {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
-        phone: user.phone || null,
         onboarding_step: user.onboardingStep,
         profile_completed: user.profileCompleted,
-        notification_preferences: user.notificationPreferences,
+        worker_profile: workerProfile,
+        manager_profile: managerProfile,
       };
     }
   );

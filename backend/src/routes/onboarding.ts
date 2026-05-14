@@ -409,13 +409,16 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
 
       app.logger.info({ userId: session.user.id, role: user.role }, 'Completing onboarding');
 
-      const updates = { profileCompleted: true };
-      await app.db.update(schema.users).set(updates).where(eq(schema.users.id, session.user.id));
+      // Update users table with profileCompleted and onboarding_step
+      await app.db.update(schema.users).set({ profileCompleted: true, onboardingStep: 3 }).where(eq(schema.users.id, session.user.id));
 
+      // Update profile table based on role
       if (user.role === 'worker') {
         await app.db.update(schema.workerProfiles).set({ onboardingCompleted: true }).where(eq(schema.workerProfiles.userId, session.user.id));
+        app.logger.info({ userId: session.user.id }, 'Worker onboarding completed');
       } else if (user.role === 'manager') {
         await app.db.update(schema.managerProfiles).set({ onboardingCompleted: true }).where(eq(schema.managerProfiles.userId, session.user.id));
+        app.logger.info({ userId: session.user.id }, 'Manager onboarding completed');
       }
 
       return { success: true };
@@ -430,7 +433,13 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
         description: 'Get onboarding status',
         tags: ['onboarding'],
         response: {
-          200: { type: 'object', additionalProperties: true },
+          200: {
+            type: 'object',
+            properties: {
+              onboarding_step: { type: 'string', enum: ['profile', 'roles', 'availability', 'complete'] },
+              onboarding_completed: { type: 'boolean' },
+            },
+          },
           401: errorSchema,
           404: errorSchema,
         },
@@ -444,23 +453,40 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
       const user = await app.db.query.users.findFirst({ where: eq(schema.users.id, session.user.id) });
       if (!user) return reply.status(404).send({ error: 'User not found' });
 
-      const response: any = {
-        role: user.role,
-        onboardingCompleted: user.profileCompleted,
-        profileCompleted: user.profileCompleted,
-        onboardingStep: user.onboardingStep,
-      };
+      app.logger.info({ userId: session.user.id, role: user.role }, 'Getting onboarding status');
 
+      // Map integer step to string label
+      const stepMap: Record<number | null, string> = {
+        0: 'profile',
+        1: 'roles',
+        2: 'availability',
+        3: 'complete',
+      };
+      const onboardingStepLabel = stepMap[user.onboardingStep as any] || 'profile';
+
+      // Check if onboarding is completed in profile tables
+      let onboardingCompleted = false;
       if (user.role === 'worker') {
-        response.workerProfile = await app.db.query.workerProfiles.findFirst({ where: eq(schema.workerProfiles.userId, session.user.id) });
+        const workerProfile = await app.db.query.workerProfiles.findFirst({
+          where: eq(schema.workerProfiles.userId, session.user.id),
+        });
+        onboardingCompleted = workerProfile?.onboardingCompleted ?? false;
       } else if (user.role === 'manager') {
-        response.managerProfile = await app.db.query.managerProfiles.findFirst({ where: eq(schema.managerProfiles.userId, session.user.id) });
-        if (response.managerProfile?.businessId) {
-          response.business = await app.db.query.businesses.findFirst({ where: eq(schema.businesses.id, response.managerProfile.businessId) });
-        }
+        const managerProfile = await app.db.query.managerProfiles.findFirst({
+          where: eq(schema.managerProfiles.userId, session.user.id),
+        });
+        onboardingCompleted = managerProfile?.onboardingCompleted ?? false;
       }
 
-      return response;
+      app.logger.info(
+        { userId: session.user.id, onboardingStep: onboardingStepLabel, onboardingCompleted },
+        'Onboarding status retrieved'
+      );
+
+      return {
+        onboarding_step: onboardingCompleted ? 'complete' : onboardingStepLabel,
+        onboarding_completed: onboardingCompleted,
+      };
     }
   );
 }
