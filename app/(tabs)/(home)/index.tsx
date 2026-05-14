@@ -68,7 +68,7 @@ const FEED_ICONS = [
 interface MarketplaceStats {
   workers_available?: number;
   restaurants_hiring?: number;
-  shifts_filled_week?: number;
+  shifts_filled_this_week?: number;
   recent_activity?: { text: string; time: string }[];
 }
 
@@ -78,11 +78,7 @@ function LandingScreen() {
   const tickerScrollRef = useRef<ScrollView>(null);
   const tickerOffset = useRef(0);
   const dotOpacity = useRef(new Animated.Value(1)).current;
-  const [stats, setStats] = useState<MarketplaceStats>({
-    workers_available: 31,
-    restaurants_hiring: 14,
-    shifts_filled_week: 127,
-  });
+  const [stats, setStats] = useState<MarketplaceStats>({});
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -135,7 +131,7 @@ function LandingScreen() {
 
   const workersAvailable = stats.workers_available ?? 31;
   const restaurantsHiring = stats.restaurants_hiring ?? 14;
-  const shiftsFilled = stats.shifts_filled_week ?? 127;
+  const shiftsFilled = stats.shifts_filled_this_week ?? 127;
 
   const activityFeed = stats.recent_activity?.length
     ? stats.recent_activity.map((item, i) => (i % 2 === 0 ? '✅ ' : '⚡ ') + item.text)
