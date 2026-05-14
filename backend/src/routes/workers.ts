@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { eq, and } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
 import type { App } from '../index.js';
+import { haversineDistanceMiles, getCityCoords } from '../utils/haversine.js';
 
 interface WorkerProfileInput {
   name: string;
@@ -52,6 +53,8 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
             available: { type: 'string', enum: ['true', 'false'] },
             role: { type: 'string' },
             limit: { type: 'integer', default: 20 },
+            lat: { type: 'number' },
+            lng: { type: 'number' },
           },
         },
         response: {
@@ -66,15 +69,19 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { available, role, limit: limitStr } = request.query as {
+      const { available, role, limit: limitStr, lat, lng } = request.query as {
         available?: string;
         role?: string;
         limit?: string;
+        lat?: number;
+        lng?: number;
       };
 
-      const limit = limitStr ? parseInt(limitStr, 10) : 20;
+      const limit = limitStr ? parseInt(String(limitStr), 10) : 20;
+      const requesterLat = lat != null ? Number(lat) : null;
+      const requesterLng = lng != null ? Number(lng) : null;
 
-      app.logger.info({ available, role, limit }, 'Getting worker profiles');
+      app.logger.info({ available, role, limit, requesterLat, requesterLng }, 'Getting worker profiles');
 
       let workers = await app.db.select().from(schema.workerProfiles);
 
@@ -82,9 +89,6 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       if (available === 'true') {
         workers = workers.filter((w) => w.isAvailable === true);
       }
-
-      // Note: role filtering requires joining with workerRoles table
-      // This would be implemented in a more advanced query
 
       // Sort: is_available DESC, reliability_score DESC
       workers.sort((a, b) => {
@@ -97,8 +101,18 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       // Apply limit
       const result = workers.slice(0, limit);
 
-      // Convert to camelCase
-      const response = result.map(toCamelCase);
+      // Convert to camelCase and calculate distance when requester coords provided
+      const response = result.map((worker) => {
+        const base = toCamelCase(worker);
+        if (requesterLat !== null && requesterLng !== null) {
+          const workerCoords = getCityCoords(worker.city);
+          if (workerCoords) {
+            const miles = haversineDistanceMiles(requesterLat, requesterLng, workerCoords[0], workerCoords[1]);
+            base.distanceMiles = parseFloat(miles.toFixed(1));
+          }
+        }
+        return base;
+      });
 
       app.logger.info({ count: response.length }, 'Worker profiles retrieved');
       return response;
