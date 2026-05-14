@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, ReactNode } from "react";
 import { Platform } from "react-native";
 import * as Linking from "expo-linking";
 import { authClient, setBearerToken, clearAuthTokens } from "@/lib/auth";
+import { apiPost } from "@/utils/api";
 
 interface User {
   id: string;
@@ -79,10 +80,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const user = (sessionData?.user as User | null) ?? null;
   const loading = isPending;
 
-  // Sync bearer token whenever session state changes
+  // Sync bearer token and register push token whenever session state changes
   useEffect(() => {
     if (sessionData?.session?.token) {
-      setBearerToken(sessionData.session.token);
+      setBearerToken(sessionData.session.token).then(() => {
+        registerPushToken();
+      });
     } else if (!isPending) {
       clearAuthTokens();
     }
@@ -96,6 +99,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => subscription.remove();
   }, []);
+
+  const registerPushToken = async () => {
+    if (Platform.OS === 'web') return;
+    try {
+      const Notifications = require('expo-notifications');
+      const { status: existing } = await Notifications.getPermissionsAsync();
+      let finalStatus = existing;
+      if (existing !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') return;
+      const { data: token } = await Notifications.getExpoPushTokenAsync();
+      await apiPost('/api/notifications/push-token', { token });
+    } catch (err) {
+      console.log('[Auth] Push token registration skipped:', err);
+    }
+  };
 
   const fetchUser = async () => {
     try {

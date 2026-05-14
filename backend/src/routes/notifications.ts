@@ -2,8 +2,60 @@ import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
 import type { App } from '../index.js';
+import { sendExpoPushNotification } from '../utils/pushNotification.js';
+
+export { sendExpoPushNotification };
 
 export function registerNotificationRoutes(app: App, fastify: FastifyInstance) {
+  fastify.post(
+    '/api/notifications/push-token',
+    {
+      schema: {
+        description: 'Register an Expo push token for the authenticated user',
+        tags: ['notifications'],
+        body: {
+          type: 'object',
+          required: ['token'],
+          properties: {
+            token: { type: 'string' },
+          },
+        },
+        response: {
+          200: { type: 'object', properties: { success: { type: 'boolean' } } },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) headers.append(key, Array.isArray(value) ? value[0] : value);
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const { token } = request.body as { token: string };
+      app.logger.info({ userId: session.user.id }, 'Registering push token');
+
+      const user = await app.db.query.users.findFirst({
+        where: eq(schema.users.id, session.user.id),
+      });
+
+      if (user) {
+        const prefs = (user.notificationPreferences as Record<string, unknown>) ?? {};
+        await app.db
+          .update(schema.users)
+          .set({ notificationPreferences: { ...prefs, push_token: token } })
+          .where(eq(schema.users.id, session.user.id));
+      }
+
+      return { success: true };
+    }
+  );
+
   fastify.get(
     '/api/notifications',
     {

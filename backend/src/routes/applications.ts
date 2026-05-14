@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
 import type { App } from '../index.js';
+import { sendExpoPushNotification } from '../utils/pushNotification.js';
 
 export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
   fastify.patch(
@@ -81,19 +82,32 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
       });
 
       if (worker && business) {
+        const title = 'You got the shift!';
+        const body = `You have been confirmed for the ${shift!.roleNeeded} shift at ${business.name}`;
+
         const notifId = `notif-${Date.now()}`;
         await app.db
           .insert(schema.notifications)
           .values({
             id: notifId,
             userId: worker.userId,
-            title: 'You got the shift!',
-            body: `You have been confirmed for the ${shift!.roleNeeded} shift at ${business.name}`,
+            title,
+            body,
             type: 'worker_confirmed' as const,
             read: false,
             shiftId: application.shiftId,
             createdAt: new Date(),
           });
+
+        // Send Expo push notification if the worker has a registered token
+        const workerUser = await app.db.query.users.findFirst({
+          where: eq(schema.users.id, worker.userId),
+        });
+        const prefs = workerUser?.notificationPreferences as Record<string, unknown> | null;
+        const pushToken = prefs?.push_token as string | undefined;
+        if (pushToken) {
+          await sendExpoPushNotification(pushToken, title, body, { shiftId: application.shiftId });
+        }
       }
 
       app.logger.info({ id }, 'Application confirmed');
