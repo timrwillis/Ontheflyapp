@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { eq, inArray } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
 import type { App } from '../index.js';
+import { sendExpoPushNotification } from '../utils/pushNotification.js';
 
 interface ShiftInput {
   role: string;
@@ -641,19 +642,31 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       });
 
       if (business) {
+        const title = 'New Application Received';
+        const body = `${worker.name} applied for your ${shift.roleNeeded} shift`;
+
         const notifId = `notif-${Date.now()}`;
         await app.db
           .insert(schema.notifications)
           .values({
             id: notifId,
             userId: business.userId,
-            title: 'New Application Received',
-            body: `${worker.name} applied for your ${shift.roleNeeded} shift`,
+            title,
+            body,
             type: 'shift_accepted' as const,
             read: false,
             shiftId: id,
             createdAt: new Date(),
           });
+
+        const managerUser = await app.db.query.users.findFirst({
+          where: eq(schema.users.id, business.userId),
+        });
+        const prefs = managerUser?.notificationPreferences as Record<string, unknown> | null;
+        const pushToken = prefs?.push_token as string | undefined;
+        if (pushToken) {
+          await sendExpoPushNotification(pushToken, title, body, { shiftId: id });
+        }
       }
 
       app.logger.info({ applicationId: applicationData.id }, 'Application created');

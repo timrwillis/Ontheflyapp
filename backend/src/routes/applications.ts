@@ -186,6 +186,46 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
           .where(eq(schema.shifts.id, application.shiftId));
       }
 
+      const worker = await app.db.query.workerProfiles.findFirst({
+        where: eq(schema.workerProfiles.id, application.workerId),
+      });
+
+      const shift = await app.db.query.shifts.findFirst({
+        where: eq(schema.shifts.id, application.shiftId),
+      });
+
+      const business = await app.db.query.businesses.findFirst({
+        where: eq(schema.businesses.id, shift!.businessId),
+      });
+
+      if (worker && business) {
+        const title = 'Application Not Selected';
+        const body = `You were not selected for the ${shift!.roleNeeded} shift at ${business.name}`;
+
+        const notifId = `notif-${Date.now()}`;
+        await app.db
+          .insert(schema.notifications)
+          .values({
+            id: notifId,
+            userId: worker.userId,
+            title,
+            body,
+            type: 'cancellation' as const,
+            read: false,
+            shiftId: application.shiftId,
+            createdAt: new Date(),
+          });
+
+        const workerUser = await app.db.query.users.findFirst({
+          where: eq(schema.users.id, worker.userId),
+        });
+        const prefs = workerUser?.notificationPreferences as Record<string, unknown> | null;
+        const pushToken = prefs?.push_token as string | undefined;
+        if (pushToken) {
+          await sendExpoPushNotification(pushToken, title, body, { shiftId: application.shiftId });
+        }
+      }
+
       app.logger.info({ id }, 'Application rejected');
       return updated;
     }
