@@ -133,10 +133,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
     try {
-      await authClient.signUp.email({ email, password, name: name || email.split('@')[0] });
+      const result = await authClient.signUp.email({ email, password, name: name || email.split('@')[0] });
+      if (result?.error) {
+        const status = result.error.status ?? 0;
+        console.warn("Email sign up error response:", status, result.error.message);
+        if (status === 422) {
+          throw new Error("An account with this email already exists. Please sign in instead.");
+        }
+        throw new Error(result.error.message || "Sign up failed. Please try again.");
+      }
       await fetchUser();
     } catch (error) {
-      console.error("Email sign up failed:", error);
+      if (error instanceof Error && error.message === "An account with this email already exists. Please sign in instead.") {
+        throw error;
+      }
+      const errObj = error as { status?: number; message?: string };
+      const status = errObj?.status ?? 0;
+      console.error("Email sign up failed:", status, (error as Error)?.message || error);
+      if (status === 422) {
+        throw new Error("An account with this email already exists. Please sign in instead.");
+      }
       throw error;
     }
   };

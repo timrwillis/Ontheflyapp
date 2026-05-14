@@ -264,7 +264,20 @@ export default function AuthScreen() {
             {/* Global error */}
             {!!error && (
               <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>{error}</Text>
+                <Text style={styles.errorBannerText}>
+                  {error}
+                  {error.includes('Please sign in instead') && (
+                    <>
+                      {' '}
+                      <Text
+                        style={styles.errorBannerLink}
+                        onPress={() => switchTab('signin')}
+                      >
+                        Switch to sign in
+                      </Text>
+                    </>
+                  )}
+                </Text>
               </View>
             )}
 
@@ -482,6 +495,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'SpaceGrotesk-Regular',
     lineHeight: 20,
+  },
+  errorBannerLink: {
+    color: COLORS.primary,
+    fontFamily: 'SpaceGrotesk-SemiBold',
+    textDecorationLine: 'underline',
   },
   fieldGroup: {
     gap: 6,
