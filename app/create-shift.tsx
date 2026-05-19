@@ -36,19 +36,19 @@ const ROLES: { label: string; icon: string; value: string }[] = [
 ];
 
 const URGENCY_OPTIONS: { label: string; icon: string; sublabel: string; value: string }[] = [
-  { label: 'ASAP',          icon: 'warning',     sublabel: 'Right now',      value: 'asap' },
+  { label: 'ASAP',          icon: 'warning',     sublabel: 'Right now',      value: 'emergency' },
   { label: 'Tonight',       icon: 'nightlight',  sublabel: 'This evening',   value: 'tonight' },
-  { label: 'Rush Coverage', icon: 'bolt',        sublabel: 'Emergency fill', value: 'rush' },
-  { label: 'Weekend Rush',  icon: 'weekend',     sublabel: 'Fri–Sun',        value: 'weekend' },
-  { label: 'Future Shift',  icon: 'event',       sublabel: 'Plan ahead',     value: 'future' },
+  { label: 'Rush Coverage', icon: 'bolt',        sublabel: 'Emergency fill', value: 'high' },
+  { label: 'Weekend Rush',  icon: 'weekend',     sublabel: 'Fri–Sun',        value: 'this_week' },
+  { label: 'Future Shift',  icon: 'event',       sublabel: 'Plan ahead',     value: 'tomorrow' },
 ];
 
 const URGENCY_COLORS: Record<string, string> = {
-  asap: '#FF3B30',
+  emergency: '#FF3B30',
   tonight: '#FF9500',
-  rush: '#FF6B35',
-  weekend: '#AF52DE',
-  future: '#00FF87',
+  high: '#FF6B35',
+  this_week: '#AF52DE',
+  tomorrow: '#00FF87',
 };
 
 const PAY_PRESETS = [
