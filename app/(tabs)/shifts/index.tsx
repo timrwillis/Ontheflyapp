@@ -108,7 +108,7 @@ export default function ShiftsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [currentRole, currentUser]);
+  }, [currentRole]);
 
   useEffect(() => { loadShifts(); }, [loadShifts]);
 

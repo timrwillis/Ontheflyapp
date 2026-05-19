@@ -17,7 +17,7 @@ import { apiGet, apiPost, apiPatch } from '@/utils/api';
 import { ShiftCard, Shift } from '@/components/ShiftCard';
 import { AvailabilityToggle } from '@/components/AvailabilityToggle';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
-import { ShiftCardSkeleton } from '@/components/SkeletonLoader';
+import { ShiftCardSkeleton, SkeletonLine } from '@/components/SkeletonLoader';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 // ─── Shared glass style ───────────────────────────────────────────────────────
@@ -65,29 +65,54 @@ interface MarketplaceStats {
   shifts_filled_week?: number;
 }
 
+interface FullMarketplaceStats {
+  workers_available?: number;
+  restaurants_hiring?: number;
+  shifts_filled_week?: number;
+  recent_activity?: string[];
+}
+
+// Shared marketplace stats — fetched once, used by all dashboards
+let _cachedStats: FullMarketplaceStats = {
+  workers_available: 31,
+  restaurants_hiring: 14,
+  shifts_filled_week: 127,
+  recent_activity: [
+    '⚡ Bartender accepted at Prime Social KC',
+    '✅ Server filled shift at Midtown Tavern',
+    '🎯 VIP event staffed in 4 minutes',
+    '⚡ Line Cook confirmed at Neon Alley',
+    '✅ Barback filled at The Copper Mug',
+  ],
+};
+
 function LandingScreen() {
   const { setRole } = useRole();
   const router = useRouter();
   const tickerScrollRef = useRef<ScrollView>(null);
   const tickerOffset = useRef(0);
   const dotOpacity = useRef(new Animated.Value(1)).current;
-  const [stats, setStats] = useState<MarketplaceStats>({
-    workers_available: 31,
-    restaurants_hiring: 14,
-    shifts_filled_week: 127,
-  });
+  const [stats, setStats] = useState<FullMarketplaceStats>(_cachedStats);
+  const [statsLoading, setStatsLoading] = useState(!_cachedStats.workers_available);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         console.log('[Landing] Fetching marketplace stats...');
-        const data = await apiGet<MarketplaceStats>('/api/marketplace/stats');
-        if (data) setStats(data);
+        const data = await apiGet<FullMarketplaceStats>('/api/marketplace/stats');
+        if (data) {
+          _cachedStats = { ..._cachedStats, ...data };
+          setStats(_cachedStats);
+        }
       } catch {
-        // fallback to defaults already set
+        // keep defaults
+      } finally {
+        setStatsLoading(false);
       }
     };
     fetchStats();
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Pulsing dot animation
@@ -141,6 +166,10 @@ function LandingScreen() {
     { value: String(shiftsFilled), label: 'filled today' },
   ];
 
+  const activityFeed = (stats.recent_activity && stats.recent_activity.length > 0)
+    ? stats.recent_activity
+    : _cachedStats.recent_activity ?? [];
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: COLORS.background }}
@@ -160,21 +189,32 @@ function LandingScreen() {
         </Text>
 
         {/* Live stats row */}
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24, width: '100%' }}>
-          {statRows.map((stat) => (
-            <View key={stat.label} style={{ flex: 1, ...glass, alignItems: 'center', paddingVertical: 14 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
-                <Animated.View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.primary, opacity: dotOpacity }} />
-                <Text style={{ color: COLORS.primary, fontSize: 30, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1 }}>
-                  {stat.value}
+        {statsLoading ? (
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24, width: '100%' }}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={{ flex: 1, ...glass, alignItems: 'center', paddingVertical: 14 }}>
+                <SkeletonLine width={48} height={30} borderRadius={6} style={{ marginBottom: 6 }} />
+                <SkeletonLine width={56} height={10} borderRadius={4} />
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24, width: '100%' }}>
+            {statRows.map((stat) => (
+              <View key={stat.label} style={{ flex: 1, ...glass, alignItems: 'center', paddingVertical: 14 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                  <Animated.View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.primary, opacity: dotOpacity }} />
+                  <Text style={{ color: COLORS.primary, fontSize: 30, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1 }}>
+                    {stat.value}
+                  </Text>
+                </View>
+                <Text style={{ color: COLORS.textSecondary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center' }}>
+                  {stat.label}
                 </Text>
               </View>
-              <Text style={{ color: COLORS.textSecondary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center' }}>
-                {stat.label}
-              </Text>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
 
         {/* Activity ticker */}
         <View style={{ width: '100%', overflow: 'hidden', marginBottom: 28 }}>
@@ -185,7 +225,7 @@ function LandingScreen() {
             scrollEnabled={false}
             contentContainerStyle={{ gap: 12, paddingHorizontal: 4 }}
           >
-            {[...ACTIVITY_FEED, ...ACTIVITY_FEED].map((item, i) => {
+            {[...activityFeed, ...activityFeed].map((item, i) => {
               const firstSpace = item.indexOf(' ');
               const firstWord = firstSpace > -1 ? item.slice(0, firstSpace) : item;
               const rest = firstSpace > -1 ? item.slice(firstSpace) : '';
@@ -505,6 +545,48 @@ function ManagerDashboard() {
     { label: 'Confirmed', value: stats.confirmed, color: '#60A5FA', borderColor: '#60A5FA' },
   ];
 
+  const [marketStats, setMarketStats] = useState<FullMarketplaceStats>(_cachedStats);
+
+  useEffect(() => {
+    const fetchMarketStats = async () => {
+      try {
+        const data = await apiGet<FullMarketplaceStats>('/api/marketplace/stats');
+        if (data) {
+          _cachedStats = { ..._cachedStats, ...data };
+          setMarketStats(_cachedStats);
+        }
+      } catch { /* keep defaults */ }
+    };
+    fetchMarketStats();
+    const interval = setInterval(fetchMarketStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const scarcityPills = (marketStats.recent_activity && marketStats.recent_activity.length > 0)
+    ? marketStats.recent_activity.slice(0, 6).map((text) => {
+        const icon = text.startsWith('✅') ? '✅'
+          : text.startsWith('⚡') ? '⚡'
+          : text.startsWith('🎯') ? '🎯'
+          : text.startsWith('🔥') ? '🔥'
+          : '📍';
+        const cleanText = text.replace(/^[✅⚡🎯🔥📍]\s*/u, '');
+        return { icon, text: cleanText };
+      })
+    : SCARCITY_INSIGHTS;
+
+  const activityItems = (marketStats.recent_activity && marketStats.recent_activity.length > 0)
+    ? marketStats.recent_activity.slice(0, 5).map((text, idx) => {
+        const icon = text.startsWith('✅') ? '✅'
+          : text.startsWith('⚡') ? '⚡'
+          : text.startsWith('🎯') ? '🎯'
+          : text.startsWith('🔥') ? '🔥'
+          : '📍';
+        const color = idx % 2 === 0 ? COLORS.primary : COLORS.accent;
+        const timeLabels = ['just now', '3m ago', '11m ago', '28m ago', '45m ago'];
+        return { icon, text: text.replace(/^[✅⚡🎯🔥📍]\s*/u, ''), time: timeLabels[idx] ?? '1h ago', color };
+      })
+    : ACTIVITY_ITEMS;
+
   const bartenderCount = nearbyWorkers.filter((w) => w.roles?.[0] === 'Bartender').length;
   const scarcityBartenderCount = bartenderCount > 0 ? bartenderCount : 4;
   const scarcityText = 'Only ' + scarcityBartenderCount + ' bartenders left';
@@ -610,7 +692,7 @@ function ManagerDashboard() {
           style={{ marginHorizontal: -20, marginBottom: 28 }}
           contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
         >
-          {SCARCITY_INSIGHTS.map((insight, i) => (
+          {scarcityPills.map((insight, i) => (
             <View key={i} style={{
               backgroundColor: 'rgba(255,255,255,0.05)',
               borderWidth: 1,
@@ -869,13 +951,13 @@ function ManagerDashboard() {
             </AnimatedPressable>
           </View>
           <View style={{ ...glass }}>
-            {ACTIVITY_ITEMS.map((item, i) => (
+            {activityItems.map((item, i) => (
               <View key={i} style={{
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 12,
                 paddingVertical: 10,
-                borderBottomWidth: i < ACTIVITY_ITEMS.length - 1 ? 1 : 0,
+                borderBottomWidth: i < activityItems.length - 1 ? 1 : 0,
                 borderBottomColor: 'rgba(255,255,255,0.05)',
               }}>
                 <View style={{
@@ -963,6 +1045,23 @@ function WorkerDashboard() {
   const tickerScrollRef = useRef<ScrollView>(null);
   const tickerOffset = useRef(0);
   const liveDotOpacity = useRef(new Animated.Value(1)).current;
+
+  const [marketStats, setMarketStats] = useState<FullMarketplaceStats>(_cachedStats);
+
+  useEffect(() => {
+    const fetchMarketStats = async () => {
+      try {
+        const data = await apiGet<FullMarketplaceStats>('/api/marketplace/stats');
+        if (data) {
+          _cachedStats = { ..._cachedStats, ...data };
+          setMarketStats(_cachedStats);
+        }
+      } catch { /* keep defaults */ }
+    };
+    fetchMarketStats();
+    const interval = setInterval(fetchMarketStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const isAvailable = workerProfile?.isAvailable ?? false;
   const workerName = workerProfile?.name ?? currentUser?.name ?? null;
@@ -1081,6 +1180,10 @@ function WorkerDashboard() {
   const showEarningsBanner = top3Shifts.length > 0 && earningsLow > 0;
 
   const shiftCount = filteredShifts.length;
+
+  const workerTickerItems = (marketStats.recent_activity && marketStats.recent_activity.length > 0)
+    ? marketStats.recent_activity
+    : WORKER_TICKER_ITEMS;
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
@@ -1261,7 +1364,7 @@ function WorkerDashboard() {
             scrollEnabled={false}
             contentContainerStyle={{ gap: 16, paddingHorizontal: 20 }}
           >
-            {[...WORKER_TICKER_ITEMS, ...WORKER_TICKER_ITEMS].map((item, i) => (
+            {[...workerTickerItems, ...workerTickerItems].map((item, i) => (
               <Text key={i} style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular' }}>
                 {`${item}  ·  `}
               </Text>

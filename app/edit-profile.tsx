@@ -114,6 +114,7 @@ export default function EditProfileScreen() {
       }
     };
     loadProfile();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSave = async () => {
