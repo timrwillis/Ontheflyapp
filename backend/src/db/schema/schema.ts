@@ -108,6 +108,7 @@ export const supportTicketCategoryEnum = pgEnum('support_ticket_category', [
   'payment',
   'technical',
   'other',
+  'general',
 ]);
 
 export const assignmentStatusEnum = pgEnum('assignment_status', [
@@ -273,7 +274,7 @@ export const documents = pgTable('documents', {
 
 export const supportTickets = pgTable('support_tickets', {
   id: text('id').primaryKey(),
-  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
   subject: text('subject').notNull(),
   body: text('body').notNull(),
   status: supportTicketStatusEnum('status').default('open').notNull(),

@@ -725,6 +725,53 @@ describe("API Integration Tests", () => {
     expect(typeof data.shifts_filled_this_week).toBe("number");
   });
 
+  // ===== Waitlist Endpoints =====
+  test("POST /api/waitlist - Join waitlist with all required fields", async () => {
+    const res = await api("/api/waitlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "John Waitlist",
+        phone: "555-9999",
+        email: "waitlist@example.com",
+        role: "worker",
+      }),
+    });
+    await expectStatus(res, 201);
+    const data = await res.json();
+    expect(data.success).toBe(true);
+    expect(data.message).toBeDefined();
+  });
+
+  test("POST /api/waitlist - Missing required name field returns 400", async () => {
+    const res = await api("/api/waitlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: "555-9999",
+        email: "waitlist@example.com",
+        role: "worker",
+      }),
+    });
+    await expectStatus(res, 400);
+  });
+
+  test("POST /api/waitlist - Join waitlist as manager", async () => {
+    const res = await api("/api/waitlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Jane Manager",
+        phone: "555-8888",
+        email: "manager@example.com",
+        role: "manager",
+      }),
+    });
+    await expectStatus(res, 201);
+    const data = await res.json();
+    expect(data.success).toBe(true);
+  });
+
   // ===== Delete User Endpoints =====
   test("DELETE /api/users/me - Delete account with role parameter", async () => {
     const res = await api("/api/users/me?role=admin", {
