@@ -395,7 +395,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
                 )}
               </View>
             )}
-            {shift.location && (
+            {!!shift.location && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <MaterialIcons name="place" size={14} color={COLORS.textSecondary} />
                 <Text

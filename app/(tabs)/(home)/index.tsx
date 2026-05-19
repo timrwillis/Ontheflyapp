@@ -1105,7 +1105,7 @@ function WorkerDashboard() {
                 </Text>
               </View>
             </View>
-            {workerName && (
+            {!!workerName && (
               <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular', marginTop: 2 }}>
                 {workerName}
               </Text>
