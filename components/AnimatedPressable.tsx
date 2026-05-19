@@ -1,9 +1,12 @@
-import { Pressable, Animated, View, PressableProps, ViewStyle, StyleProp, Platform } from 'react-native';
+import { Pressable, Animated, View, ViewStyle, StyleProp, Platform } from 'react-native';
 import { useRef, useCallback } from 'react';
 
-interface AnimatedPressableProps extends PressableProps {
-  scaleValue?: number;
+interface AnimatedPressableProps {
+  onPress?: () => void;
   style?: StyleProp<ViewStyle>;
+  children?: React.ReactNode;
+  disabled?: boolean;
+  scaleValue?: number;
 }
 
 export function AnimatedPressable({
@@ -12,7 +15,6 @@ export function AnimatedPressable({
   children,
   disabled,
   scaleValue = 0.97,
-  ...props
 }: AnimatedPressableProps) {
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -34,10 +36,6 @@ export function AnimatedPressable({
     }).start();
   }, [scale]);
 
-  const cleanProps = Object.fromEntries(
-    Object.entries(props).filter(([key]) => !key.startsWith('__'))
-  ) as typeof props;
-
   if (Platform.OS === 'web') {
     return (
       <View style={disabled ? { opacity: 0.5 } : undefined}>
@@ -47,7 +45,6 @@ export function AnimatedPressable({
           onPress={onPress}
           disabled={disabled}
           style={style}
-          {...cleanProps}
         >
           {children}
         </Pressable>
@@ -63,7 +60,6 @@ export function AnimatedPressable({
         onPress={onPress}
         disabled={disabled}
         style={style}
-        {...cleanProps}
       >
         {children}
       </Pressable>
