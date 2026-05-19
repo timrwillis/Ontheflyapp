@@ -134,6 +134,8 @@ export const users = pgTable('users', {
     reminders: true,
     marketing: false,
   }).notNull(),
+  agreedToTerms: boolean('agreed_to_terms').default(false).notNull(),
+  agreedAt: timestamp('agreed_at', { withTimezone: true }),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
