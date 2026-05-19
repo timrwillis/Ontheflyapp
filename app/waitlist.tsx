@@ -11,7 +11,7 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import AnimatedPressable from '@/components/AnimatedPressable';
+import { AnimatedPressable } from '@/components/AnimatedPressable';
 
 const ROLE_OPTIONS = ['Bartender', 'Server', 'Cook', 'Event Staff', 'Security', 'Barback', 'Host'];
 

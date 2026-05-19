@@ -235,7 +235,7 @@ export default function CreateShiftScreen() {
     const checkSubscription = async () => {
       console.log('[CreateShift] Checking subscription status...');
       try {
-        const me = await apiGet('/api/me');
+        const me = await apiGet<{ subscription_status?: string }>('/api/me');
         const active = me?.subscription_status === 'active';
         console.log('[CreateShift] Subscription status:', me?.subscription_status, '→ active:', active);
         setHasSubscription(active);
