@@ -488,4 +488,112 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
       return { success: true, message: 'Account deleted' };
     }
   );
+
+  fastify.patch(
+    '/api/me',
+    {
+      schema: {
+        description: 'Update current user profile (terms agreement)',
+        tags: ['users'],
+        body: {
+          type: 'object',
+          properties: {
+            agreed_to_terms: { type: 'boolean' },
+            agreed_at: { type: 'string', format: 'date-time' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              email: { type: 'string' },
+              name: { type: 'string' },
+              role: { type: 'string' },
+              onboarding_step: { type: 'integer' },
+              profile_completed: { type: 'boolean' },
+              agreed_to_terms: { type: 'boolean' },
+              agreed_at: { type: ['string', 'null'], format: 'date-time' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { agreed_to_terms, agreed_at } = request.body as {
+        agreed_to_terms?: boolean;
+        agreed_at?: string;
+      };
+
+      // Get authenticated user
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) {
+          headers.append(key, Array.isArray(value) ? value[0] : value);
+        }
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const userId = session.user.id;
+      app.logger.info({ userId, agreed_to_terms }, 'Updating user profile');
+
+      // Look up user
+      const user = await app.db.query.users.findFirst({
+        where: eq(schema.users.id, userId),
+      });
+
+      if (!user) {
+        app.logger.warn({ userId }, 'User not found');
+        return reply.status(404).send({ error: 'User not found' });
+      }
+
+      // Build updates object with only provided fields
+      const updates: any = {};
+      if (agreed_to_terms !== undefined) {
+        updates.agreedToTerms = agreed_to_terms;
+      }
+      if (agreed_at !== undefined) {
+        updates.agreedAt = agreed_at ? new Date(agreed_at) : null;
+      }
+
+      // Only update if there are fields to update
+      if (Object.keys(updates).length > 0) {
+        await app.db.update(schema.users).set(updates).where(eq(schema.users.id, userId));
+        app.logger.info({ userId }, 'User profile updated');
+      }
+
+      // Return updated user
+      const updated = await app.db.query.users.findFirst({
+        where: eq(schema.users.id, userId),
+      });
+
+      return {
+        id: updated?.id,
+        email: updated?.email,
+        name: updated?.name,
+        role: updated?.role,
+        onboarding_step: updated?.onboardingStep,
+        profile_completed: updated?.profileCompleted,
+        agreed_to_terms: updated?.agreedToTerms,
+        agreed_at: updated?.agreedAt?.toISOString() || null,
+      };
+    }
+  );
 }

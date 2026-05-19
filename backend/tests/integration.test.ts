@@ -29,6 +29,20 @@ describe("API Integration Tests", () => {
     expect(data.name).toBeDefined();
   });
 
+  test("PATCH /api/me - Update user profile (terms agreement)", async () => {
+    const res = await authenticatedApi("/api/me", authToken, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        agreed_to_terms: true,
+      }),
+    });
+    await expectStatus(res, 200);
+    const data = await res.json();
+    expect(data.id).toBe(userId);
+    expect(data.agreed_to_terms).toBe(true);
+  });
+
   test("GET /api/users/me - Get current user profile", async () => {
     const res = await authenticatedApi("/api/users/me", authToken);
     await expectStatus(res, 200);
