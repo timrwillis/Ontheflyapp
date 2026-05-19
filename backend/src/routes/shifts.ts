@@ -557,7 +557,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
     '/api/shifts/:id/applications',
     {
       schema: {
-        description: 'Get all applications for a shift',
+        description: 'Get all applications for a shift (manager only)',
         tags: ['shifts'],
         params: {
           type: 'object',
@@ -572,8 +572,51 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
             properties: {
               applications: {
                 type: 'array',
-                items: { type: 'object', additionalProperties: true },
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    shift_id: { type: 'string' },
+                    worker_id: { type: 'string' },
+                    status: { type: 'string' },
+                    applied_at: { type: 'string', format: 'date-time' },
+                    worker: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        name: { type: 'string' },
+                        city: { type: 'string' },
+                        reliability_score: { type: 'integer' },
+                        is_available: { type: 'boolean' },
+                        is_verified: { type: 'boolean' },
+                        worker_roles: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              role: { type: 'string' },
+                              years_experience: { type: ['integer', 'null'] },
+                              is_primary: { type: 'boolean' },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          403: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
             },
           },
           404: {
@@ -588,7 +631,22 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
     async (request, reply) => {
       const { id } = request.params as { id: string };
 
-      app.logger.info({ id }, 'Getting shift applications');
+      // Authenticate the request
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) {
+          headers.append(key, Array.isArray(value) ? value[0] : value);
+        }
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const userId = session.user.id;
+      app.logger.info({ id, userId }, 'Getting shift applications');
 
       const shift = await app.db.query.shifts.findFirst({
         where: eq(schema.shifts.id, id),
@@ -599,6 +657,16 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Shift not found' });
       }
 
+      // Verify authorization - user must own the business
+      const business = await app.db.query.businesses.findFirst({
+        where: eq(schema.businesses.id, shift.businessId),
+      });
+
+      if (!business || business.userId !== userId) {
+        app.logger.warn({ id, userId }, 'Forbidden: User does not own the business');
+        return reply.status(403).send({ error: 'Forbidden' });
+      }
+
       const applications = await app.db
         .select()
         .from(schema.shiftApplications)
@@ -606,12 +674,37 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
 
       const applicationsWithWorkers = await Promise.all(
         applications.map(async (app_item) => {
-          const worker = await app.db.query.workerProfiles.findFirst({
+          const workerProfile = await app.db.query.workerProfiles.findFirst({
             where: eq(schema.workerProfiles.id, app_item.workerId),
           });
+
+          let workerRoles: any[] = [];
+          if (workerProfile) {
+            workerRoles = await app.db
+              .select()
+              .from(schema.workerRoles)
+              .where(eq(schema.workerRoles.workerId, workerProfile.id));
+          }
+
           return {
-            ...app_item,
-            worker,
+            id: app_item.id,
+            shift_id: app_item.shiftId,
+            worker_id: app_item.workerId,
+            status: app_item.status,
+            applied_at: app_item.appliedAt?.toISOString(),
+            worker: workerProfile ? {
+              id: workerProfile.id,
+              name: workerProfile.name,
+              city: workerProfile.city,
+              reliability_score: workerProfile.reliabilityScore,
+              is_available: workerProfile.isAvailable,
+              is_verified: workerProfile.isVerified,
+              worker_roles: workerRoles.map((r) => ({
+                role: r.role,
+                years_experience: r.yearsExperience,
+                is_primary: r.isPrimary,
+              })),
+            } : null,
           };
         })
       );
