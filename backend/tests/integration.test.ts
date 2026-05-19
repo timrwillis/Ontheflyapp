@@ -365,6 +365,18 @@ describe("API Integration Tests", () => {
     await expectStatus(res, 200);
   });
 
+  test("PATCH /api/worker-profiles/me - Update current worker profile (partial)", async () => {
+    const res = await authenticatedApi("/api/worker-profiles/me", authToken, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bio: "Updated bio text",
+        is_available: true,
+      }),
+    });
+    await expectStatus(res, 200);
+  });
+
   test("PATCH /api/worker-profiles/{id}/availability - Update worker availability to true", async () => {
     const res = await authenticatedApi(`/api/worker-profiles/${workerId}/availability`, authToken, {
       method: "PATCH",
