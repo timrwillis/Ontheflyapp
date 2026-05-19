@@ -19,6 +19,7 @@ import { AvailabilityToggle } from '@/components/AvailabilityToggle';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { ShiftCardSkeleton, SkeletonLine } from '@/components/SkeletonLoader';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { DEMO_MODE, DEMO_SHIFTS, DEMO_WORKERS } from '@/constants/DemoData';
 
 // ─── Shared glass style ───────────────────────────────────────────────────────
 
@@ -507,6 +508,18 @@ function ManagerDashboard() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   const loadData = useCallback(async () => {
+    if (DEMO_MODE) {
+      console.log('[ManagerDashboard] DEMO_MODE: using demo data');
+      const open = DEMO_SHIFTS.filter((s) => s.status === 'open').length;
+      const filled = DEMO_SHIFTS.filter((s) => s.status === 'filled').length;
+      const confirmed = DEMO_SHIFTS.filter((s) => s.status === 'pending').length;
+      setShifts(DEMO_SHIFTS);
+      setStats({ open, filled, confirmed });
+      setNearbyWorkers(DEMO_WORKERS.slice(0, 8).map((w) => ({ id: w.id, name: w.name, roles: w.roles, isAvailable: w.isAvailable ?? false })));
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       console.log('[ManagerDashboard] Loading shifts...');
       const [shiftsData, workersData] = await Promise.all([
@@ -1095,6 +1108,13 @@ function WorkerDashboard() {
   }, []);
 
   const loadShifts = useCallback(async () => {
+    if (DEMO_MODE) {
+      console.log('[WorkerDashboard] DEMO_MODE: using demo data');
+      setShifts(DEMO_SHIFTS.filter((s) => s.status === 'open'));
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       console.log('[WorkerDashboard] Loading shifts...');
       const data = await apiGet<{ shifts: Shift[] }>('/api/shifts?status=open');

@@ -9,6 +9,7 @@ import { WorkerCard, WorkerProfile } from '@/components/WorkerCard';
 import { WorkerCardSkeleton } from '@/components/SkeletonLoader';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { DEMO_MODE, DEMO_WORKERS } from '@/constants/DemoData';
 
 export default function WorkersScreen() {
   const { currentRole } = useRole();
@@ -24,6 +25,13 @@ export default function WorkersScreen() {
   const [isFocused, setIsFocused] = useState(false);
 
   const loadWorkers = useCallback(async () => {
+    if (DEMO_MODE) {
+      console.log('[WorkersTab] DEMO_MODE: using demo data');
+      setWorkers(DEMO_WORKERS);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       console.log('[WorkersTab] Loading workers from /api/workers...');
       const data = await apiGet<WorkerProfile[] | { workers: WorkerProfile[] }>('/api/workers');

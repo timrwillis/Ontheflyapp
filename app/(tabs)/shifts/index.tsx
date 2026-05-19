@@ -11,6 +11,7 @@ import { ShiftCardSkeleton, WorkerCardSkeleton } from '@/components/SkeletonLoad
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { WorkerCard, WorkerProfile } from '@/components/WorkerCard';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { DEMO_MODE, DEMO_SHIFTS } from '@/constants/DemoData';
 
 const MANAGER_TABS = ['Open', 'Pending', 'Filled', 'Completed'];
 const WORKER_TABS = ['Upcoming', 'Completed'];
@@ -80,6 +81,17 @@ export default function ShiftsScreen() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const loadShifts = useCallback(async () => {
+    if (DEMO_MODE) {
+      console.log('[ShiftsTab] DEMO_MODE: using demo data');
+      if (currentRole === 'worker') {
+        setShifts(DEMO_SHIFTS.filter((s) => s.status === 'open' || s.status === 'pending').slice(0, 5));
+      } else {
+        setShifts(DEMO_SHIFTS);
+      }
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       if (currentRole === 'worker') {
         console.log('[ShiftsTab] Loading worker applications from /api/applications/my');
