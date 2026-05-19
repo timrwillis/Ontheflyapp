@@ -645,4 +645,218 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
       };
     }
   );
+
+  // PATCH /api/worker-profiles/me - Update current worker profile (partial update)
+  fastify.patch(
+    '/api/worker-profiles/me',
+    {
+      schema: {
+        description: 'Update current worker profile (partial update)',
+        tags: ['workers'],
+        body: {
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            phone: { type: 'string' },
+            city: { type: 'string' },
+            bio: { type: 'string' },
+            has_transportation: { type: 'boolean' },
+            preferred_radius_miles: { type: 'integer' },
+            is_available: { type: 'boolean' },
+            availability_days: { type: 'array', items: { type: 'string' } },
+            availability_start: { type: 'string' },
+            availability_end: { type: 'string' },
+            roles: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  role: { type: 'string', enum: ['bartender', 'server', 'cook', 'dishwasher', 'event_staff', 'security', 'barback', 'host', 'runner', 'busser'] },
+                  years_experience: { type: 'integer' },
+                  is_primary: { type: 'boolean' },
+                },
+              },
+            },
+            onboarding_step: { type: 'integer' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            additionalProperties: true,
+          },
+          400: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          500: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const body = request.body as {
+        name?: string;
+        phone?: string;
+        city?: string;
+        bio?: string;
+        has_transportation?: boolean;
+        preferred_radius_miles?: number;
+        is_available?: boolean;
+        availability_days?: string[];
+        availability_start?: string;
+        availability_end?: string;
+        roles?: Array<{ role: string; years_experience?: number; is_primary?: boolean }>;
+        onboarding_step?: number;
+      };
+
+      // Authenticate the request
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) {
+          headers.append(key, Array.isArray(value) ? value[0] : value);
+        }
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const userId = session.user.id;
+      app.logger.info({ userId }, 'Patching worker profile');
+
+      try {
+        // Check if user exists in users table
+        const user = await app.db.query.users.findFirst({
+          where: eq(schema.users.id, userId),
+        });
+
+        if (!user) {
+          app.logger.warn({ userId }, 'User not found in users table');
+          return reply.status(401).send({ error: 'Unauthorized' });
+        }
+
+        // Look up existing worker_profiles row
+        let profile = await app.db.query.workerProfiles.findFirst({
+          where: eq(schema.workerProfiles.userId, userId),
+        });
+
+        if (!profile) {
+          // Insert new row with defaults
+          const newId = `wp-${Date.now()}`;
+          const insertData: any = {
+            id: newId,
+            userId,
+            name: body.name || user.name || 'Worker',
+            phone: body.phone || '',
+            city: body.city || '',
+            bio: body.bio,
+            hasTransportation: body.has_transportation ?? false,
+            preferredRadiusMiles: body.preferred_radius_miles,
+            availabilityDays: body.availability_days,
+            availabilityStart: body.availability_start,
+            availabilityEnd: body.availability_end,
+            isAvailable: body.is_available ?? false,
+            reliabilityScore: 100,
+            isVerified: false,
+            isSuspended: false,
+            onboardingCompleted: false,
+          };
+
+          const [inserted] = await app.db
+            .insert(schema.workerProfiles)
+            .values(insertData)
+            .returning();
+
+          profile = inserted;
+          app.logger.info({ profileId: profile.id }, 'New worker profile created');
+        } else {
+          // Update existing row with only provided fields
+          const updates: any = {};
+          if (body.name !== undefined) updates.name = body.name;
+          if (body.phone !== undefined) updates.phone = body.phone;
+          if (body.city !== undefined) updates.city = body.city;
+          if (body.bio !== undefined) updates.bio = body.bio;
+          if (body.has_transportation !== undefined) updates.hasTransportation = body.has_transportation;
+          if (body.preferred_radius_miles !== undefined) updates.preferredRadiusMiles = body.preferred_radius_miles;
+          if (body.is_available !== undefined) updates.isAvailable = body.is_available;
+          if (body.availability_days !== undefined) updates.availabilityDays = body.availability_days;
+          if (body.availability_start !== undefined) updates.availabilityStart = body.availability_start;
+          if (body.availability_end !== undefined) updates.availabilityEnd = body.availability_end;
+
+          if (Object.keys(updates).length > 0) {
+            const [updated] = await app.db
+              .update(schema.workerProfiles)
+              .set(updates)
+              .where(eq(schema.workerProfiles.id, profile.id))
+              .returning();
+
+            profile = updated;
+            app.logger.info({ profileId: profile.id }, 'Worker profile updated');
+          }
+        }
+
+        // Handle roles array if provided
+        if (body.roles !== undefined && body.roles !== null) {
+          // Validate all role values
+          const validRoles = ['bartender', 'server', 'cook', 'dishwasher', 'event_staff', 'security', 'barback', 'host', 'runner', 'busser'];
+          for (const roleObj of body.roles) {
+            if (!validRoles.includes(roleObj.role)) {
+              app.logger.warn({ role: roleObj.role }, 'Invalid role value');
+              return reply.status(400).send({ error: `Invalid role value: ${roleObj.role}` });
+            }
+          }
+
+          // Delete all existing roles for this worker
+          await app.db
+            .delete(schema.workerRoles)
+            .where(eq(schema.workerRoles.workerId, profile.id));
+
+          // Insert new roles
+          for (const roleObj of body.roles) {
+            const roleId = `wr-${Date.now()}-${Math.random()}`;
+            await app.db.insert(schema.workerRoles).values({
+              id: roleId,
+              workerId: profile.id,
+              role: roleObj.role as any,
+              yearsExperience: roleObj.years_experience,
+              isPrimary: roleObj.is_primary ?? false,
+            });
+          }
+
+          app.logger.info({ profileId: profile.id, rolesCount: body.roles.length }, 'Worker roles updated');
+        }
+
+        // Handle onboarding_step if provided
+        if (body.onboarding_step !== undefined) {
+          await app.db
+            .update(schema.users)
+            .set({ onboardingStep: body.onboarding_step })
+            .where(eq(schema.users.id, userId));
+
+          app.logger.info({ userId, onboardingStep: body.onboarding_step }, 'User onboarding step updated');
+        }
+
+        app.logger.info({ profileId: profile.id }, 'Worker profile patch completed');
+        return reply.status(200).send(profile);
+      } catch (error) {
+        app.logger.error({ err: error, userId }, 'Failed to patch worker profile');
+        return reply.status(500).send({ error: 'Failed to update worker profile' });
+      }
+    }
+  );
 }
