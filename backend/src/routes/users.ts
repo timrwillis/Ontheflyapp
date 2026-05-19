@@ -59,6 +59,7 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
                   onboarding_completed: { type: 'boolean' },
                 },
               },
+              subscription_status: { type: ['string', 'null'] },
             },
           },
           401: {
@@ -174,6 +175,7 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
         role: user.role,
         onboarding_step: user.onboardingStep,
         profile_completed: user.profileCompleted,
+        subscription_status: user.subscriptionStatus,
         worker_profile: workerProfile,
         manager_profile: managerProfile,
       };
@@ -500,6 +502,7 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
           properties: {
             agreed_to_terms: { type: 'boolean' },
             agreed_at: { type: 'string', format: 'date-time' },
+            subscription_status: { type: 'string' },
           },
         },
         response: {
@@ -514,6 +517,7 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
               profile_completed: { type: 'boolean' },
               agreed_to_terms: { type: 'boolean' },
               agreed_at: { type: ['string', 'null'], format: 'date-time' },
+              subscription_status: { type: ['string', 'null'] },
             },
           },
           401: {
@@ -532,9 +536,10 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { agreed_to_terms, agreed_at } = request.body as {
+      const { agreed_to_terms, agreed_at, subscription_status } = request.body as {
         agreed_to_terms?: boolean;
         agreed_at?: string;
+        subscription_status?: string;
       };
 
       // Get authenticated user
@@ -572,6 +577,9 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
       if (agreed_at !== undefined) {
         updates.agreedAt = agreed_at ? new Date(agreed_at) : null;
       }
+      if (subscription_status !== undefined) {
+        updates.subscriptionStatus = subscription_status;
+      }
 
       // Only update if there are fields to update
       if (Object.keys(updates).length > 0) {
@@ -593,6 +601,7 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
         profile_completed: updated?.profileCompleted,
         agreed_to_terms: updated?.agreedToTerms,
         agreed_at: updated?.agreedAt?.toISOString() || null,
+        subscription_status: updated?.subscriptionStatus,
       };
     }
   );
