@@ -16,7 +16,7 @@ import {
 import { Stack, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { useRole } from '@/contexts/RoleContext';
-import { apiPost } from '@/utils/api';
+import { apiPost, apiGet } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -117,6 +117,67 @@ function PromiseBanner() {
   );
 }
 
+// ─── Paywall Screen ──────────────────────────────────────────────────────────
+
+function PaywallScreen({ onSubscribe }: { onSubscribe: () => void }) {
+  return (
+    <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <Stack.Screen options={{ title: 'Upgrade to Post', headerStyle: { backgroundColor: COLORS.background }, headerTintColor: COLORS.text }} />
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }} showsVerticalScrollIndicator={false}>
+        {/* Icon */}
+        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.primaryMuted, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+          <MaterialIcons name="lock" size={36} color={COLORS.primary} />
+        </View>
+
+        {/* Headline */}
+        <Text style={{ color: COLORS.text, fontSize: 26, fontFamily: 'SpaceGrotesk-Bold', fontWeight: '800', textAlign: 'center', letterSpacing: -0.5, marginBottom: 8 }}>
+          Post Unlimited Shifts
+        </Text>
+        <Text style={{ color: COLORS.primary, fontSize: 22, fontFamily: 'SpaceGrotesk-Bold', fontWeight: '700', textAlign: 'center', marginBottom: 20 }}>
+          $149/month
+        </Text>
+        <Text style={{ color: COLORS.textSecondary, fontSize: 15, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center', lineHeight: 22, marginBottom: 36 }}>
+          Get instant access to Kansas City's hospitality workforce. Post shifts, approve workers, and fill your floor in minutes.
+        </Text>
+
+        {/* Feature bullets */}
+        {[
+          { icon: 'bolt', text: 'Unlimited shift posting — no caps, no limits' },
+          { icon: 'people', text: 'Instant worker matching by role and availability' },
+          { icon: 'notifications-active', text: 'Real-time notifications when workers apply' },
+        ].map((feature) => (
+          <View key={feature.text} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 16, width: '100%', maxWidth: 320 }}>
+            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.primaryMuted, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <MaterialIcons name={feature.icon as any} size={18} color={COLORS.primary} />
+            </View>
+            <Text style={{ color: COLORS.text, fontSize: 15, fontFamily: 'SpaceGrotesk-Regular', lineHeight: 22, flex: 1, paddingTop: 7 }}>
+              {feature.text}
+            </Text>
+          </View>
+        ))}
+
+        {/* Divider */}
+        <View style={{ width: '100%', maxWidth: 320, height: 1, backgroundColor: COLORS.border, marginVertical: 28 }} />
+
+        {/* Subscribe button */}
+        <AnimatedPressable
+          onPress={onSubscribe}
+          style={{ width: '100%', maxWidth: 320, backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 16 }}
+        >
+          <Text style={{ color: COLORS.background, fontSize: 17, fontFamily: 'SpaceGrotesk-Bold', fontWeight: '800', letterSpacing: 0.2 }}>
+            Subscribe — $149/mo
+          </Text>
+        </AnimatedPressable>
+
+        {/* Fine print */}
+        <Text style={{ color: COLORS.textTertiary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center', lineHeight: 18 }}>
+          Cancel anytime. Billed monthly. No setup fees.
+        </Text>
+      </ScrollView>
+    </View>
+  );
+}
+
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function CreateShiftScreen() {
@@ -143,6 +204,8 @@ export default function CreateShiftScreen() {
 
   const [customPayMode, setCustomPayMode] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [subChecking, setSubChecking] = useState(true);
+  const [hasSubscription, setHasSubscription] = useState(false);
 
   // Pulsing glow animation for blast button
   const glowAnim = useRef(new Animated.Value(0.6)).current;
@@ -167,6 +230,24 @@ export default function CreateShiftScreen() {
     pulse.start();
     return () => pulse.stop();
   }, [glowAnim]);
+
+  useEffect(() => {
+    const checkSubscription = async () => {
+      console.log('[CreateShift] Checking subscription status...');
+      try {
+        const me = await apiGet('/api/me');
+        const active = me?.subscription_status === 'active';
+        console.log('[CreateShift] Subscription status:', me?.subscription_status, '→ active:', active);
+        setHasSubscription(active);
+      } catch (err) {
+        console.log('[CreateShift] Failed to check subscription, defaulting to no subscription:', err);
+        setHasSubscription(false);
+      } finally {
+        setSubChecking(false);
+      }
+    };
+    checkSubscription();
+  }, []);
 
   // Advanced section collapse animation
   const advancedHeight = useRef(new Animated.Value(0)).current;
@@ -256,6 +337,31 @@ export default function CreateShiftScreen() {
   };
 
   const blastButtonOpacity = loading ? 0.6 : 1;
+
+  // Show loading spinner while checking subscription
+  if (subChecking) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' }}>
+        <Stack.Screen options={{ title: 'Post a Shift', headerStyle: { backgroundColor: COLORS.background }, headerTintColor: COLORS.text }} />
+        <MaterialIcons name="hourglass-empty" size={32} color={COLORS.textSecondary} />
+        <Text style={{ color: COLORS.textSecondary, fontSize: 14, fontFamily: 'SpaceGrotesk-Regular', marginTop: 12 }}>
+          Checking account...
+        </Text>
+      </View>
+    );
+  }
+
+  // Show paywall if no active subscription
+  if (!hasSubscription) {
+    return (
+      <PaywallScreen
+        onSubscribe={() => {
+          console.log('[CreateShift] Subscribe button pressed');
+          Alert.alert('Stripe Coming Soon', 'Subscription payments will be available shortly. Stay tuned!');
+        }}
+      />
+    );
+  }
 
   return (
     <>
