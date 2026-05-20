@@ -143,6 +143,18 @@ describe("API Integration Tests", () => {
     expect(data.success).toBeDefined();
   });
 
+  test("POST /api/onboarding/worker - Missing required name field returns 400", async () => {
+    const res = await authenticatedApi("/api/onboarding/worker", authToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: "555-0001",
+        city: "San Francisco",
+      }),
+    });
+    await expectStatus(res, 400);
+  });
+
   test("POST /api/onboarding/worker - Missing required phone field returns 400", async () => {
     const res = await authenticatedApi("/api/onboarding/worker", authToken, {
       method: "POST",
@@ -150,6 +162,18 @@ describe("API Integration Tests", () => {
       body: JSON.stringify({
         name: "Test Worker",
         city: "San Francisco",
+      }),
+    });
+    await expectStatus(res, 400);
+  });
+
+  test("POST /api/onboarding/worker - Missing required city field returns 400", async () => {
+    const res = await authenticatedApi("/api/onboarding/worker", authToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Test Worker",
+        phone: "555-0001",
       }),
     });
     await expectStatus(res, 400);
@@ -366,6 +390,18 @@ describe("API Integration Tests", () => {
     expect(workerId).toBeDefined();
   });
 
+  test("POST /api/worker-profiles - Missing required name field returns 400", async () => {
+    const res = await authenticatedApi("/api/worker-profiles", authToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: "555-1234",
+        city: "San Francisco",
+      }),
+    });
+    await expectStatus(res, 400);
+  });
+
   test("POST /api/worker-profiles - Missing required phone field returns 400", async () => {
     const res = await authenticatedApi("/api/worker-profiles", authToken, {
       method: "POST",
@@ -378,13 +414,13 @@ describe("API Integration Tests", () => {
     await expectStatus(res, 400);
   });
 
-  test("POST /api/worker-profiles - Missing required name field returns 400", async () => {
+  test("POST /api/worker-profiles - Missing required city field returns 400", async () => {
     const res = await authenticatedApi("/api/worker-profiles", authToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        name: "Jane Doe",
         phone: "555-1234",
-        city: "San Francisco",
       }),
     });
     await expectStatus(res, 400);
@@ -548,22 +584,6 @@ describe("API Integration Tests", () => {
     expect(shiftId).toBeDefined();
   });
 
-  test("POST /api/shifts - Missing required urgency field returns 400", async () => {
-    const res = await authenticatedApi("/api/shifts", authToken, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        role: "chef",
-        date: "2026-05-10",
-        start_time: "18:00",
-        end_time: "22:00",
-        hourly_pay: "25.00",
-        location: "San Francisco",
-      }),
-    });
-    await expectStatus(res, 400);
-  });
-
   test("POST /api/shifts - Missing required role field returns 400", async () => {
     const res = await authenticatedApi("/api/shifts", authToken, {
       method: "POST",
@@ -596,6 +616,22 @@ describe("API Integration Tests", () => {
     await expectStatus(res, 400);
   });
 
+  test("POST /api/shifts - Missing required start_time field returns 400", async () => {
+    const res = await authenticatedApi("/api/shifts", authToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        role: "chef",
+        date: "2026-05-10",
+        end_time: "22:00",
+        hourly_pay: "25.00",
+        location: "San Francisco",
+        urgency: "tomorrow",
+      }),
+    });
+    await expectStatus(res, 400);
+  });
+
   test("POST /api/shifts - Missing required hourly_pay field returns 400", async () => {
     const res = await authenticatedApi("/api/shifts", authToken, {
       method: "POST",
@@ -607,6 +643,22 @@ describe("API Integration Tests", () => {
         end_time: "22:00",
         location: "San Francisco",
         urgency: "tomorrow",
+      }),
+    });
+    await expectStatus(res, 400);
+  });
+
+  test("POST /api/shifts - Missing required urgency field returns 400", async () => {
+    const res = await authenticatedApi("/api/shifts", authToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        role: "chef",
+        date: "2026-05-10",
+        start_time: "18:00",
+        end_time: "22:00",
+        hourly_pay: "25.00",
+        location: "San Francisco",
       }),
     });
     await expectStatus(res, 400);
@@ -760,24 +812,24 @@ describe("API Integration Tests", () => {
     await expectStatus(res, 201);
   });
 
-  test("POST /api/ratings - Missing required worker_id returns 400", async () => {
-    const res = await authenticatedApi("/api/ratings", authToken, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        shift_id: shiftId,
-        score: 5,
-      }),
-    });
-    await expectStatus(res, 400);
-  });
-
   test("POST /api/ratings - Missing required shift_id returns 400", async () => {
     const res = await authenticatedApi("/api/ratings", authToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         worker_id: workerId,
+        score: 5,
+      }),
+    });
+    await expectStatus(res, 400);
+  });
+
+  test("POST /api/ratings - Missing required worker_id returns 400", async () => {
+    const res = await authenticatedApi("/api/ratings", authToken, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        shift_id: shiftId,
         score: 5,
       }),
     });
