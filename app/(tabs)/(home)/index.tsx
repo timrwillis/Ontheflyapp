@@ -236,13 +236,7 @@ function LandingScreen() {
                   alignItems: 'center',
                   gap: 6,
                 }}>
-                  <Animated.View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.primary, opacity: dotOpacity }} />
-                  <Text style={{ color: COLORS.primary, fontSize: 12, fontFamily: 'SpaceGrotesk-SemiBold' }}>
-                    {firstWord}
-                  </Text>
-                  <Text style={{ color: COLORS.text, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
-                    {rest}
-                  </Text>
+                  <Animated.View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.primary, opacity: dotOpacity }} /><Text style={{ color: COLORS.primary, fontSize: 12, fontFamily: 'SpaceGrotesk-SemiBold' }}>{firstWord}</Text>{rest ? <Text style={{ color: COLORS.text, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>{rest}</Text> : null}
                 </View>
               );
             })}

@@ -1,3 +1,6 @@
+// Capture native fetch BEFORE any polyfill can override it
+const nativeFetch = global.fetch;
+
 import { createAuthClient } from "better-auth/react";
 import { expoClient } from "@better-auth/expo/client";
 import * as SecureStore from "expo-secure-store";
@@ -26,15 +29,17 @@ export const authClient = createAuthClient({
       storage,
     }),
   ],
-  ...(Platform.OS === "web" && {
-    fetchOptions: {
-      credentials: "include",
-      auth: {
-        type: "Bearer" as const,
-        token: () => localStorage.getItem(BEARER_TOKEN_KEY) || "",
+  fetchOptions: Platform.OS === "web"
+    ? {
+        credentials: "include",
+        auth: {
+          type: "Bearer" as const,
+          token: () => localStorage.getItem(BEARER_TOKEN_KEY) || "",
+        },
+      }
+    : {
+        customFetchImpl: nativeFetch,
       },
-    },
-  }),
 });
 
 export async function setBearerToken(token: string) {
