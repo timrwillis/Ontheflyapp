@@ -40,7 +40,6 @@ export default function WorkerAvailabilityStep() {
   const [loading, setLoading] = useState(false);
 
   const toggleDay = (day: string) => {
-    console.log('[WorkerOnboarding] Day toggled:', day);
     setSelectedDays((prev) => prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]);
   };
 
@@ -59,12 +58,9 @@ export default function WorkerAvailabilityStep() {
         is_available: isAvailable,
         onboarding_step: 3,
       };
-      console.log('[WorkerOnboarding] Submitting availability:', payload);
       await apiPatch('/api/worker-profiles/me', payload);
-      console.log('[WorkerOnboarding] Availability saved, navigating to complete');
       router.push('/onboarding/worker/complete');
-    } catch (err) {
-      console.error('[WorkerOnboarding] Error saving availability:', err);
+    } catch {
       Alert.alert('Error', 'Could not save your availability. Please try again.');
     } finally {
       setLoading(false);
@@ -124,12 +120,12 @@ export default function WorkerAvailabilityStep() {
           })}
         </View>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-          <AnimatedPressable onPress={() => { console.log('[WorkerOnboarding] Select all days'); setSelectedDays(DAYS.map((d) => d.value)); }} style={{ flex: 1 }}>
+          <AnimatedPressable onPress={() => setSelectedDays(DAYS.map((d) => d.value))} style={{ flex: 1 }}>
             <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 8, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
               <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-SemiBold' }}>Select All</Text>
             </View>
           </AnimatedPressable>
-          <AnimatedPressable onPress={() => { console.log('[WorkerOnboarding] Clear days'); setSelectedDays([]); }} style={{ flex: 1 }}>
+          <AnimatedPressable onPress={() => setSelectedDays([])} style={{ flex: 1 }}>
             <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 8, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
               <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-SemiBold' }}>Clear</Text>
             </View>
@@ -147,7 +143,7 @@ export default function WorkerAvailabilityStep() {
             <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-SemiBold', letterSpacing: 1, marginBottom: 8 }}>FROM</Text>
             <TextInput
               value={startTime}
-              onChangeText={(t) => { console.log('[WorkerOnboarding] Start time changed:', t); setStartTime(t); }}
+              onChangeText={setStartTime}
               placeholder="9:00 AM"
               placeholderTextColor={COLORS.textTertiary}
               style={{
@@ -166,7 +162,7 @@ export default function WorkerAvailabilityStep() {
             <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-SemiBold', letterSpacing: 1, marginBottom: 8 }}>TO</Text>
             <TextInput
               value={endTime}
-              onChangeText={(t) => { console.log('[WorkerOnboarding] End time changed:', t); setEndTime(t); }}
+              onChangeText={setEndTime}
               placeholder="11:00 PM"
               placeholderTextColor={COLORS.textTertiary}
               style={{
@@ -196,7 +192,7 @@ export default function WorkerAvailabilityStep() {
         </View>
         <Switch
           value={isAvailable}
-          onValueChange={(v) => { console.log('[WorkerOnboarding] Available now toggled:', v); setIsAvailable(v); }}
+          onValueChange={setIsAvailable}
           trackColor={{ false: COLORS.surfaceSecondary, true: COLORS.primaryMuted }}
           thumbColor={isAvailable ? COLORS.primary : COLORS.textSecondary}
         />

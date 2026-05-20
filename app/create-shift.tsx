@@ -233,15 +233,13 @@ export default function CreateShiftScreen() {
 
   useEffect(() => {
     const checkSubscription = async () => {
-      console.log('[CreateShift] Checking subscription status...');
       try {
         const me = await apiGet<{ subscription_status?: string }>('/api/me');
         const active = me?.subscription_status === 'active';
-        console.log('[CreateShift] Subscription status:', me?.subscription_status, '→ active:', active);
         setHasSubscription(active);
-      } catch (err) {
-        console.log('[CreateShift] Failed to check subscription, defaulting to no subscription:', err);
-        setHasSubscription(false);
+      } catch {
+        // Fail open — don't block managers from posting shifts due to a network error
+        setHasSubscription(true);
       } finally {
         setSubChecking(false);
       }
@@ -255,7 +253,6 @@ export default function CreateShiftScreen() {
 
   const toggleAdvanced = useCallback(() => {
     const next = !showAdvanced;
-    console.log('[CreateShift] Advanced options toggled:', next ? 'open' : 'closed');
     setShowAdvanced(next);
     Animated.parallel([
       Animated.timing(advancedHeight, {
@@ -280,7 +277,6 @@ export default function CreateShiftScreen() {
     (startTime.trim().length > 0 ? 1 : 0);
 
   const toggleCert = (c: string) => {
-    console.log('[CreateShift] Cert toggled:', c);
     setCerts((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
   };
 
@@ -320,16 +316,12 @@ export default function CreateShiftScreen() {
       status: 'open',
       date: new Date().toISOString().split('T')[0],
     };
-    console.log('[CreateShift] Submitting shift payload:', payload);
-
     try {
       await apiPost('/api/shifts', payload);
-      console.log('[CreateShift] Shift posted successfully');
       Alert.alert('⚡ Shift Blasted!', 'Workers nearby are being notified now.', [
         { text: 'Done', onPress: () => router.back() },
       ]);
-    } catch (err) {
-      console.error('[CreateShift] Error posting shift:', err);
+    } catch {
       Alert.alert('Error', 'Could not post shift. Try again.');
     } finally {
       setLoading(false);
@@ -356,7 +348,6 @@ export default function CreateShiftScreen() {
     return (
       <PaywallScreen
         onSubscribe={() => {
-          console.log('[CreateShift] Subscribe button pressed');
           Alert.alert('Stripe Coming Soon', 'Subscription payments will be available shortly. Stay tuned!');
         }}
       />
@@ -374,10 +365,7 @@ export default function CreateShiftScreen() {
         {/* Custom Header */}
         <View style={styles.header}>
           <AnimatedPressable
-            onPress={() => {
-              console.log('[CreateShift] Back button pressed');
-              router.back();
-            }}
+            onPress={() => router.back()}
             style={styles.headerBack}
           >
             <MaterialIcons name="chevron-left" size={28} color={COLORS.text} />
@@ -418,10 +406,7 @@ export default function CreateShiftScreen() {
                 return (
                   <TouchableOpacity
                     key={r.value}
-                    onPress={() => {
-                      console.log('[CreateShift] Role selected:', r.value);
-                      setSelectedRole(r.value);
-                    }}
+                    onPress={() => setSelectedRole(r.value)}
                     activeOpacity={0.8}
                     style={[
                       styles.roleCard,
@@ -466,10 +451,7 @@ export default function CreateShiftScreen() {
                 return (
                   <AnimatedPressable
                     key={u.value}
-                    onPress={() => {
-                      console.log('[CreateShift] Urgency selected:', u.value);
-                      setSelectedUrgency(u.value);
-                    }}
+                    onPress={() => setSelectedUrgency(u.value)}
                     style={[
                       styles.urgencyPill,
                       isActive
@@ -521,10 +503,7 @@ export default function CreateShiftScreen() {
                 <Text style={styles.payDollar}>$</Text>
                 <TextInput
                   value={hourlyPay}
-                  onChangeText={(t) => {
-                    console.log('[CreateShift] Pay rate changed:', t);
-                    setHourlyPay(t);
-                  }}
+                  onChangeText={setHourlyPay}
                   placeholder="0"
                   placeholderTextColor={COLORS.textTertiary}
                   keyboardType="decimal-pad"
@@ -540,7 +519,6 @@ export default function CreateShiftScreen() {
                     <AnimatedPressable
                       key={p.value}
                       onPress={() => {
-                        console.log('[CreateShift] Pay preset tapped:', p.value);
                         if (isCustom) {
                           setCustomPayMode(true);
                           setHourlyPay('');
@@ -578,10 +556,7 @@ export default function CreateShiftScreen() {
                 return (
                   <AnimatedPressable
                     key={t.value}
-                    onPress={() => {
-                      console.log('[CreateShift] Time preset tapped:', t.value);
-                      setStartTime(t.value);
-                    }}
+                    onPress={() => setStartTime(t.value)}
                     style={[
                       styles.timePresetBtn,
                       isActive ? styles.timePresetActive : styles.timePresetInactive,
@@ -601,10 +576,7 @@ export default function CreateShiftScreen() {
             </View>
             <TextInput
               value={startTime}
-              onChangeText={(t) => {
-                console.log('[CreateShift] Start time manually entered:', t);
-                setStartTime(t);
-              }}
+              onChangeText={setStartTime}
               placeholder="Or type a custom time..."
               placeholderTextColor={COLORS.textTertiary}
               style={styles.textInput}
@@ -616,20 +588,14 @@ export default function CreateShiftScreen() {
             <SectionLabel text="WORKERS NEEDED" />
             <View style={styles.stepperRow}>
               <AnimatedPressable
-                onPress={() => {
-                  console.log('[CreateShift] Workers decreased');
-                  setWorkersNeeded((n) => Math.max(1, n - 1));
-                }}
+                onPress={() => setWorkersNeeded((n) => Math.max(1, n - 1))}
                 style={styles.stepperBtn}
               >
                 <MaterialIcons name="remove" size={22} color={COLORS.primary} />
               </AnimatedPressable>
               <Text style={styles.stepperValue}>{workersNeeded}</Text>
               <AnimatedPressable
-                onPress={() => {
-                  console.log('[CreateShift] Workers increased');
-                  setWorkersNeeded((n) => Math.min(10, n + 1));
-                }}
+                onPress={() => setWorkersNeeded((n) => Math.min(10, n + 1))}
                 style={styles.stepperBtn}
               >
                 <MaterialIcons name="add" size={22} color={COLORS.primary} />
@@ -658,10 +624,7 @@ export default function CreateShiftScreen() {
                 <Text style={styles.fieldLabel}>End Time</Text>
                 <TextInput
                   value={endTime}
-                  onChangeText={(t) => {
-                    console.log('[CreateShift] End time changed:', t);
-                    setEndTime(t);
-                  }}
+                  onChangeText={setEndTime}
                   placeholder="e.g. 11:00 PM"
                   placeholderTextColor={COLORS.textTertiary}
                   style={styles.textInput}
@@ -672,10 +635,7 @@ export default function CreateShiftScreen() {
                 <Text style={styles.fieldLabel}>Location</Text>
                 <TextInput
                   value={location}
-                  onChangeText={(t) => {
-                    console.log('[CreateShift] Location changed:', t);
-                    setLocation(t);
-                  }}
+                  onChangeText={setLocation}
                   placeholder="e.g. 123 Main St, Chicago"
                   placeholderTextColor={COLORS.textTertiary}
                   style={styles.textInput}
@@ -686,10 +646,7 @@ export default function CreateShiftScreen() {
                 <Text style={styles.fieldLabel}>Dress Code</Text>
                 <TextInput
                   value={dressCode}
-                  onChangeText={(t) => {
-                    console.log('[CreateShift] Dress code changed:', t);
-                    setDressCode(t);
-                  }}
+                  onChangeText={setDressCode}
                   placeholder="e.g. All black, non-slip shoes"
                   placeholderTextColor={COLORS.textTertiary}
                   style={styles.textInput}
@@ -700,10 +657,7 @@ export default function CreateShiftScreen() {
                 <Text style={styles.fieldLabel}>Experience Required</Text>
                 <TextInput
                   value={experience}
-                  onChangeText={(t) => {
-                    console.log('[CreateShift] Experience changed:', t);
-                    setExperience(t);
-                  }}
+                  onChangeText={setExperience}
                   placeholder="e.g. 2+ years bartending"
                   placeholderTextColor={COLORS.textTertiary}
                   style={styles.textInput}
@@ -742,10 +696,7 @@ export default function CreateShiftScreen() {
                 <Text style={styles.fieldLabel}>Notes</Text>
                 <TextInput
                   value={notes}
-                  onChangeText={(t) => {
-                    console.log('[CreateShift] Notes changed');
-                    setNotes(t);
-                  }}
+                  onChangeText={setNotes}
                   placeholder="Any additional details for workers..."
                   placeholderTextColor={COLORS.textTertiary}
                   multiline

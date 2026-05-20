@@ -96,12 +96,9 @@ export default function WorkerProfileStep() {
         preferred_radius_miles: Number(radius) || 10,
         onboarding_step: 1,
       };
-      console.log('[WorkerOnboarding] Submitting worker profile:', payload);
       await apiPatch('/api/worker-profiles/me', payload);
-      console.log('[WorkerOnboarding] Worker profile saved, navigating to roles');
       router.push('/onboarding/worker/roles');
-    } catch (err) {
-      console.error('[WorkerOnboarding] Error saving profile:', err);
+    } catch {
       Alert.alert('Error', 'Could not save your profile. Please try again.');
     } finally {
       setLoading(false);
@@ -133,7 +130,7 @@ export default function WorkerProfileStep() {
       </Text>
 
       <View style={{ ...glass, marginBottom: 16 }}>
-        <InputField label="Full Name" value={name} onChangeText={(t) => { console.log('[WorkerOnboarding] Name changed'); setName(t); }} placeholder="Your full name" />
+        <InputField label="Full Name" value={name} onChangeText={setName} placeholder="Your full name" />
         <InputField label="Phone Number" value={phone} onChangeText={setPhone} placeholder="+1 (555) 000-0000" keyboardType="phone-pad" />
         <InputField label="City" value={city} onChangeText={setCity} placeholder="e.g. Chicago, IL" />
         <InputField label="Bio (optional)" value={bio} onChangeText={setBio} placeholder="Tell managers about your experience..." multiline />
@@ -151,7 +148,7 @@ export default function WorkerProfileStep() {
         </View>
         <Switch
           value={hasTransportation}
-          onValueChange={(v) => { console.log('[WorkerOnboarding] Transportation toggled:', v); setHasTransportation(v); }}
+          onValueChange={setHasTransportation}
           trackColor={{ false: COLORS.surfaceSecondary, true: COLORS.primaryMuted }}
           thumbColor={hasTransportation ? COLORS.primary : COLORS.textSecondary}
         />
@@ -166,7 +163,7 @@ export default function WorkerProfileStep() {
           {['5', '10', '15', '25', '50'].map((r) => {
             const isActive = radius === r;
             return (
-              <AnimatedPressable key={r} onPress={() => { console.log('[WorkerOnboarding] Radius selected:', r); setRadius(r); }}>
+              <AnimatedPressable key={r} onPress={() => setRadius(r)}>
                 <View style={{
                   backgroundColor: isActive ? COLORS.primary : 'rgba(255,255,255,0.04)',
                   borderRadius: 10,

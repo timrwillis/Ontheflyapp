@@ -15,7 +15,7 @@ export interface User {
   business_name?: string;
   business_type?: string;
   city?: string;
-  onboarding_step?: string;
+  onboarding_step?: number;
   profile_completed?: boolean;
   notification_preferences?: NotificationPreferences;
 }
@@ -145,9 +145,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 
   const fetchMe = useCallback(async () => {
     try {
-      console.log('[RoleContext] Fetching /api/me...');
       const data = await apiGet<Record<string, unknown>>('/api/me');
-      console.log('[RoleContext] /api/me response:', data);
 
       const user: User = {
         id: String(data.id ?? ''),
@@ -159,7 +157,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         business_name: (data.business as Record<string, unknown>)?.name as string ?? (data.business_name as string | undefined),
         business_type: (data.business as Record<string, unknown>)?.type as string ?? (data.business_type as string | undefined),
         city: (data.worker_profile as Record<string, unknown>)?.city as string ?? (data.city as string | undefined),
-        onboarding_step: data.onboarding_step as string | undefined,
+        onboarding_step: data.onboarding_step != null ? Number(data.onboarding_step) : undefined,
         profile_completed: Boolean(data.profile_completed),
         notification_preferences: (data.notification_preferences as NotificationPreferences) ?? {},
       };
@@ -175,14 +173,12 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       if (role === 'worker' && data.worker_profile) {
         const wp = normalizeWorkerProfile(data.worker_profile as Record<string, unknown>);
         setWorkerProfile(wp);
-        console.log('[RoleContext] Worker profile loaded from /api/me:', wp);
       } else {
         setWorkerProfile(null);
       }
 
       return user;
-    } catch (err) {
-      console.warn('[RoleContext] /api/me failed:', err);
+    } catch {
       return null;
     }
   }, []);
@@ -191,33 +187,27 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     try {
       const session = await authClient.getSession().catch(() => null);
       if (!session?.data?.session) return null;
-      console.log('[RoleContext] Fetching onboarding status...');
       const data = await apiGet<OnboardingStatus>('/api/onboarding/status');
-      console.log('[RoleContext] Onboarding status:', data);
       setOnboardingStatus(data);
       return data;
-    } catch (err) {
-      console.warn('[RoleContext] Could not fetch onboarding status:', err);
+    } catch {
       return null;
     }
   }, []);
 
   const refreshWorkerProfile = useCallback(async () => {
     try {
-      console.log('[RoleContext] Refreshing worker profile via /api/me...');
       const data = await apiGet<Record<string, unknown>>('/api/me');
       if (data.worker_profile) {
         const wp = normalizeWorkerProfile(data.worker_profile as Record<string, unknown>);
         setWorkerProfile(wp);
-        console.log('[RoleContext] Worker profile refreshed:', wp);
       }
-    } catch (err) {
-      console.warn('[RoleContext] Could not refresh worker profile:', err);
+    } catch {
+      // silently fail — profile will be stale until next refresh
     }
   }, []);
 
   const setRole = useCallback(async (role: Role) => {
-    console.log('[RoleContext] Setting role to:', role);
     setCurrentRole(role);
     if (role) {
       await AsyncStorage.setItem(ROLE_STORAGE_KEY, role);
@@ -236,27 +226,23 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         let session = null;
         try {
           session = await authClient.getSession();
-        } catch (sessionErr) {
+        } catch {
           // getSession throws on web when no session exists — treat as no session
-          console.log('[RoleContext] No active session:', JSON.stringify(sessionErr) || (sessionErr as Error)?.message || 'unknown error');
           setIsLoading(false);
           return;
         }
-        console.log('[RoleContext] Auth session check:', session?.data?.session ? 'active' : 'none');
         if (!session?.data?.session) {
-          console.log('[RoleContext] No active session — skipping fetchMe, auth screen will handle redirect');
           setIsLoading(false);
           return;
         }
 
         const stored = await AsyncStorage.getItem(ROLE_STORAGE_KEY);
-        console.log('[RoleContext] Stored role:', stored);
         if (stored && (stored === 'manager' || stored === 'worker' || stored === 'admin')) {
           setCurrentRole(stored as Role);
         }
         await fetchMe();
-      } catch (err) {
-        console.error('[RoleContext] Init error:', JSON.stringify(err) || (err as Error)?.message || 'unknown error');
+      } catch {
+        // init errors are non-fatal
       } finally {
         setIsLoading(false);
       }

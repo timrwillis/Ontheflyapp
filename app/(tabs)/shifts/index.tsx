@@ -39,7 +39,7 @@ function SegmentedControl({ options, selected, onSelect }: { options: string[]; 
       {options.map((opt) => {
         const isActive = selected === opt;
         return (
-          <AnimatedPressable key={opt} onPress={() => { console.log('[ShiftsTab] Segment selected:', opt); onSelect(opt); }} style={{ flex: 1 }}>
+          <AnimatedPressable key={opt} onPress={() => onSelect(opt)} style={{ flex: 1 }}>
             <View style={{
               backgroundColor: isActive ? 'rgba(0,255,133,0.08)' : 'transparent',
               borderRadius: 9,
@@ -82,7 +82,6 @@ export default function ShiftsScreen() {
 
   const loadShifts = useCallback(async () => {
     if (DEMO_MODE) {
-      console.log('[ShiftsTab] DEMO_MODE: using demo data');
       if (currentRole === 'worker') {
         setShifts(DEMO_SHIFTS.filter((s) => s.status === 'open' || s.status === 'pending').slice(0, 5));
       } else {
@@ -94,7 +93,6 @@ export default function ShiftsScreen() {
     }
     try {
       if (currentRole === 'worker') {
-        console.log('[ShiftsTab] Loading worker applications from /api/applications/my');
         const [appsData, assignData] = await Promise.all([
           apiGet<{ applications?: { shift?: Shift; status?: string }[]; data?: { shift?: Shift; status?: string }[] } | { shift?: Shift; status?: string }[]>('/api/applications/my').catch(() => []),
           apiGet<{ assignments?: { shift?: Shift; status?: string }[] } | { shift?: Shift; status?: string }[]>('/api/assignments/my').catch(() => []),
@@ -106,16 +104,13 @@ export default function ShiftsScreen() {
           ...assignList.map((item: any) => ({ ...(item.shift ?? item), status: item.status ?? item.shift?.status, _type: 'assignment', _assignment_id: item.id } as Shift)),
         ];
         setShifts(mapped);
-        console.log('[ShiftsTab] Loaded', mapped.length, 'worker shifts');
       } else {
-        console.log('[ShiftsTab] Loading manager shifts from /api/shifts/my');
         const data = await apiGet<{ shifts?: Shift[] } | Shift[]>('/api/shifts/my');
         const shiftList = Array.isArray(data) ? data : (data as any)?.shifts ?? [];
         setShifts(shiftList);
-        console.log('[ShiftsTab] Loaded', shiftList.length, 'manager shifts');
       }
-    } catch (err) {
-      console.error('[ShiftsTab] Error loading shifts:', err);
+    } catch {
+      // silently fail — UI shows empty state
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -133,9 +128,7 @@ export default function ShiftsScreen() {
       const data = await apiGet<{ applications: Application[] }>(`/api/shifts/${shiftId}/applications`);
       const list = Array.isArray(data) ? data : (data as any)?.applications ?? [];
       setApplications(list);
-      console.log('[ShiftsTab] Loaded', list.length, 'applications for shift', shiftId);
-    } catch (err) {
-      console.error('[ShiftsTab] Error loading applications:', err);
+    } catch {
       Alert.alert('Error', 'Could not load applicants. Please try again.');
     } finally {
       setAppsLoading(false);
@@ -147,9 +140,7 @@ export default function ShiftsScreen() {
     try {
       await apiPatch(`/api/applications/${applicationId}/confirm`, {});
       setApplications((prev) => prev.map((a) => a.id === applicationId ? { ...a, status: 'confirmed' } : a));
-      console.log('[ShiftsTab] Application confirmed:', applicationId);
-    } catch (err) {
-      console.error('[ShiftsTab] Error confirming application:', err);
+    } catch {
       Alert.alert('Error', 'Could not approve applicant. Please try again.');
     } finally {
       setActionLoading(null);
@@ -161,9 +152,7 @@ export default function ShiftsScreen() {
     try {
       await apiPatch(`/api/applications/${applicationId}/reject`, {});
       setApplications((prev) => prev.map((a) => a.id === applicationId ? { ...a, status: 'rejected' } : a));
-      console.log('[ShiftsTab] Application rejected:', applicationId);
-    } catch (err) {
-      console.error('[ShiftsTab] Error rejecting application:', err);
+    } catch {
       Alert.alert('Error', 'Could not reject applicant. Please try again.');
     } finally {
       setActionLoading(null);
@@ -286,7 +275,7 @@ export default function ShiftsScreen() {
               {currentRole === 'manager' ? 'Post a shift to get started.' : 'Accept shifts to see them here.'}
             </Text>
             {currentRole === 'manager' ? (
-              <AnimatedPressable onPress={() => { console.log('[ShiftsTab] Post First Shift CTA pressed'); router.push('/create-shift'); }}>
+              <AnimatedPressable onPress={() => router.push('/create-shift')}>
                 <View style={{
                   backgroundColor: COLORS.primary,
                   borderRadius: 12,
@@ -299,7 +288,7 @@ export default function ShiftsScreen() {
                 </View>
               </AnimatedPressable>
             ) : (
-              <AnimatedPressable onPress={() => { console.log('[ShiftsTab] Browse Open Shifts CTA pressed'); router.push('/(tabs)/(home)'); }}>
+              <AnimatedPressable onPress={() => router.push('/(tabs)/(home)')}>
                 <View style={{
                   backgroundColor: 'rgba(255,255,255,0.04)',
                   borderRadius: 12,
@@ -433,7 +422,7 @@ export default function ShiftsScreen() {
                         </View>
                       ) : (
                         <>
-                          <AnimatedPressable onPress={() => { console.log('[ShiftsTab] Approve pressed:', app.id); handleApprove(app.id); }} style={{ flex: 1 }} disabled={isActioning}>
+                          <AnimatedPressable onPress={() => handleApprove(app.id)} style={{ flex: 1 }} disabled={isActioning}>
                             <View style={{ backgroundColor: isActioning ? 'rgba(0,255,135,0.4)' : COLORS.primary, borderRadius: 10, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }}>
                               {isActioning ? <ActivityIndicator size="small" color="#000" /> : <MaterialIcons name="check" size={16} color="#000" />}
                               <Text style={{ color: '#000', fontSize: 13, fontFamily: 'SpaceGrotesk-Bold' }}>
@@ -441,7 +430,7 @@ export default function ShiftsScreen() {
                               </Text>
                             </View>
                           </AnimatedPressable>
-                          <AnimatedPressable onPress={() => { console.log('[ShiftsTab] Reject pressed:', app.id); handleReject(app.id); }} style={{ flex: 1 }} disabled={isActioning}>
+                          <AnimatedPressable onPress={() => handleReject(app.id)} style={{ flex: 1 }} disabled={isActioning}>
                             <View style={{ backgroundColor: COLORS.dangerMuted, borderRadius: 10, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6, borderWidth: 1, borderColor: 'rgba(255,68,68,0.3)' }}>
                               {isActioning ? <ActivityIndicator size="small" color={COLORS.danger} /> : <MaterialIcons name="close" size={16} color={COLORS.danger} />}
                               <Text style={{ color: COLORS.danger, fontSize: 13, fontFamily: 'SpaceGrotesk-Bold' }}>

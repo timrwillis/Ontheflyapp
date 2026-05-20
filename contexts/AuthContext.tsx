@@ -79,18 +79,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchUser();
 
-    const subscription = Linking.addEventListener("url", (event) => {
-      console.log("Deep link received, refreshing user session");
+    const subscription = Linking.addEventListener("url", () => {
       fetchUser();
     });
 
-    const intervalId = setInterval(() => {
-      fetchUser();
-    }, 5 * 60 * 1000);
+    // On web, refresh session when the tab becomes visible again
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          fetchUser();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      return () => {
+        subscription.remove();
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+    }
 
     return () => {
       subscription.remove();
-      clearInterval(intervalId);
     };
   }, []);
 
@@ -100,9 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let session = null;
       try {
         session = await authClient.getSession();
-      } catch (sessionErr) {
+      } catch {
         // getSession throws on web when no session exists — treat as no session
-        console.log("No active session:", JSON.stringify(sessionErr) || (sessionErr as Error)?.message || 'unknown error');
       }
       if (session?.data?.user) {
         setUser(session.data.user as User);
@@ -113,8 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         await clearAuthTokens();
       }
-    } catch (error) {
-      console.error("Failed to fetch user:", JSON.stringify(error) || (error as Error)?.message || 'unknown error');
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
@@ -122,13 +128,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    try {
-      await authClient.signIn.email({ email, password });
-      await fetchUser();
-    } catch (error) {
-      console.error("Email sign in failed:", error);
-      throw error;
-    }
+    await authClient.signIn.email({ email, password });
+    await fetchUser();
   };
 
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
@@ -136,7 +137,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await authClient.signUp.email({ email, password, name: name || email.split('@')[0] });
       if (result?.error) {
         const status = result.error.status ?? 0;
-        console.warn("Email sign up error response:", status, result.error.message);
         if (status === 422) {
           throw new Error("An account with this email already exists. Please sign in instead.");
         }
@@ -149,7 +149,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const errObj = error as { status?: number; message?: string };
       const status = errObj?.status ?? 0;
-      console.error("Email sign up failed:", status, (error as Error)?.message || error);
       if (status === 422) {
         throw new Error("An account with this email already exists. Please sign in instead.");
       }
@@ -207,8 +206,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       await authClient.signOut();
-    } catch (error) {
-      console.error("Sign out failed (API):", error);
+    } catch {
+      // sign out errors are non-fatal
     } finally {
       setUser(null);
       await clearAuthTokens();

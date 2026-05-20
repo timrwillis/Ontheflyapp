@@ -1,4 +1,7 @@
 {
+  "cli": {
+    "version": ">= 5.9.1"
+  },
   "build": {
     "development": {
       "developmentClient": true,
@@ -10,7 +13,11 @@
       "autoIncrement": true
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "channel": "production"
     }
+  },
+  "submit": {
+    "production": {}
   }
 }

@@ -96,12 +96,9 @@ export default function ManagerBusinessStep() {
         description: description.trim() || undefined,
         website: website.trim() || undefined,
       };
-      console.log('[ManagerOnboarding] Submitting business:', payload);
       await apiPost('/api/onboarding/business', payload);
-      console.log('[ManagerOnboarding] Business saved, navigating to complete');
       router.push('/onboarding/manager/complete');
-    } catch (err) {
-      console.error('[ManagerOnboarding] Error saving business:', err);
+    } catch {
       Alert.alert('Error', 'Could not save your business. Please try again.');
     } finally {
       setLoading(false);
@@ -133,7 +130,7 @@ export default function ManagerBusinessStep() {
       </Text>
 
       <View style={{ ...glass, marginBottom: 16 }}>
-        <InputField label="Business Name" value={name} onChangeText={(t) => { console.log('[ManagerOnboarding] Business name changed'); setName(t); }} placeholder="e.g. The Grand Hotel" />
+        <InputField label="Business Name" value={name} onChangeText={setName} placeholder="e.g. The Grand Hotel" />
         <InputField label="City" value={city} onChangeText={setCity} placeholder="e.g. Chicago, IL" />
         <InputField label="Address" value={address} onChangeText={setAddress} placeholder="e.g. 123 Main St" />
         <InputField label="Business Phone" value={phone} onChangeText={setPhone} placeholder="+1 (555) 000-0000" keyboardType="phone-pad" />
@@ -150,7 +147,7 @@ export default function ManagerBusinessStep() {
           {BUSINESS_TYPES.map((bt) => {
             const isActive = type === bt.value;
             return (
-              <AnimatedPressable key={bt.value} onPress={() => { console.log('[ManagerOnboarding] Business type selected:', bt.value); setType(bt.value); }}>
+              <AnimatedPressable key={bt.value} onPress={() => setType(bt.value)}>
                 <View style={{
                   backgroundColor: isActive ? COLORS.accent : 'rgba(255,255,255,0.04)',
                   borderRadius: 10,
