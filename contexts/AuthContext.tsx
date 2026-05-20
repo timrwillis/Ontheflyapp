@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUser = async () => {
     try {
       setLoading(true);
-      let session = null;
+      let session: Awaited<ReturnType<typeof authClient.getSession>> | null = null;
       try {
         session = await authClient.getSession();
       } catch {
@@ -191,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const { error } = await authClient.signIn.social({
         provider: "apple",
-        idToken: credential.identityToken,
+        idToken: { token: credential.identityToken },
       });
       if (error) {
         throw new Error(error.message || "Apple sign in failed");

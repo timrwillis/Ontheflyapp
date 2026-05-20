@@ -223,7 +223,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     const init = async () => {
       try {
         // Check for an active auth session first — if none, skip fetchMe
-        let session = null;
+        let session: Awaited<ReturnType<typeof authClient.getSession>> | null = null;
         try {
           session = await authClient.getSession();
         } catch {
