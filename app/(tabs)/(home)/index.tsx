@@ -83,7 +83,6 @@ function LandingScreen() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        console.log('[Landing] Fetching marketplace stats...');
         const data = await apiGet<MarketplaceStats>('/api/marketplace/stats');
         if (data) setStats(data);
       } catch {
@@ -117,7 +116,6 @@ function LandingScreen() {
   }, []);
 
   const handleRoleSelect = async (role: 'manager' | 'worker' | 'admin') => {
-    console.log('[Landing] Role selected:', role);
     if (role === 'admin') {
       await setRole(role);
       return;
@@ -226,7 +224,7 @@ function LandingScreen() {
 
         {/* CTA Buttons */}
         <View style={{ gap: 12, width: '100%', marginBottom: 32 }}>
-          <AnimatedPressable onPress={() => { console.log('[Landing] Manager CTA pressed'); handleRoleSelect('manager'); }}>
+          <AnimatedPressable onPress={() => handleRoleSelect('manager')}>
             <View style={{
               backgroundColor: COLORS.primary,
               borderRadius: 14,
@@ -242,7 +240,7 @@ function LandingScreen() {
           <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center', marginTop: -6 }}>
             avg 4 min fill time
           </Text>
-          <AnimatedPressable onPress={() => { console.log('[Landing] Worker CTA pressed'); handleRoleSelect('worker'); }}>
+          <AnimatedPressable onPress={() => handleRoleSelect('worker')}>
             <View style={{ ...glass, paddingVertical: 18, alignItems: 'center' }}>
               <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
                 I'm a Worker — Find Work Tonight
@@ -252,7 +250,7 @@ function LandingScreen() {
           <Text style={{ color: COLORS.primary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center', marginTop: -6 }}>
             Shifts available now →
           </Text>
-          <AnimatedPressable onPress={() => { console.log('[Landing] Admin access pressed'); handleRoleSelect('admin'); }}>
+          <AnimatedPressable onPress={() => handleRoleSelect('admin')}>
             <View style={{ paddingVertical: 12, alignItems: 'center' }}>
               <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
                 Admin Access
@@ -311,7 +309,7 @@ const SCARCITY_INSIGHTS = [
   { icon: '🎯', text: '94% fill rate this week' },
 ];
 
-const ACTIVITY_ITEMS = [
+const FALLBACK_ACTIVITY_ITEMS = [
   { icon: '✅', text: 'Bartender confirmed at Prime Social KC', time: '2m ago', color: COLORS.primary },
   { icon: '⚡', text: 'Server accepted shift at Midtown Tavern', time: '8m ago', color: COLORS.accent },
   { icon: '🎯', text: 'VIP event fully staffed in 4 minutes', time: '23m ago', color: '#60A5FA' },
@@ -446,6 +444,7 @@ function ManagerDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [nearbyWorkers, setNearbyWorkers] = useState<WorkerMini[]>([]);
+  const [activityItems, setActivityItems] = useState(FALLBACK_ACTIVITY_ITEMS);
 
   // Emergency banner pulse animation
   const emergencyPulse = useRef(new Animated.Value(0.4)).current;
@@ -478,10 +477,10 @@ function ManagerDashboard() {
 
   const loadData = useCallback(async () => {
     try {
-      console.log('[ManagerDashboard] Loading shifts...');
-      const [shiftsData, workersData] = await Promise.all([
+      const [shiftsData, workersData, marketplaceData] = await Promise.all([
         apiGet<{ shifts: Shift[] }>('/api/shifts?role=manager'),
         apiGet<WorkerMini[]>('/api/worker-profiles?available=true').catch(() => []),
+        apiGet<MarketplaceStats>('/api/marketplace/stats').catch(() => null),
       ]);
       const shiftList = Array.isArray((shiftsData as any)?.shifts) ? (shiftsData as any).shifts : Array.isArray(shiftsData) ? shiftsData : [];
       setShifts(shiftList);
@@ -490,8 +489,20 @@ function ManagerDashboard() {
       const confirmed = shiftList.filter((s: Shift) => s.status === 'pending').length;
       setStats({ open, filled, confirmed });
       setNearbyWorkers(Array.isArray(workersData) ? workersData : []);
+      if (marketplaceData?.recent_activity?.length) {
+        const ITEM_ICONS = ['✅', '⚡', '🎯', '✅', '⚡'];
+        const ITEM_COLORS = [COLORS.primary, COLORS.accent, '#60A5FA', COLORS.primary, COLORS.accent];
+        setActivityItems(
+          marketplaceData.recent_activity.slice(0, 5).map((item, i) => ({
+            icon: ITEM_ICONS[i % ITEM_ICONS.length],
+            text: item.text,
+            time: item.time,
+            color: ITEM_COLORS[i % ITEM_COLORS.length],
+          }))
+        );
+      }
     } catch (err) {
-      console.error('[ManagerDashboard] Error loading shifts:', err);
+      console.error('[ManagerDashboard] Error loading data:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -544,7 +555,7 @@ function ManagerDashboard() {
               <Text style={{ fontSize: 22 }}>👋</Text>
             </View>
           </View>
-          <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Notifications bell pressed'); router.push('/notifications'); }}>
+          <AnimatedPressable onPress={() => router.push('/notifications')}>
             <View style={{ width: 44, height: 44, ...glass, borderRadius: 22, padding: 0, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialIcons name="notifications" size={20} color={COLORS.text} />
             </View>
@@ -579,7 +590,7 @@ function ManagerDashboard() {
                 </Text>
               </View>
             </View>
-            <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Fill Now pressed'); router.push('/create-shift'); }}>
+            <AnimatedPressable onPress={() => router.push('/create-shift')}>
               <View style={{ backgroundColor: COLORS.danger, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
                 <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
                   Fill Now →
@@ -647,7 +658,7 @@ function ManagerDashboard() {
           style={{ marginHorizontal: -20, marginBottom: 28 }}
           contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
         >
-          <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Emergency Shift pressed'); router.push('/create-shift'); }}>
+          <AnimatedPressable onPress={() => router.push('/create-shift')}>
             <View style={{
               backgroundColor: 'rgba(255,68,68,0.15)',
               borderRadius: 20,
@@ -665,7 +676,7 @@ function ManagerDashboard() {
               </Text>
             </View>
           </AnimatedPressable>
-          <AnimatedPressable onPress={() => console.log('[ManagerDashboard] Repost Last pressed')}>
+          <AnimatedPressable onPress={() => {}}>
             <View style={{ ...glass, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={{ fontSize: 14 }}>↩</Text>
               <Text style={{ color: COLORS.text, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
@@ -673,7 +684,7 @@ function ManagerDashboard() {
               </Text>
             </View>
           </AnimatedPressable>
-          <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] View Workers pressed'); router.push('/(tabs)/workers'); }}>
+          <AnimatedPressable onPress={() => router.push('/(tabs)/workers')}>
             <View style={{ ...glass, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={{ fontSize: 14 }}>👥</Text>
               <Text style={{ color: COLORS.text, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
@@ -681,7 +692,7 @@ function ManagerDashboard() {
               </Text>
             </View>
           </AnimatedPressable>
-          <AnimatedPressable onPress={() => console.log('[ManagerDashboard] Invite Staff pressed')}>
+          <AnimatedPressable onPress={() => {}}>
             <View style={{ ...glass, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={{ fontSize: 14 }}>✉</Text>
               <Text style={{ color: COLORS.text, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
@@ -720,7 +731,7 @@ function ManagerDashboard() {
             <Text style={{ color: COLORS.danger, fontSize: 11, fontFamily: 'SpaceGrotesk-SemiBold', marginRight: 10 }}>
               {scarcityText}
             </Text>
-            <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Browse All workers pressed'); router.push('/nearby-workers'); }}>
+            <AnimatedPressable onPress={() => router.push('/nearby-workers')}>
               <Text style={{ color: COLORS.primary, fontSize: 12, fontFamily: 'SpaceGrotesk-SemiBold' }}>
                 Browse All →
               </Text>
@@ -743,7 +754,7 @@ function ManagerDashboard() {
                 <WorkerMiniCard key={worker.id} worker={worker} />
               ))}
               {extraWorkers > 0 && (
-                <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] +more workers pressed'); router.push('/nearby-workers'); }}>
+                <AnimatedPressable onPress={() => router.push('/nearby-workers')}>
                   <View style={{
                     width: 110,
                     backgroundColor: 'rgba(255,255,255,0.05)',
@@ -768,7 +779,7 @@ function ManagerDashboard() {
         </View>
 
         {/* Browse Marketplace Banner */}
-        <AnimatedPressable onPress={() => { console.log('[ManagerDashboard] Browse Marketplace banner pressed'); router.push('/nearby-workers'); }} style={{ marginBottom: 28 }}>
+        <AnimatedPressable onPress={() => router.push('/nearby-workers')} style={{ marginBottom: 28 }}>
           <View style={{
             backgroundColor: 'rgba(255,255,255,0.04)',
             borderWidth: 1,
@@ -859,7 +870,7 @@ function ManagerDashboard() {
                 <ShiftCard
                   shift={shift}
                   index={i}
-                  onPress={() => { console.log('[ManagerDashboard] Shift pressed:', shift.id); router.push(`/shift/${shift.id}`); }}
+                  onPress={() => router.push(`/shift/${shift.id}`)}
                 />
               </View>
             );
@@ -872,20 +883,20 @@ function ManagerDashboard() {
             <Text style={{ color: COLORS.text, fontSize: 18, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
               Recent Activity
             </Text>
-            <AnimatedPressable onPress={() => console.log('[ManagerDashboard] View All activity pressed')}>
+            <AnimatedPressable onPress={() => {}}>
               <Text style={{ color: COLORS.primary, fontSize: 12, fontFamily: 'SpaceGrotesk-SemiBold' }}>
                 View All
               </Text>
             </AnimatedPressable>
           </View>
           <View style={{ ...glass }}>
-            {ACTIVITY_ITEMS.map((item, i) => (
+            {activityItems.map((item, i) => (
               <View key={i} style={{
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 12,
                 paddingVertical: 10,
-                borderBottomWidth: i < ACTIVITY_ITEMS.length - 1 ? 1 : 0,
+                borderBottomWidth: i < activityItems.length - 1 ? 1 : 0,
                 borderBottomColor: 'rgba(255,255,255,0.05)',
               }}>
                 <View style={{
@@ -912,10 +923,7 @@ function ManagerDashboard() {
 
       {/* BLAST SHIFT FAB */}
       <Pressable
-        onPress={() => {
-          console.log('[ManagerDashboard] Blast Shift FAB pressed');
-          router.push('/create-shift');
-        }}
+        onPress={() => router.push('/create-shift')}
         style={{
           position: 'absolute',
           left: 24,
@@ -1007,7 +1015,6 @@ function WorkerDashboard() {
 
   const loadShifts = useCallback(async () => {
     try {
-      console.log('[WorkerDashboard] Loading shifts...');
       const data = await apiGet<{ shifts: Shift[] }>('/api/shifts?status=open');
       const list = Array.isArray((data as any)?.shifts) ? (data as any).shifts : Array.isArray(data) ? data : [];
       setShifts(list);
@@ -1027,7 +1034,6 @@ function WorkerDashboard() {
     if (!workerProfile?.id) return;
     setAvailabilityLoading(true);
     try {
-      console.log('[WorkerDashboard] Toggling availability for worker:', workerProfile.id);
       await apiPatch(`/api/worker-profiles/${workerProfile.id}/availability`, {
         is_available: !isAvailable,
       });
@@ -1044,7 +1050,6 @@ function WorkerDashboard() {
     if (!currentUser?.id) return;
     setApplyingId(shiftId);
     try {
-      console.log('[WorkerDashboard] Applying to shift:', shiftId, 'user:', currentUser.id);
       await apiPost(`/api/shifts/${shiftId}/apply`, { user_id: currentUser.id });
       Alert.alert('Applied!', 'Your application has been submitted. The manager will confirm shortly.');
       loadShifts();
@@ -1121,7 +1126,7 @@ function WorkerDashboard() {
               </Text>
             )}
           </View>
-          <AnimatedPressable onPress={() => { console.log('[WorkerDashboard] Notifications bell pressed'); router.push('/notifications'); }}>
+          <AnimatedPressable onPress={() => router.push('/notifications')}>
             <View style={{ width: 44, height: 44, ...glass, borderRadius: 22, padding: 0, alignItems: 'center', justifyContent: 'center' }}>
               <MaterialIcons name="notifications" size={20} color={COLORS.text} />
             </View>
@@ -1211,7 +1216,7 @@ function WorkerDashboard() {
             return (
               <AnimatedPressable
                 key={filter}
-                onPress={() => { console.log('[WorkerDashboard] Filter selected:', filter); setActiveFilter(filter); }}
+                onPress={() => setActiveFilter(filter)}
               >
                 <View style={{
                   backgroundColor: isActive ? COLORS.primary : COLORS.surface,
@@ -1317,7 +1322,7 @@ function WorkerDashboard() {
                     showAcceptButton
                     onAccept={() => handleAcceptShift(shift.id)}
                     acceptLoading={applyingId === shift.id}
-                    onPress={() => { console.log('[WorkerDashboard] Emergency shift pressed:', shift.id); router.push(`/shift/${shift.id}`); }}
+                    onPress={() => router.push(`/shift/${shift.id}`)}
                   />
                 ))}
               </>
@@ -1340,7 +1345,7 @@ function WorkerDashboard() {
                     showAcceptButton
                     onAccept={() => handleAcceptShift(shift.id)}
                     acceptLoading={applyingId === shift.id}
-                    onPress={() => { console.log('[WorkerDashboard] Boosted shift pressed:', shift.id); router.push(`/shift/${shift.id}`); }}
+                    onPress={() => router.push(`/shift/${shift.id}`)}
                   />
                 ))}
               </>
@@ -1363,7 +1368,7 @@ function WorkerDashboard() {
                     showAcceptButton
                     onAccept={() => handleAcceptShift(shift.id)}
                     acceptLoading={applyingId === shift.id}
-                    onPress={() => { console.log('[WorkerDashboard] Upcoming shift pressed:', shift.id); router.push(`/shift/${shift.id}`); }}
+                    onPress={() => router.push(`/shift/${shift.id}`)}
                   />
                 ))}
               </>
@@ -1386,7 +1391,6 @@ function AdminDashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        console.log('[AdminDashboard] Loading admin stats...');
         const data = await apiGet<Record<string, number>>('/api/admin/stats');
         setStats(data ?? {});
       } catch (err) {
@@ -1479,7 +1483,7 @@ function AdminDashboard() {
         ].map((action) => (
           <AnimatedPressable
             key={action.label}
-            onPress={() => { console.log('[AdminDashboard] Quick action pressed:', action.label); router.push(action.route as never); }}
+            onPress={() => router.push(action.route as never)}
           >
             <View style={{ ...glass, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
@@ -1502,7 +1506,7 @@ function AdminDashboard() {
         {adminTools.map((tool) => (
           <AnimatedPressable
             key={tool.label}
-            onPress={() => console.log('[AdminDashboard] Admin tool pressed:', tool.label)}
+            onPress={() => {}}
           >
             <View style={{ ...glass, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
