@@ -25,30 +25,24 @@ export default function WaitlistScreen() {
   const [error, setError] = useState('');
 
   const handleSubmit = async () => {
-    console.log('[Waitlist] Submit button pressed', { name, phone, email, role });
     if (!name.trim() || !phone.trim() || !email.trim() || !role) {
       setError('Please fill in all fields and select a role.');
-      console.log('[Waitlist] Validation failed — missing fields');
       return;
     }
     setError('');
     setSubmitting(true);
     try {
-      console.log('[Waitlist] POST /api/waitlist', { name: name.trim(), phone: phone.trim(), email: email.trim(), role });
-      const res = await fetch('https://zqdg2aguqavazwnbcyv4744dv5nv2nxg.app.specular.dev/api/waitlist', {
+      const res = await fetch('https://u8y8kzvzgndjkymacqmf8v9manbx8fwa.app.specular.dev/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), phone: phone.trim(), email: email.trim(), role }),
       });
       if (!res.ok) {
         const text = await res.text();
-        console.log('[Waitlist] POST /api/waitlist failed', res.status, text);
         throw new Error('Failed');
       }
-      console.log('[Waitlist] POST /api/waitlist success');
       setSubmitted(true);
     } catch (e) {
-      console.log('[Waitlist] POST /api/waitlist error', e);
       setError('Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
@@ -56,7 +50,6 @@ export default function WaitlistScreen() {
   };
 
   const handleRolePress = (r: string) => {
-    console.log('[Waitlist] Role selected:', r);
     setRole(r);
   };
 
@@ -117,7 +110,6 @@ export default function WaitlistScreen() {
               onChangeText={setName}
               autoCapitalize="words"
               returnKeyType="next"
-              onFocus={() => console.log('[Waitlist] Name field focused')}
             />
             <TextInput
               style={styles.input}
@@ -127,7 +119,6 @@ export default function WaitlistScreen() {
               onChangeText={setPhone}
               keyboardType="phone-pad"
               returnKeyType="next"
-              onFocus={() => console.log('[Waitlist] Phone field focused')}
             />
             <TextInput
               style={styles.input}
@@ -138,7 +129,6 @@ export default function WaitlistScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               returnKeyType="done"
-              onFocus={() => console.log('[Waitlist] Email field focused')}
             />
 
             {/* Role picker */}

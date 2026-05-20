@@ -20,18 +20,15 @@ export default function BetaWelcome() {
   }, [fadeAnim]);
 
   const handleContinue = async () => {
-    console.log('[BetaWelcome] Continue button pressed');
     try {
       await AsyncStorage.setItem(BETA_SEEN_KEY, 'true');
-      console.log('[BetaWelcome] onthefly_beta_seen flag set in AsyncStorage');
     } catch (e) {
-      console.warn('[BetaWelcome] Failed to set AsyncStorage flag:', e);
+      // ignore
     }
     router.replace('/(tabs)/(home)');
   };
 
   const handleFeedback = () => {
-    console.log('[BetaWelcome] Join Feedback Group button pressed, opening URL:', FEEDBACK_URL);
     Linking.openURL(FEEDBACK_URL);
   };
 
@@ -133,18 +130,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   boltIcon: {
-    ...(Platform.OS === 'web'
+    ...((Platform.OS === 'web'
       ? { textShadow: '0 0 20px rgba(0,255,135,0.4)' }
-      : { shadowColor: '#00FF87', shadowRadius: 20, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 0 } }),
+      : { shadowColor: '#00FF87', shadowRadius: 20, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 0 } }) as any),
   },
   logoText: {
     color: '#00FF87',
     fontSize: 44,
     fontFamily: 'SpaceGrotesk-Bold',
     letterSpacing: -1.5,
-    ...(Platform.OS === 'web'
+    ...((Platform.OS === 'web'
       ? { textShadow: '0 0 20px rgba(0,255,135,0.4)' }
-      : { shadowColor: '#00FF87', shadowRadius: 20, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 0 } }),
+      : { shadowColor: '#00FF87', shadowRadius: 20, shadowOpacity: 0.4, shadowOffset: { width: 0, height: 0 } }) as any),
   },
   divider: {
     width: 60,
@@ -199,9 +196,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    ...(Platform.OS === 'web'
+    ...((Platform.OS === 'web'
       ? { boxShadow: '0 4px 16px rgba(0,255,135,0.45)' }
-      : { shadowColor: '#00FF87', shadowRadius: 16, shadowOpacity: 0.45, shadowOffset: { width: 0, height: 4 }, elevation: 8 }),
+      : { shadowColor: '#00FF87', shadowRadius: 16, shadowOpacity: 0.45, shadowOffset: { width: 0, height: 4 }, elevation: 8 }) as any),
   },
   primaryButtonLabel: {
     color: '#0A0A0A',
