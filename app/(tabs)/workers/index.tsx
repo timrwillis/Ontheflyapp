@@ -26,14 +26,12 @@ export default function WorkersScreen() {
 
   const loadWorkers = useCallback(async () => {
     if (DEMO_MODE) {
-      console.log('[WorkersTab] DEMO_MODE: using demo data');
       setWorkers(DEMO_WORKERS);
       setLoading(false);
       setRefreshing(false);
       return;
     }
     try {
-      console.log('[WorkersTab] Loading workers from /api/workers...');
       const data = await apiGet<WorkerProfile[] | { workers: WorkerProfile[] }>('/api/workers');
       const list = Array.isArray(data) ? data : (data as any)?.workers ?? [];
       // Normalize field names
@@ -47,9 +45,8 @@ export default function WorkersScreen() {
         roles: w.roles ?? w.worker_roles?.map((r: any) => r.role) ?? [],
       }));
       setWorkers(normalized);
-      console.log('[WorkersTab] Loaded', normalized.length, 'workers');
     } catch (err) {
-      console.error('[WorkersTab] Error loading workers:', err);
+      // silently fail
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -62,21 +59,19 @@ export default function WorkersScreen() {
 
   const handleVerify = async (workerId: string) => {
     try {
-      console.log('[WorkersTab] Verifying worker:', workerId);
       await apiPatch(`/api/worker-profiles/${workerId}/verify`, {});
       loadWorkers();
     } catch (err) {
-      console.error('[WorkersTab] Error verifying worker:', err);
+      // silently fail
     }
   };
 
   const handleSuspend = async (worker: WorkerProfile) => {
     try {
-      console.log('[WorkersTab] Suspending/reinstating worker:', worker.id);
       await apiPatch(`/api/worker-profiles/${worker.id}/suspend`, { suspended: !worker.isSuspended });
       loadWorkers();
     } catch (err) {
-      console.error('[WorkersTab] Error suspending worker:', err);
+      // silently fail
     }
   };
 
@@ -129,7 +124,7 @@ export default function WorkersScreen() {
         <MaterialIcons name="search" size={18} color={isFocused ? COLORS.primary : COLORS.textSecondary} />
         <TextInput
           value={search}
-          onChangeText={(t) => { console.log('[WorkersTab] Search changed:', t); setSearch(t); }}
+          onChangeText={(t) => { setSearch(t); }}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder="Search workers or roles..."
@@ -150,7 +145,7 @@ export default function WorkersScreen() {
         style={{ marginHorizontal: -20, marginBottom: 16 }}
         contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
       >
-        <AnimatedPressable onPress={() => { console.log('[WorkersTab] Available filter toggled:', !availableOnly); setAvailableOnly(!availableOnly); }}>
+        <AnimatedPressable onPress={() => { setAvailableOnly(!availableOnly); }}>
           <View style={{
             backgroundColor: availableOnly ? COLORS.primaryMuted : 'rgba(255,255,255,0.04)',
             borderRadius: 20,
@@ -169,7 +164,7 @@ export default function WorkersScreen() {
           </View>
         </AnimatedPressable>
 
-        <AnimatedPressable onPress={() => { console.log('[WorkersTab] Verified filter toggled:', !verifiedOnly); setVerifiedOnly(!verifiedOnly); }}>
+        <AnimatedPressable onPress={() => { setVerifiedOnly(!verifiedOnly); }}>
           <View style={{
             backgroundColor: verifiedOnly ? COLORS.primaryMuted : 'rgba(255,255,255,0.04)',
             borderRadius: 20,
@@ -188,7 +183,7 @@ export default function WorkersScreen() {
           </View>
         </AnimatedPressable>
 
-        <AnimatedPressable onPress={() => { console.log('[WorkersTab] Top Rated filter toggled:', !topRatedOnly); setTopRatedOnly(!topRatedOnly); }}>
+        <AnimatedPressable onPress={() => { setTopRatedOnly(!topRatedOnly); }}>
           <View style={{
             backgroundColor: topRatedOnly ? COLORS.accentMuted : 'rgba(255,255,255,0.04)',
             borderRadius: 20,
@@ -248,7 +243,7 @@ export default function WorkersScreen() {
             worker={worker}
             index={i}
             showAdminActions={currentRole === 'admin'}
-            onPress={() => { console.log('[WorkersTab] Worker pressed:', worker.id); router.push(`/worker/${worker.id}`); }}
+            onPress={() => { router.push(`/worker/${worker.id}`); }}
             onVerify={() => handleVerify(worker.id)}
             onSuspend={() => handleSuspend(worker)}
           />

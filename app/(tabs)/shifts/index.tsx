@@ -312,10 +312,8 @@ export default function ShiftsScreen() {
               index={i}
               onPress={() => {
                 if (currentRole === 'manager' && selectedTab === 'Pending') {
-                  console.log('[ShiftsTab] Pending shift tapped, opening applicants sheet:', shift.id);
                   openSheetForShift(shift);
                 } else {
-                  console.log('[ShiftsTab] Shift pressed:', shift.id);
                   router.push(`/shift/${shift.id}`);
                 }
               }}

@@ -60,10 +60,9 @@ function NotificationPreferencesSection() {
       marketing: key === 'marketing' ? value : marketing,
     };
     try {
-      console.log('[Profile] Saving notification preferences:', prefs);
       await apiPut('/api/me', { notification_preferences: prefs });
     } catch (err) {
-      console.error('[Profile] Error saving notification preferences:', err);
+      // silently fail
     } finally {
       setSaving(false);
     }
@@ -104,14 +103,12 @@ function AccountSection() {
   const router = useRouter();
 
   const handleSignOut = () => {
-    console.log('[Profile] Sign out tapped');
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
-          console.log('[Profile] Sign out confirmed, clearing role');
           await setRole(null);
           router.replace('/');
         },
@@ -120,7 +117,6 @@ function AccountSection() {
   };
 
   const handleDeleteAccount = () => {
-    console.log('[Profile] Delete account tapped');
     Alert.alert(
       'Delete Account',
       'This will permanently delete your account and all data. This cannot be undone.',
@@ -130,12 +126,10 @@ function AccountSection() {
           text: 'Delete Account',
           style: 'destructive',
           onPress: async () => {
-            console.log('[Profile] Delete account confirmed, calling DELETE /api/me');
             try {
               await apiDelete('/api/me');
-              console.log('[Profile] Delete account API call succeeded');
             } catch (err) {
-              console.log('[Profile] Delete account API call failed (proceeding anyway):', err);
+              // proceed anyway
             }
             await setRole(null);
             router.replace('/');
@@ -149,7 +143,7 @@ function AccountSection() {
     <View style={{ marginBottom: 32 }}>
       <Text style={sectionLabelStyle}>ACCOUNT</Text>
       <View style={glass}>
-        <AnimatedPressable onPress={() => { console.log('[Profile] Settings pressed'); router.push('/settings'); }}>
+        <AnimatedPressable onPress={() => { router.push('/settings'); }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.divider }}>
             <MaterialIcons name="settings" size={18} color={COLORS.textSecondary} />
             <Text style={{ color: COLORS.text, fontSize: 15, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
@@ -158,7 +152,7 @@ function AccountSection() {
             <MaterialIcons name="chevron-right" size={18} color={COLORS.textSecondary} />
           </View>
         </AnimatedPressable>
-        <AnimatedPressable onPress={() => { console.log('[Profile] Support pressed'); router.push('/support'); }}>
+        <AnimatedPressable onPress={() => { router.push('/support'); }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.divider }}>
             <MaterialIcons name="support-agent" size={18} color={COLORS.textSecondary} />
             <Text style={{ color: COLORS.text, fontSize: 15, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
@@ -167,7 +161,7 @@ function AccountSection() {
             <MaterialIcons name="chevron-right" size={18} color={COLORS.textSecondary} />
           </View>
         </AnimatedPressable>
-        <AnimatedPressable onPress={() => { console.log('[Profile] Notifications pressed'); router.push('/notifications'); }}>
+        <AnimatedPressable onPress={() => { router.push('/notifications'); }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.divider }}>
             <MaterialIcons name="notifications" size={18} color={COLORS.textSecondary} />
             <Text style={{ color: COLORS.text, fontSize: 15, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
@@ -201,7 +195,6 @@ function RoleSwitcher() {
   const { setRole, currentRole } = useRole();
 
   const handleSwitch = async (role: Role) => {
-    console.log('[Profile] Switching role to:', role);
     await setRole(role);
   };
 
@@ -419,7 +412,7 @@ function WorkerProfileView() {
       )}
 
       {/* Edit profile */}
-      <AnimatedPressable onPress={() => { console.log('[Profile] Edit profile pressed'); router.push('/edit-profile'); }}>
+      <AnimatedPressable onPress={() => { router.push('/edit-profile'); }}>
         <View style={{ ...glass, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
           <MaterialIcons name="edit" size={18} color={COLORS.primary} />
           <Text style={{ color: COLORS.primary, fontSize: 15, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>

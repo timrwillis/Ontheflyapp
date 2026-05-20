@@ -122,7 +122,6 @@ function LandingScreen() {
   }, []);
 
   const handleRoleSelect = async (role: 'manager' | 'worker' | 'admin') => {
-    console.log('[Landing] Role selected:', role);
     if (role === 'admin') {
       await setRole(role);
       return;
@@ -135,7 +134,7 @@ function LandingScreen() {
         router.push('/onboarding/worker/index' as any);
       }
     } catch (error) {
-      console.error('[Landing] Failed to set role:', error);
+      // silently fail
     }
   };
 
