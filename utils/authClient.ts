@@ -3,7 +3,7 @@ import { expoClient } from '@better-auth/expo/client';
 import * as SecureStore from 'expo-secure-store';
 
 export const authClient = createAuthClient({
-  baseURL: 'https://zqdg2aguqavazwnbcyv4744dv5nv2nxg.app.specular.dev',
+  baseURL: 'https://u8y8kzvzgndjkymacqmf8v9manbx8fwa.app.specular.dev',
   plugins: [
     expoClient({
       scheme: 'onthefly',

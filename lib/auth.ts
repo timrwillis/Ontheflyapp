@@ -4,7 +4,7 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
 
-const API_URL = "https://zqdg2aguqavazwnbcyv4744dv5nv2nxg.app.specular.dev";
+const API_URL = "https://u8y8kzvzgndjkymacqmf8v9manbx8fwa.app.specular.dev";
 
 export const BEARER_TOKEN_KEY = "onthefly_bearer_token";
 
