@@ -28,7 +28,7 @@ function BusinessCard({ business, index }: { business: Business; index: number }
   const typeLabel = business.type ? business.type.charAt(0).toUpperCase() + business.type.slice(1) : 'Venue';
 
   return (
-    <AnimatedPressable onPress={() => console.log('[BusinessesTab] Business pressed:', business.id)}>
+    <AnimatedPressable onPress={() => {}}>
       <View style={{ backgroundColor: COLORS.surface, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, padding: 16, marginBottom: 12, ...(Platform.OS === 'web' ? { boxShadow: '0 2px 8px rgba(0,0,0,0.4)' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 6 }) }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
           <View style={{ flex: 1 }}>
@@ -73,7 +73,6 @@ export default function BusinessesScreen() {
 
   const loadBusinesses = useCallback(async () => {
     try {
-      console.log('[BusinessesTab] Loading businesses...');
       const data = await apiGet<Business[]>('/api/businesses');
       setBusinesses(Array.isArray(data) ? data : []);
     } catch (err) {
