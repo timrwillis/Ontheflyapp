@@ -46,7 +46,6 @@ export default function WorkerRolesStep() {
   const [loading, setLoading] = useState(false);
 
   const toggleRole = (roleValue: string) => {
-    console.log('[WorkerOnboarding] Role toggled:', roleValue);
     setSelectedRoles((prev) => {
       const exists = prev.find((r) => r.role === roleValue);
       if (exists) {
@@ -62,12 +61,10 @@ export default function WorkerRolesStep() {
   };
 
   const setPrimary = (roleValue: string) => {
-    console.log('[WorkerOnboarding] Primary role set:', roleValue);
     setSelectedRoles((prev) => prev.map((r) => ({ ...r, is_primary: r.role === roleValue })));
   };
 
   const handleNext = async () => {
-    console.log('[WorkerOnboarding] Roles step submit pressed');
     if (selectedRoles.length === 0) {
       Alert.alert('Required', 'Please select at least one role.');
       return;
@@ -75,12 +72,10 @@ export default function WorkerRolesStep() {
     setLoading(true);
     try {
       const payload = { roles: selectedRoles };
-      console.log('[WorkerOnboarding] Submitting roles:', payload);
       await apiPost('/api/onboarding/worker/roles', payload);
-      console.log('[WorkerOnboarding] Roles saved, navigating to availability');
       router.push('/onboarding/worker/availability');
     } catch (err) {
-      console.error('[WorkerOnboarding] Error saving roles:', err);
+      console.error('[WorkerOnboarding] Roles save failed:', err);
       Alert.alert('Error', 'Could not save your roles. Please try again.');
     } finally {
       setLoading(false);

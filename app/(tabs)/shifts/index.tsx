@@ -20,7 +20,7 @@ function SegmentedControl({ options, selected, onSelect }: { options: string[]; 
       {options.map((opt) => {
         const isActive = selected === opt;
         return (
-          <AnimatedPressable key={opt} onPress={() => { console.log('[ShiftsTab] Segment selected:', opt); onSelect(opt); }} style={{ flex: 1 }}>
+          <AnimatedPressable key={opt} onPress={() => onSelect(opt)} style={{ flex: 1 }}>
             <View style={{
               backgroundColor: isActive ? 'rgba(0,255,133,0.08)' : 'transparent',
               borderRadius: 9,
@@ -59,7 +59,6 @@ export default function ShiftsScreen() {
   const loadShifts = useCallback(async () => {
     try {
       if (currentRole === 'worker') {
-        console.log('[ShiftsTab] Loading worker applications from /api/applications/my');
         const [appsData, assignData] = await Promise.all([
           apiGet<{ applications?: { shift?: Shift; status?: string }[]; data?: { shift?: Shift; status?: string }[] } | { shift?: Shift; status?: string }[]>('/api/applications/my').catch(() => []),
           apiGet<{ assignments?: { shift?: Shift; status?: string }[] } | { shift?: Shift; status?: string }[]>('/api/assignments/my').catch(() => []),
@@ -71,13 +70,10 @@ export default function ShiftsScreen() {
           ...assignList.map((item: any) => ({ ...(item.shift ?? item), status: item.status ?? item.shift?.status, _type: 'assignment', _assignment_id: item.id } as Shift)),
         ];
         setShifts(mapped);
-        console.log('[ShiftsTab] Loaded', mapped.length, 'worker shifts');
       } else {
-        console.log('[ShiftsTab] Loading manager shifts from /api/shifts/my');
         const data = await apiGet<{ shifts?: Shift[] } | Shift[]>('/api/shifts/my');
         const shiftList = Array.isArray(data) ? data : (data as any)?.shifts ?? [];
         setShifts(shiftList);
-        console.log('[ShiftsTab] Loaded', shiftList.length, 'manager shifts');
       }
     } catch (err) {
       console.error('[ShiftsTab] Error loading shifts:', err);
@@ -198,7 +194,7 @@ export default function ShiftsScreen() {
             {currentRole === 'manager' ? 'Post a shift to get started.' : 'Accept shifts to see them here.'}
           </Text>
           {currentRole === 'manager' ? (
-            <AnimatedPressable onPress={() => { console.log('[ShiftsTab] Post First Shift CTA pressed'); router.push('/create-shift'); }}>
+            <AnimatedPressable onPress={() => router.push('/create-shift')}>
               <View style={{
                 backgroundColor: COLORS.primary,
                 borderRadius: 12,
@@ -211,7 +207,7 @@ export default function ShiftsScreen() {
               </View>
             </AnimatedPressable>
           ) : (
-            <AnimatedPressable onPress={() => { console.log('[ShiftsTab] Browse Open Shifts CTA pressed'); router.push('/(tabs)/(home)'); }}>
+            <AnimatedPressable onPress={() => router.push('/(tabs)/(home)')}>
               <View style={{
                 backgroundColor: 'rgba(255,255,255,0.04)',
                 borderRadius: 12,
@@ -233,7 +229,7 @@ export default function ShiftsScreen() {
             key={shift.id}
             shift={shift}
             index={i}
-            onPress={() => { console.log('[ShiftsTab] Shift pressed:', shift.id); router.push(`/shift/${shift.id}`); }}
+            onPress={() => router.push(`/shift/${shift.id}`)}
           />
         ))
       )}

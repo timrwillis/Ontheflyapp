@@ -28,7 +28,6 @@ export default function ManagerProfileStep() {
   const [loading, setLoading] = useState(false);
 
   const handleNext = async () => {
-    console.log('[ManagerOnboarding] Profile step submit pressed');
     if (!phone.trim()) {
       Alert.alert('Required', 'Please enter your phone number.');
       return;
@@ -36,12 +35,10 @@ export default function ManagerProfileStep() {
     setLoading(true);
     try {
       const payload = { phone: phone.trim() };
-      console.log('[ManagerOnboarding] Submitting manager profile:', payload);
       await apiPost('/api/onboarding/manager', payload);
-      console.log('[ManagerOnboarding] Manager profile saved, navigating to business');
       router.push('/onboarding/manager/business');
     } catch (err) {
-      console.error('[ManagerOnboarding] Error saving profile:', err);
+      console.error('[ManagerOnboarding] Profile save failed:', err);
       Alert.alert('Error', 'Could not save your profile. Please try again.');
     } finally {
       setLoading(false);
@@ -78,7 +75,7 @@ export default function ManagerProfileStep() {
         </Text>
         <TextInput
           value={phone}
-          onChangeText={(t) => { console.log('[ManagerOnboarding] Phone changed'); setPhone(t); }}
+          onChangeText={setPhone}
           placeholder="+1 (555) 000-0000"
           placeholderTextColor={COLORS.textTertiary}
           keyboardType="phone-pad"
