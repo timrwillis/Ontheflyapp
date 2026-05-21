@@ -26,15 +26,19 @@ export const authClient = createAuthClient({
       storage,
     }),
   ],
-  ...(Platform.OS === "web" && {
-    fetchOptions: {
-      credentials: "include",
+  fetchOptions: {
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    ...(Platform.OS === "web" ? {
+      credentials: "include" as const,
       auth: {
         type: "Bearer" as const,
         token: () => localStorage.getItem(BEARER_TOKEN_KEY) || "",
       },
-    },
-  }),
+    } : {}),
+  },
 });
 
 export async function setBearerToken(token: string) {

@@ -1,23 +1,61 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   TextInput,
-  StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
   Animated,
   Pressable,
   ActivityIndicator,
+  Alert,
+  StyleSheet,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '@/contexts/AuthContext';
 import { COLORS } from '@/constants/Colors';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-// ─── Brand logo components ───────────────────────────────────────────────────
+type Screen = 'landing' | 'signin' | 'signup';
+type WorkerRole = 'worker' | 'manager' | null;
+
+const ND = Platform.OS !== 'web';
+
+const primaryBtnGlow = Platform.select({
+  web: { boxShadow: '0 0 20px rgba(0,255,135,0.35)' },
+  default: {
+    shadowColor: '#00FF87',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+}) as object;
+
+const logoGlowStyle = Platform.select({
+  web: {},
+  default: {
+    shadowColor: '#00FF87',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 28,
+    elevation: 14,
+  },
+}) as object;
+
+const roleActiveGlow = Platform.select({
+  web: { boxShadow: '0 0 16px rgba(0,255,135,0.3)' },
+  default: {
+    shadowColor: '#00FF87',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+}) as object;
 
 function AppleLogo({ size = 20, color = '#FFFFFF' }: { size?: number; color?: string }) {
   return (
@@ -38,149 +76,86 @@ function GoogleLogo({ size = 20 }: { size?: number }) {
   );
 }
 
-// ─── Animated pressable ───────────────────────────────────────────────────────
-
-function AnimatedPressable({
-  onPress,
-  style,
-  children,
-  disabled,
-}: {
-  onPress: () => void;
-  style?: object | object[];
-  children: React.ReactNode;
-  disabled?: boolean;
-}) {
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const animateIn = useCallback(() => {
-    Animated.spring(scale, { toValue: 0.97, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start();
-  }, [scale]);
-
-  const animateOut = useCallback(() => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start();
-  }, [scale]);
-
-  return (
-    <Animated.View style={[{ transform: [{ scale }] }, disabled && { opacity: 0.5 }]}>
-      <Pressable
-        onPressIn={animateIn}
-        onPressOut={animateOut}
-        onPress={onPress}
-        disabled={disabled}
-        style={style}
-      >
-        {children}
-      </Pressable>
-    </Animated.View>
-  );
-}
-
-// ─── Main screen ──────────────────────────────────────────────────────────────
-
-type Tab = 'signin' | 'signup';
-
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const { user, loading, signInWithEmail, signUpWithEmail, signInWithApple, signInWithGoogle } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<Tab>('signin');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [screen, setScreen] = useState<Screen>('landing');
+  const [selectedRole, setSelectedRole] = useState<WorkerRole>(null);
+
+  // Sign In state
+  const [siEmail, setSiEmail] = useState('');
+  const [siPassword, setSiPassword] = useState('');
+  const [siShowPw, setSiShowPw] = useState(false);
+  const [siLoading, setSiLoading] = useState(false);
+
+  // Sign Up state
+  const [suName, setSuName] = useState('');
+  const [suEmail, setSuEmail] = useState('');
+  const [suPassword, setSuPassword] = useState('');
+  const [suShowPw, setSuShowPw] = useState(false);
+  const [suLoading, setSuLoading] = useState(false);
+
   const [socialLoading, setSocialLoading] = useState<'apple' | 'google' | null>(null);
-  const [error, setError] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [nameError, setNameError] = useState('');
 
-  // Fade-in entrance animation
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(24)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideX = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: Platform.OS !== 'web' }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: Platform.OS !== 'web' }),
-    ]).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Navigate once authenticated
   useEffect(() => {
     if (!loading && user) {
       router.replace('/(tabs)/(home)');
     }
   }, [user, loading]);
 
-  const clearErrors = () => {
-    setError('');
-    setEmailError('');
-    setPasswordError('');
-    setNameError('');
-  };
+  const navigateTo = useCallback((newScreen: Screen) => {
+    const forward = newScreen !== 'landing';
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 0, duration: 130, useNativeDriver: ND }),
+      Animated.timing(slideX, { toValue: forward ? -28 : 28, duration: 130, useNativeDriver: ND }),
+    ]).start(() => {
+      setScreen(newScreen);
+      slideX.setValue(forward ? 28 : -28);
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: ND }),
+        Animated.timing(slideX, { toValue: 0, duration: 200, useNativeDriver: ND }),
+      ]).start();
+    });
+  }, [fadeAnim, slideX]);
 
-  const validateEmail = (val: string) => {
-    if (!val) return 'Email is required';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return 'Enter a valid email address';
-    return '';
-  };
-
-  const validatePassword = (val: string) => {
-    if (!val) return 'Password is required';
-    if (activeTab === 'signup' && val.length < 8) return 'Password must be at least 8 characters';
-    return '';
-  };
-
-  const handleEmailBlur = () => {
-    setEmailError(validateEmail(email));
-  };
-
-  const handlePasswordBlur = () => {
-    setPasswordError(validatePassword(password));
-  };
-
-  const handleSubmit = async () => {
-    clearErrors();
-    const eErr = validateEmail(email);
-    const pErr = validatePassword(password);
-    if (eErr) setEmailError(eErr);
-    if (pErr) setPasswordError(pErr);
-    if (activeTab === 'signup' && !name.trim()) {
-      setNameError('Full name is required');
-      return;
-    }
-    if (eErr || pErr) return;
-
-    setSubmitting(true);
+  const handleSignIn = async () => {
+    if (!siEmail.trim()) { Alert.alert('Missing Email', 'Please enter your email address.'); return; }
+    if (!siPassword) { Alert.alert('Missing Password', 'Please enter your password.'); return; }
+    setSiLoading(true);
     try {
-      if (activeTab === 'signin') {
-        await signInWithEmail(email, password);
-      } else {
-        await signUpWithEmail(email, password, name || undefined);
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
-      console.warn('[AuthScreen] Email auth error:', msg);
-      setError(msg);
+      await signInWithEmail(siEmail.trim(), siPassword);
+    } catch (err) {
+      Alert.alert('Sign In Failed', err instanceof Error ? err.message : 'Please check your credentials and try again.');
     } finally {
-      setSubmitting(false);
+      setSiLoading(false);
+    }
+  };
+
+  const handleSignUp = async () => {
+    if (!suName.trim()) { Alert.alert('Missing Name', 'Please enter your full name.'); return; }
+    if (!suEmail.trim()) { Alert.alert('Missing Email', 'Please enter your email address.'); return; }
+    if (suPassword.length < 8) { Alert.alert('Password Too Short', 'Password must be at least 8 characters.'); return; }
+    setSuLoading(true);
+    try {
+      await signUpWithEmail(suEmail.trim(), suPassword, suName.trim());
+    } catch (err) {
+      Alert.alert('Sign Up Failed', err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setSuLoading(false);
     }
   };
 
   const handleApple = async () => {
     setSocialLoading('apple');
-    setError('');
     try {
       await signInWithApple();
-    } catch (err: unknown) {
+    } catch (err) {
       const msg = err instanceof Error ? err.message : 'Apple sign in failed';
-      if (!msg.toLowerCase().includes('cancel')) {
-        console.warn('[AuthScreen] Apple auth error:', msg);
-        setError(msg);
-      }
+      if (!msg.toLowerCase().includes('cancel')) Alert.alert('Sign In Failed', msg);
     } finally {
       setSocialLoading(null);
     }
@@ -188,154 +163,136 @@ export default function AuthScreen() {
 
   const handleGoogle = async () => {
     setSocialLoading('google');
-    setError('');
     try {
       await signInWithGoogle();
-    } catch (err: unknown) {
+    } catch (err) {
       const msg = err instanceof Error ? err.message : 'Google sign in failed';
-      if (!msg.toLowerCase().includes('cancel')) {
-        console.warn('[AuthScreen] Google auth error:', msg);
-        setError(msg);
-      }
+      if (!msg.toLowerCase().includes('cancel')) Alert.alert('Sign In Failed', msg);
     } finally {
       setSocialLoading(null);
     }
   };
 
-  const switchTab = (tab: Tab) => {
-    setActiveTab(tab);
-    clearErrors();
-    setEmail('');
-    setPassword('');
-    setName('');
-  };
-
-  const submitLabel = activeTab === 'signin' ? 'Sign In' : 'Create Account';
-  const isAnyLoading = submitting || socialLoading !== null;
+  const isAnyLoading = siLoading || suLoading || !!socialLoading;
 
   return (
     <KeyboardAvoidingView
-      style={[styles.root, { paddingTop: insets.top }]}
+      style={{ flex: 1, backgroundColor: COLORS.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          {/* Logo */}
-          <View style={styles.logoSection}>
-            <View style={styles.logoRow}>
-              <Text style={styles.bolt}>⚡</Text>
+      <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateX: slideX }] }}>
+
+        {/* ─── LANDING ─────────────────────────────────────────────── */}
+        {screen === 'landing' && (
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingTop: insets.top + 60, paddingBottom: insets.bottom + 40 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Logo */}
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', marginBottom: 64 }}>
+              <View style={{ marginBottom: 4, ...logoGlowStyle }}>
+                <Text style={{ fontSize: 72 }}>⚡</Text>
+              </View>
               <Text style={styles.logoText}>On The Fly</Text>
+              <Text style={styles.tagline}>Instant Coverage.</Text>
+              <Text style={styles.heroText}>The fastest way to{'\n'}staff your shift.</Text>
             </View>
-            <Text style={styles.tagline}>Instant Coverage.</Text>
-          </View>
 
-          {/* Tab switcher */}
-          <View style={styles.tabRow}>
-            <AnimatedPressable onPress={() => switchTab('signin')} style={{ flex: 1 }}>
-              <View style={[styles.tab, activeTab === 'signin' ? styles.tabActiveSignIn : styles.tabInactive]}>
-                <Text style={[styles.tabLabel, activeTab === 'signin' ? styles.tabLabelActiveSignIn : styles.tabLabelInactive]}>
-                  Sign In
-                </Text>
-              </View>
-            </AnimatedPressable>
-            <AnimatedPressable onPress={() => switchTab('signup')} style={{ flex: 1 }}>
-              <View style={[styles.tab, activeTab === 'signup' ? styles.tabActiveSignUp : styles.tabInactive]}>
-                <Text style={[styles.tabLabel, activeTab === 'signup' ? styles.tabLabelActiveSignUp : styles.tabLabelInactive]}>
-                  Create Account
-                </Text>
-              </View>
-            </AnimatedPressable>
-          </View>
+            {/* CTAs */}
+            <View style={{ gap: 14 }}>
+              <Pressable onPress={() => navigateTo('signup')}>
+                <View style={{ ...styles.primaryBtn, ...primaryBtnGlow }}>
+                  <Text style={styles.primaryBtnText}>Get Started</Text>
+                </View>
+              </Pressable>
+              <Pressable onPress={() => navigateTo('signin')}>
+                <View style={styles.outlineBtn}>
+                  <Text style={styles.outlineBtnText}>Sign In</Text>
+                </View>
+              </Pressable>
+            </View>
+          </ScrollView>
+        )}
 
-          {/* Card */}
-          <View style={styles.card}>
-            {/* Global error */}
-            {!!error && (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>{error}</Text>
-              </View>
-            )}
+        {/* ─── SIGN IN ─────────────────────────────────────────────── */}
+        {screen === 'signin' && (
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 28, paddingBottom: insets.bottom + 40 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Pressable onPress={() => navigateTo('landing')} style={styles.backBtn}>
+              <MaterialIcons name="arrow-back" size={22} color={COLORS.text} />
+            </Pressable>
 
-            {/* Name field (sign up only) */}
-            {activeTab === 'signup' && (
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Full name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. Alex Johnson"
-                  placeholderTextColor={COLORS.textTertiary}
-                  value={name}
-                  onChangeText={setName}
-                  autoCapitalize="words"
-                  returnKeyType="next"
-                  editable={!isAnyLoading}
-                />
-                {!!nameError && <Text style={styles.fieldError}>{nameError}</Text>}
-              </View>
-            )}
+            <View style={{ marginBottom: 36 }}>
+              <Text style={styles.screenTitle}>Welcome Back</Text>
+              <Text style={styles.screenSubtitle}>Sign in to your account</Text>
+            </View>
 
             {/* Email */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.fieldLabel}>Email</Text>
               <TextInput
-                style={[styles.input, !!emailError && styles.inputError]}
-                placeholder="e.g. you@example.com"
+                style={styles.input}
+                placeholder="you@example.com"
                 placeholderTextColor={COLORS.textTertiary}
-                value={email}
-                onChangeText={(v) => { setEmail(v); if (emailError) setEmailError(validateEmail(v)); }}
-                onBlur={handleEmailBlur}
+                value={siEmail}
+                onChangeText={setSiEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
-                returnKeyType="next"
                 editable={!isAnyLoading}
               />
-              {!!emailError && <Text style={styles.fieldError}>{emailError}</Text>}
             </View>
 
             {/* Password */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Password</Text>
-              <View style={[styles.inputRow, !!passwordError && styles.inputError]}>
+            <View style={[styles.fieldGroup, { marginTop: 16 }]}>
+              <Text style={styles.fieldLabel}>Password</Text>
+              <View style={styles.inputRow}>
                 <TextInput
                   style={styles.inputInner}
-                  placeholder={activeTab === 'signup' ? 'At least 8 characters' : 'Your password'}
+                  placeholder="Your password"
                   placeholderTextColor={COLORS.textTertiary}
-                  value={password}
-                  onChangeText={(v) => { setPassword(v); if (passwordError) setPasswordError(validatePassword(v)); }}
-                  onBlur={handlePasswordBlur}
-                  secureTextEntry={!showPassword}
+                  value={siPassword}
+                  onChangeText={setSiPassword}
+                  secureTextEntry={!siShowPw}
                   returnKeyType="done"
-                  onSubmitEditing={handleSubmit}
+                  onSubmitEditing={handleSignIn}
                   editable={!isAnyLoading}
                 />
-                <Pressable
-                  onPress={() => setShowPassword((s) => !s)}
-                  style={styles.eyeBtn}
-                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  <Text style={styles.eyeText}>{showPassword ? 'Hide' : 'Show'}</Text>
+                <Pressable onPress={() => setSiShowPw(v => !v)} style={styles.showHide}>
+                  <Text style={styles.showHideText}>{siShowPw ? 'Hide' : 'Show'}</Text>
                 </Pressable>
               </View>
-              {!!passwordError && <Text style={styles.fieldError}>{passwordError}</Text>}
             </View>
 
-            {/* Submit */}
-            <AnimatedPressable
-              onPress={handleSubmit}
-              style={styles.primaryBtn}
-              disabled={isAnyLoading}
+            {/* Sign In button */}
+            <Pressable onPress={handleSignIn} disabled={isAnyLoading} style={{ marginTop: 32 }}>
+              <View style={{ ...styles.primaryBtn, ...primaryBtnGlow, ...(isAnyLoading ? styles.disabled : {}) }}>
+                {siLoading
+                  ? <ActivityIndicator color="#000" size="small" />
+                  : <Text style={styles.primaryBtnText}>Sign In</Text>}
+              </View>
+            </Pressable>
+
+            {/* Forgot password */}
+            <Pressable
+              onPress={() => Alert.alert('Password Reset', 'Please contact support to reset your password.')}
+              style={{ marginTop: 18, alignItems: 'center' }}
             >
-              {submitting ? (
-                <ActivityIndicator color="#0A0A0A" size="small" />
-              ) : (
-                <Text style={styles.primaryBtnText}>{submitLabel}</Text>
-              )}
-            </AnimatedPressable>
+              <Text style={{ color: COLORS.primary, fontSize: 14, fontFamily: 'SpaceGrotesk-SemiBold' }}>
+                Forgot password?
+              </Text>
+            </Pressable>
+
+            {/* Switch to sign up */}
+            <Text style={[styles.switchLink, { marginTop: 12 }]}>
+              Don't have an account?{' '}
+              <Text style={styles.switchLinkCta} onPress={() => navigateTo('signup')}>Sign up</Text>
+            </Text>
 
             {/* Divider */}
             <View style={styles.dividerRow}>
@@ -344,224 +301,335 @@ export default function AuthScreen() {
               <View style={styles.dividerLine} />
             </View>
 
-            {/* Apple — must be first per App Store rules */}
-            <AnimatedPressable
-              onPress={handleApple}
-              style={styles.socialBtn}
-              disabled={isAnyLoading}
-            >
-              {socialLoading === 'apple' ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <>
-                  <AppleLogo size={20} color="#FFFFFF" />
-                  <Text style={styles.socialBtnText}>Continue with Apple</Text>
-                </>
-              )}
-            </AnimatedPressable>
+            {/* Apple */}
+            <Pressable onPress={handleApple} disabled={isAnyLoading}>
+              <View style={{ ...styles.socialBtn, ...(isAnyLoading ? styles.disabled : {}) }}>
+                {socialLoading === 'apple'
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : (
+                    <>
+                      <AppleLogo size={20} color="#FFF" />
+                      <Text style={styles.socialBtnText}>Continue with Apple</Text>
+                    </>
+                  )}
+              </View>
+            </Pressable>
 
             {/* Google */}
-            <AnimatedPressable
-              onPress={handleGoogle}
-              style={[styles.socialBtn, styles.socialBtnGoogle]}
-              disabled={isAnyLoading}
-            >
-              {socialLoading === 'google' ? (
-                <ActivityIndicator color={COLORS.text} size="small" />
-              ) : (
-                <>
-                  <GoogleLogo size={20} />
-                  <Text style={[styles.socialBtnText, styles.socialBtnTextGoogle]}>Continue with Google</Text>
-                </>
-              )}
-            </AnimatedPressable>
-          </View>
+            <Pressable onPress={handleGoogle} disabled={isAnyLoading} style={{ marginTop: 12 }}>
+              <View style={{ ...styles.socialBtn, ...styles.googleBtn, ...(isAnyLoading ? styles.disabled : {}) }}>
+                {socialLoading === 'google'
+                  ? <ActivityIndicator color={COLORS.text} size="small" />
+                  : (
+                    <>
+                      <GoogleLogo size={20} />
+                      <Text style={[styles.socialBtnText, { color: COLORS.text }]}>Continue with Google</Text>
+                    </>
+                  )}
+              </View>
+            </Pressable>
+          </ScrollView>
+        )}
 
-          {/* Footer */}
-          <Text style={styles.footer}>
-            {activeTab === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-            <Text
-              style={styles.footerLink}
-              onPress={() => switchTab(activeTab === 'signin' ? 'signup' : 'signin')}
-            >
-              {activeTab === 'signin' ? 'Create one' : 'Sign in'}
+        {/* ─── SIGN UP ─────────────────────────────────────────────── */}
+        {screen === 'signup' && (
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 28, paddingBottom: insets.bottom + 40 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Pressable onPress={() => navigateTo('landing')} style={styles.backBtn}>
+              <MaterialIcons name="arrow-back" size={22} color={COLORS.text} />
+            </Pressable>
+
+            <View style={{ marginBottom: 28 }}>
+              <Text style={styles.screenTitle}>Create Account</Text>
+              <Text style={styles.screenSubtitle}>Join On The Fly today</Text>
+            </View>
+
+            {/* Role selector */}
+            <View style={{ marginBottom: 28 }}>
+              <Text style={styles.sectionLabel}>I AM A...</Text>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <Pressable onPress={() => setSelectedRole('worker')} style={{ flex: 1 }}>
+                  <View style={[
+                    styles.roleCard,
+                    selectedRole === 'worker' && styles.roleCardActive,
+                    selectedRole === 'worker' ? (roleActiveGlow as any) : null,
+                  ]}>
+                    <Text style={{ fontSize: 28, marginBottom: 8 }}>👷</Text>
+                    <Text style={styles.roleCardTitle}>Worker</Text>
+                    <Text style={styles.roleCardSub}>Find shifts near me</Text>
+                  </View>
+                </Pressable>
+                <Pressable onPress={() => setSelectedRole('manager')} style={{ flex: 1 }}>
+                  <View style={[
+                    styles.roleCard,
+                    selectedRole === 'manager' && styles.roleCardActive,
+                    selectedRole === 'manager' ? (roleActiveGlow as any) : null,
+                  ]}>
+                    <Text style={{ fontSize: 28, marginBottom: 8 }}>🏢</Text>
+                    <Text style={styles.roleCardTitle}>Manager</Text>
+                    <Text style={styles.roleCardSub}>Post shifts for my venue</Text>
+                  </View>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Name */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Full Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Alex Johnson"
+                placeholderTextColor={COLORS.textTertiary}
+                value={suName}
+                onChangeText={setSuName}
+                autoCapitalize="words"
+                editable={!isAnyLoading}
+              />
+            </View>
+
+            {/* Email */}
+            <View style={[styles.fieldGroup, { marginTop: 16 }]}>
+              <Text style={styles.fieldLabel}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="you@example.com"
+                placeholderTextColor={COLORS.textTertiary}
+                value={suEmail}
+                onChangeText={setSuEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isAnyLoading}
+              />
+            </View>
+
+            {/* Password */}
+            <View style={[styles.fieldGroup, { marginTop: 16 }]}>
+              <Text style={styles.fieldLabel}>Password</Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.inputInner}
+                  placeholder="At least 8 characters"
+                  placeholderTextColor={COLORS.textTertiary}
+                  value={suPassword}
+                  onChangeText={setSuPassword}
+                  secureTextEntry={!suShowPw}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSignUp}
+                  editable={!isAnyLoading}
+                />
+                <Pressable onPress={() => setSuShowPw(v => !v)} style={styles.showHide}>
+                  <Text style={styles.showHideText}>{suShowPw ? 'Hide' : 'Show'}</Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Create Account button */}
+            <Pressable onPress={handleSignUp} disabled={isAnyLoading} style={{ marginTop: 32 }}>
+              <View style={{ ...styles.primaryBtn, ...primaryBtnGlow, ...(isAnyLoading ? styles.disabled : {}) }}>
+                {suLoading
+                  ? <ActivityIndicator color="#000" size="small" />
+                  : <Text style={styles.primaryBtnText}>Create Account</Text>}
+              </View>
+            </Pressable>
+
+            {/* Switch to sign in */}
+            <Text style={[styles.switchLink, { marginTop: 20 }]}>
+              Already have an account?{' '}
+              <Text style={styles.switchLinkCta} onPress={() => navigateTo('signin')}>Sign in</Text>
             </Text>
-          </Text>
-        </Animated.View>
-      </ScrollView>
+          </ScrollView>
+        )}
+
+      </Animated.View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scroll: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-  },
-  logoSection: {
-    alignItems: 'center',
-    paddingTop: 48,
-    paddingBottom: 32,
-  },
-  logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 8,
-  },
-  bolt: {
-    fontSize: 36,
-  },
+  // Landing
   logoText: {
     color: COLORS.primary,
-    fontSize: 38,
-    fontWeight: '800',
-    letterSpacing: -1.5,
+    fontSize: 46,
     fontFamily: 'SpaceGrotesk-Bold',
+    letterSpacing: -2,
+    marginBottom: 6,
   },
   tagline: {
     color: COLORS.textSecondary,
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: 'SpaceGrotesk-Regular',
-  },
-  tabRow: {
-    flexDirection: 'row',
-    gap: 10,
     marginBottom: 24,
   },
-  tab: {
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderRadius: 14,
-    borderWidth: 1.5,
-  },
-  tabInactive: {
-    backgroundColor: 'transparent',
-    borderColor: COLORS.border,
-  },
-  tabActiveSignIn: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-    ...Platform.select({
-      web: { boxShadow: '0 0 16px rgba(0,255,135,0.4)' },
-      default: { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
-    }),
-  },
-  tabActiveSignUp: {
-    backgroundColor: '#1A1A2E',
-    borderColor: COLORS.primary,
-    ...Platform.select({
-      web: { boxShadow: '0 0 16px rgba(0,255,135,0.2)' },
-      default: { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 6 },
-    }),
-  },
-  tabLabel: {
-    fontSize: 15,
+  heroText: {
+    color: COLORS.text,
+    fontSize: 20,
     fontFamily: 'SpaceGrotesk-Bold',
+    textAlign: 'center',
+    lineHeight: 30,
   },
-  tabLabelInactive: {
-    color: COLORS.textSecondary,
-  },
-  tabLabelActiveSignIn: {
-    color: '#0A0A0A',
-  },
-  tabLabelActiveSignUp: {
-    color: COLORS.primary,
-  },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    gap: 16,
-  },
-  errorBanner: {
-    backgroundColor: 'rgba(255, 68, 68, 0.12)',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 68, 68, 0.25)',
-  },
-  errorBannerText: {
-    color: COLORS.danger,
-    fontSize: 14,
-    fontFamily: 'SpaceGrotesk-Regular',
-    lineHeight: 20,
-  },
-  fieldGroup: {
-    gap: 6,
-  },
-  label: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontFamily: 'SpaceGrotesk-SemiBold',
-  },
-  input: {
-    backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    color: COLORS.text,
-    fontSize: 15,
-    fontFamily: 'SpaceGrotesk-Regular',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  inputError: {
-    borderColor: COLORS.danger,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 14,
-  },
-  inputInner: {
-    flex: 1,
-    paddingVertical: 13,
-    color: COLORS.text,
-    fontSize: 15,
-    fontFamily: 'SpaceGrotesk-Regular',
-  },
-  eyeBtn: {
-    paddingLeft: 8,
-    paddingVertical: 13,
-  },
-  eyeText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    fontFamily: 'SpaceGrotesk-SemiBold',
-  },
-  fieldError: {
-    color: COLORS.danger,
-    fontSize: 13,
-    fontFamily: 'SpaceGrotesk-Regular',
-  },
+
+  // Buttons
   primaryBtn: {
     backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingVertical: 15,
+    borderRadius: 14,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 50,
   },
   primaryBtnText: {
     color: '#0A0A0A',
     fontSize: 16,
     fontFamily: 'SpaceGrotesk-Bold',
   },
+  outlineBtn: {
+    borderRadius: 14,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+  },
+  outlineBtnText: {
+    color: COLORS.primary,
+    fontSize: 16,
+    fontFamily: 'SpaceGrotesk-Bold',
+  },
+  disabled: {
+    opacity: 0.55,
+  },
+
+  // Navigation
+  backBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  // Screen titles
+  screenTitle: {
+    color: COLORS.text,
+    fontSize: 32,
+    fontFamily: 'SpaceGrotesk-Bold',
+    letterSpacing: -1,
+    marginBottom: 6,
+  },
+  screenSubtitle: {
+    color: COLORS.textSecondary,
+    fontSize: 15,
+    fontFamily: 'SpaceGrotesk-Regular',
+  },
+
+  // Form
+  fieldGroup: {},
+  fieldLabel: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontFamily: 'SpaceGrotesk-SemiBold',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: COLORS.text,
+    fontSize: 15,
+    fontFamily: 'SpaceGrotesk-Regular',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 16,
+  },
+  inputInner: {
+    flex: 1,
+    paddingVertical: 14,
+    color: COLORS.text,
+    fontSize: 15,
+    fontFamily: 'SpaceGrotesk-Regular',
+  },
+  showHide: {
+    paddingLeft: 12,
+    paddingVertical: 14,
+  },
+  showHideText: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    fontFamily: 'SpaceGrotesk-SemiBold',
+  },
+
+  // Section labels
+  sectionLabel: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    fontFamily: 'SpaceGrotesk-SemiBold',
+    letterSpacing: 1.5,
+    marginBottom: 12,
+  },
+
+  // Role cards
+  roleCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    padding: 16,
+    alignItems: 'center',
+    minHeight: 128,
+    justifyContent: 'center',
+  },
+  roleCardActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryMuted,
+  },
+  roleCardTitle: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontFamily: 'SpaceGrotesk-Bold',
+    marginBottom: 4,
+  },
+  roleCardSub: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    fontFamily: 'SpaceGrotesk-Regular',
+    textAlign: 'center',
+  },
+
+  // Links
+  switchLink: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    fontFamily: 'SpaceGrotesk-Regular',
+    textAlign: 'center',
+  },
+  switchLinkCta: {
+    color: COLORS.primary,
+    fontFamily: 'SpaceGrotesk-SemiBold',
+  },
+
+  // Divider
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    marginVertical: 20,
   },
   dividerLine: {
     flex: 1,
@@ -573,38 +641,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'SpaceGrotesk-Regular',
   },
+
+  // Social buttons
   socialBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
     backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 14,
+    height: 52,
     borderWidth: 1,
     borderColor: COLORS.border,
-    minHeight: 50,
-  },
-  socialBtnGoogle: {
-    backgroundColor: COLORS.surfaceSecondary,
   },
   socialBtnText: {
     color: COLORS.text,
     fontSize: 15,
     fontFamily: 'SpaceGrotesk-SemiBold',
   },
-  socialBtnTextGoogle: {
-    color: COLORS.text,
-  },
-  footer: {
-    textAlign: 'center',
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    fontFamily: 'SpaceGrotesk-Regular',
-    marginTop: 20,
-  },
-  footerLink: {
-    color: COLORS.primary,
-    fontFamily: 'SpaceGrotesk-SemiBold',
+  googleBtn: {
+    backgroundColor: COLORS.surfaceSecondary,
   },
 });
