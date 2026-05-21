@@ -210,7 +210,7 @@ export default function AuthScreen() {
     setName('');
   };
 
-  const submitLabel = activeTab === 'signin' ? 'Sign in' : 'Create account';
+  const submitLabel = activeTab === 'signin' ? 'Sign In' : 'Create Account';
   const isAnyLoading = submitting || socialLoading !== null;
 
   return (
@@ -235,21 +235,19 @@ export default function AuthScreen() {
 
           {/* Tab switcher */}
           <View style={styles.tabRow}>
-            <AnimatedPressable
-              onPress={() => switchTab('signin')}
-              style={[styles.tab, activeTab === 'signin' && styles.tabActive]}
-            >
-              <Text style={[styles.tabLabel, activeTab === 'signin' && styles.tabLabelActive]}>
-                Sign in
-              </Text>
+            <AnimatedPressable onPress={() => switchTab('signin')} style={{ flex: 1 }}>
+              <View style={[styles.tab, activeTab === 'signin' ? styles.tabActiveSignIn : styles.tabInactive]}>
+                <Text style={[styles.tabLabel, activeTab === 'signin' ? styles.tabLabelActiveSignIn : styles.tabLabelInactive]}>
+                  Sign In
+                </Text>
+              </View>
             </AnimatedPressable>
-            <AnimatedPressable
-              onPress={() => switchTab('signup')}
-              style={[styles.tab, activeTab === 'signup' && styles.tabActive]}
-            >
-              <Text style={[styles.tabLabel, activeTab === 'signup' && styles.tabLabelActive]}>
-                Sign up
-              </Text>
+            <AnimatedPressable onPress={() => switchTab('signup')} style={{ flex: 1 }}>
+              <View style={[styles.tab, activeTab === 'signup' ? styles.tabActiveSignUp : styles.tabInactive]}>
+                <Text style={[styles.tabLabel, activeTab === 'signup' ? styles.tabLabelActiveSignUp : styles.tabLabelInactive]}>
+                  Create Account
+                </Text>
+              </View>
             </AnimatedPressable>
           </View>
 
@@ -386,7 +384,7 @@ export default function AuthScreen() {
               style={styles.footerLink}
               onPress={() => switchTab(activeTab === 'signin' ? 'signup' : 'signin')}
             >
-              {activeTab === 'signin' ? 'Sign up' : 'Sign in'}
+              {activeTab === 'signin' ? 'Create one' : 'Sign in'}
             </Text>
           </Text>
         </Animated.View>
@@ -432,29 +430,47 @@ const styles = StyleSheet.create({
   },
   tabRow: {
     flexDirection: 'row',
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    gap: 10,
+    marginBottom: 24,
   },
   tab: {
-    flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 14,
     alignItems: 'center',
-    borderRadius: 9,
+    borderRadius: 14,
+    borderWidth: 1.5,
   },
-  tabActive: {
+  tabInactive: {
+    backgroundColor: 'transparent',
+    borderColor: COLORS.border,
+  },
+  tabActiveSignIn: {
     backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+    ...Platform.select({
+      web: { boxShadow: '0 0 16px rgba(0,255,135,0.4)' },
+      default: { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 },
+    }),
+  },
+  tabActiveSignUp: {
+    backgroundColor: '#1A1A2E',
+    borderColor: COLORS.primary,
+    ...Platform.select({
+      web: { boxShadow: '0 0 16px rgba(0,255,135,0.2)' },
+      default: { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 6 },
+    }),
   },
   tabLabel: {
     fontSize: 15,
-    fontFamily: 'SpaceGrotesk-SemiBold',
+    fontFamily: 'SpaceGrotesk-Bold',
+  },
+  tabLabelInactive: {
     color: COLORS.textSecondary,
   },
-  tabLabelActive: {
+  tabLabelActiveSignIn: {
     color: '#0A0A0A',
+  },
+  tabLabelActiveSignUp: {
+    color: COLORS.primary,
   },
   card: {
     backgroundColor: COLORS.surface,
