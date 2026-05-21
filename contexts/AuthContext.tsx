@@ -94,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Re-check session on deep link (OAuth callbacks)
   useEffect(() => {
     const subscription = Linking.addEventListener("url", () => {
-      console.log("Deep link received, refreshing user session");
       fetchUser();
     });
     return () => subscription.remove();
@@ -113,8 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (finalStatus !== 'granted') return;
       const { data: token } = await Notifications.getExpoPushTokenAsync();
       await apiPost('/api/notifications/push-token', { token });
-    } catch (err) {
-      console.log('[Auth] Push token registration skipped:', err);
+    } catch {
+      // Push token registration is best-effort; ignore errors silently
     }
   };
 
@@ -123,8 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let session = null;
       try {
         session = await authClient.getSession();
-      } catch (sessionErr) {
-        console.log("No active session:", JSON.stringify(sessionErr) || (sessionErr as Error)?.message || 'unknown error');
+      } catch {
+        // No active session
       }
       if (session?.data?.session?.token) {
         await setBearerToken(session.data.session.token);
