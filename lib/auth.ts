@@ -5,13 +5,11 @@ import { createAuthClient } from "better-auth/react";
 import { expoClient } from "@better-auth/expo/client";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
-import Constants from "expo-constants";
 
 const API_URL = "https://u8y8kzvzgndjkymacqmf8v9manbx8fwa.app.specular.dev";
 
 export const BEARER_TOKEN_KEY = "onthefly_bearer_token";
 
-// Platform-specific storage: localStorage for web, SecureStore for native
 const storage = Platform.OS === "web"
   ? {
       getItem: (key: string) => localStorage.getItem(key),
@@ -19,6 +17,25 @@ const storage = Platform.OS === "web"
       deleteItem: (key: string) => localStorage.removeItem(key),
     }
   : SecureStore;
+
+// Wraps every request to enforce JSON headers and normalize network errors
+const authFetch: typeof fetch = async (input, init) => {
+  const merged: RequestInit = {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...(init?.headers as Record<string, string> | undefined),
+    },
+  };
+  try {
+    return await nativeFetch(input as RequestInfo, merged);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const isKotlinError = msg.includes('Kotlin') || msg.includes('convert');
+    throw new Error(isKotlinError ? 'Connection error. Please try again.' : 'Network error. Please check your connection.');
+  }
+};
 
 export const authClient = createAuthClient({
   baseURL: API_URL,
@@ -30,10 +47,7 @@ export const authClient = createAuthClient({
     }),
   ],
   fetchOptions: {
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
+    customFetchImpl: authFetch,
     ...(Platform.OS === "web" ? {
       credentials: "include" as const,
       auth: {

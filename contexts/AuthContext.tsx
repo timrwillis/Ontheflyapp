@@ -136,23 +136,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    const { error } = await authClient.signIn.email({ email, password });
-    if (error) {
-      throw new Error(error.message || 'Sign in failed. Please check your credentials.');
+    try {
+      const { error } = await authClient.signIn.email({ email, password });
+      if (error) {
+        throw new Error(error.message || 'Sign in failed. Please check your credentials.');
+      }
+      await fetchUser();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('Kotlin') || msg.includes('convert')) {
+        throw new Error('Connection error. Please try again.');
+      }
+      throw err;
     }
-    await fetchUser();
   };
 
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
-    const { error } = await authClient.signUp.email({
-      email,
-      password,
-      name: name || email.split('@')[0],
-    });
-    if (error) {
-      throw new Error(error.message || 'Sign up failed. Please try again.');
+    try {
+      const { error } = await authClient.signUp.email({
+        email,
+        password,
+        name: name || email.split('@')[0],
+      });
+      if (error) {
+        throw new Error(error.message || 'Sign up failed. Please try again.');
+      }
+      await fetchUser();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('Kotlin') || msg.includes('convert')) {
+        throw new Error('Connection error. Please try again.');
+      }
+      throw err;
     }
-    await fetchUser();
   };
 
   const signInWithSocial = async (provider: "apple" | "google") => {
