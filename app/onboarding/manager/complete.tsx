@@ -25,11 +25,9 @@ export default function ManagerOnboardingComplete() {
   const businessName = currentUser?.business_name ?? 'Your Business';
 
   const handleStart = async () => {
-    console.log('[ManagerOnboarding] Complete — Post First Shift pressed');
     setLoading(true);
     try {
       await apiPost('/api/onboarding/complete', {});
-      console.log('[ManagerOnboarding] Onboarding marked complete');
       router.replace('/create-shift');
     } catch (err) {
       console.error('[ManagerOnboarding] Error completing onboarding:', err);

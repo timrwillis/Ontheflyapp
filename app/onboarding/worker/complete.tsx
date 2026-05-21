@@ -33,11 +33,9 @@ export default function WorkerOnboardingComplete() {
   const days = workerProfile?.availability_days ?? [];
 
   const handleStart = async () => {
-    console.log('[WorkerOnboarding] Complete — Start Finding Shifts pressed');
     setLoading(true);
     try {
       await apiPost('/api/onboarding/complete', {});
-      console.log('[WorkerOnboarding] Onboarding marked complete');
       await refreshWorkerProfile();
       router.replace('/(tabs)/(home)');
     } catch (err) {
