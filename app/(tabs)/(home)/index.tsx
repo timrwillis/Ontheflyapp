@@ -101,6 +101,7 @@ function LandingScreen() {
   const tickerOffset = useRef(0);
   const dotOpacity = useRef(new Animated.Value(1)).current;
   const [stats, setStats] = useState<MarketplaceStats>({});
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -174,22 +175,6 @@ function LandingScreen() {
     { value: String(restaurantsHiring), label: 'venues hiring' },
     { value: String(shiftsFilled), label: 'filled today' },
   ];
-
-  const activityFeed = (stats.recent_activity && stats.recent_activity.length > 0)
-    ? stats.recent_activity
-    : _cachedStats.recent_activity ?? [];
-
-  // Build live feed items from activityFeed for the LIVE ACTIVITY section
-  const liveFeedItems = activityFeed.slice(0, 5).map((text, idx) => {
-    const iconName = text.startsWith('✅') ? 'check-circle' as const
-      : text.startsWith('⚡') ? 'bolt' as const
-      : text.startsWith('🎯') ? 'star' as const
-      : 'check-circle' as const;
-    const iconColor = idx % 2 === 0 ? COLORS.primary : '#FFB800';
-    const timeLabels = ['just now', '2m', '8m', '14m', '22m'];
-    const cleanText = text.replace(/^[✅⚡🎯🔥📍]\s*/u, '');
-    return { iconName, iconColor, text: cleanText, time: timeLabels[idx] ?? '30m' };
-  });
 
   return (
     <ScrollView
@@ -612,19 +597,6 @@ function ManagerDashboard() {
         return { icon, text: cleanText };
       })
     : SCARCITY_INSIGHTS;
-
-  const activityItems = (marketStats.recent_activity && marketStats.recent_activity.length > 0)
-    ? marketStats.recent_activity.slice(0, 5).map((text, idx) => {
-        const icon = text.startsWith('✅') ? '✅'
-          : text.startsWith('⚡') ? '⚡'
-          : text.startsWith('🎯') ? '🎯'
-          : text.startsWith('🔥') ? '🔥'
-          : '📍';
-        const color = idx % 2 === 0 ? COLORS.primary : COLORS.accent;
-        const timeLabels = ['just now', '3m ago', '11m ago', '28m ago', '45m ago'];
-        return { icon, text: text.replace(/^[✅⚡🎯🔥📍]\s*/u, ''), time: timeLabels[idx] ?? '1h ago', color };
-      })
-    : ACTIVITY_ITEMS;
 
   const bartenderCount = nearbyWorkers.filter((w) => w.roles?.[0] === 'Bartender').length;
   const scarcityBartenderCount = bartenderCount > 0 ? bartenderCount : 4;

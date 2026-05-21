@@ -195,7 +195,7 @@ export default function ShiftsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
       >
         {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
           <Text style={{ color: COLORS.text, fontSize: 26, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5, flex: 1 }}>
             {titleText}
           </Text>
@@ -205,6 +205,12 @@ export default function ShiftsScreen() {
                 {shifts.length}
               </Text>
             </View>
+          )}
+        </View>
+
+        {/* Reliability score bar — workers only */}
+        {currentRole === 'worker' && (
+          <View style={{ marginBottom: 20 }}>
             {/* Progress bar */}
             <View style={{ height: 3, backgroundColor: COLORS.surfaceSecondary, borderRadius: 2, marginBottom: 6, overflow: 'hidden' }}>
               <View style={{ height: 3, width: `${scoreBarWidth}%`, backgroundColor: scoreColor, borderRadius: 2 }} />
@@ -216,75 +222,75 @@ export default function ShiftsScreen() {
               {completedShifts} shifts completed
             </Text>
           </View>
-        </View>
-      )}
+        )}
 
-      <SegmentedControl options={tabs} selected={selectedTab} onSelect={setSelectedTab} />
+        <SegmentedControl options={tabs} selected={selectedTab} onSelect={setSelectedTab} />
 
-      {loading ? (
-        <>
-          <ShiftCardSkeleton />
-          <ShiftCardSkeleton />
-          <ShiftCardSkeleton />
-        </>
-      ) : filteredShifts.length === 0 ? (
-        <View style={{
-          backgroundColor: 'rgba(255,255,255,0.04)',
-          borderRadius: 16,
-          padding: 40,
-          alignItems: 'center',
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.08)',
-        }}>
-          <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: COLORS.primaryMuted, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-            <MaterialIcons name="calendar-today" size={28} color={COLORS.primary} />
+        {loading ? (
+          <>
+            <ShiftCardSkeleton />
+            <ShiftCardSkeleton />
+            <ShiftCardSkeleton />
+          </>
+        ) : filteredShifts.length === 0 ? (
+          <View style={{
+            backgroundColor: 'rgba(255,255,255,0.04)',
+            borderRadius: 16,
+            padding: 40,
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.08)',
+          }}>
+            <View style={{ width: 64, height: 64, borderRadius: 20, backgroundColor: COLORS.primaryMuted, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+              <MaterialIcons name="calendar-today" size={28} color={COLORS.primary} />
+            </View>
+            <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 6 }}>
+              No {selectedTab.toLowerCase()} shifts
+            </Text>
+            <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center', fontFamily: 'SpaceGrotesk-Regular', marginBottom: 20 }}>
+              {currentRole === 'manager' ? 'Post a shift to get started.' : 'Accept shifts to see them here.'}
+            </Text>
+            {currentRole === 'manager' ? (
+              <AnimatedPressable onPress={() => router.push('/create-shift')}>
+                <View style={{
+                  backgroundColor: COLORS.primary,
+                  borderRadius: 12,
+                  paddingHorizontal: 24,
+                  paddingVertical: 12,
+                }}>
+                  <Text style={{ color: '#000', fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                    Post Your First Shift
+                  </Text>
+                </View>
+              </AnimatedPressable>
+            ) : (
+              <AnimatedPressable onPress={() => router.push('/(tabs)/(home)')}>
+                <View style={{
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  borderRadius: 12,
+                  paddingHorizontal: 24,
+                  paddingVertical: 12,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.08)',
+                }}>
+                  <Text style={{ color: COLORS.text, fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                    Browse Open Shifts
+                  </Text>
+                </View>
+              </AnimatedPressable>
+            )}
           </View>
-          <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 6 }}>
-            No {selectedTab.toLowerCase()} shifts
-          </Text>
-          <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center', fontFamily: 'SpaceGrotesk-Regular', marginBottom: 20 }}>
-            {currentRole === 'manager' ? 'Post a shift to get started.' : 'Accept shifts to see them here.'}
-          </Text>
-          {currentRole === 'manager' ? (
-            <AnimatedPressable onPress={() => router.push('/create-shift')}>
-              <View style={{
-                backgroundColor: COLORS.primary,
-                borderRadius: 12,
-                paddingHorizontal: 24,
-                paddingVertical: 12,
-              }}>
-                <Text style={{ color: '#000', fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                  Post Your First Shift
-                </Text>
-              </View>
-            </AnimatedPressable>
-          ) : (
-            <AnimatedPressable onPress={() => router.push('/(tabs)/(home)')}>
-              <View style={{
-                backgroundColor: 'rgba(255,255,255,0.04)',
-                borderRadius: 12,
-                paddingHorizontal: 24,
-                paddingVertical: 12,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.08)',
-              }}>
-                <Text style={{ color: COLORS.text, fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                  Browse Open Shifts
-                </Text>
-              </View>
-            </AnimatedPressable>
-          )}
-        </View>
-      ) : (
-        filteredShifts.map((shift, i) => (
-          <ShiftCard
-            key={shift.id}
-            shift={shift}
-            index={i}
-            onPress={() => router.push(`/shift/${shift.id}`)}
-          />
-        ))
-      )}
-    </ScrollView>
+        ) : (
+          filteredShifts.map((shift, i) => (
+            <ShiftCard
+              key={shift.id}
+              shift={shift}
+              index={i}
+              onPress={() => router.push(`/shift/${shift.id}`)}
+            />
+          ))
+        )}
+      </ScrollView>
+    </>
   );
 }

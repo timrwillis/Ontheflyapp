@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TextInput, Switch, Alert, Platform } from 'reac
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { apiPatch } from '@/utils/api';
+import { apiPatch, apiPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 

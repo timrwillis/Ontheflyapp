@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = async () => {
     try {
-      let session = null;
+      let session: Awaited<ReturnType<typeof authClient.getSession>> | null = null;
       try {
         session = await authClient.getSession();
       } catch {
