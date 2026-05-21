@@ -647,15 +647,6 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Worker not found' });
       }
 
-      // Log the invite details
-      console.log(`Invite sent to: ${worker.name}`);
-      if (shiftId) {
-        console.log(`  Shift ID: ${shiftId}`);
-      }
-      if (message) {
-        console.log(`  Message: ${message}`);
-      }
-
       app.logger.info(
         { workerId, workerName: worker.name, shiftId, message },
         'Worker invite sent successfully'
