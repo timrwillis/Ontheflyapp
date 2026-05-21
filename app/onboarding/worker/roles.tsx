@@ -65,7 +65,6 @@ export default function WorkerRolesStep() {
   };
 
   const handleNext = async () => {
-    console.log('[WorkerOnboarding] Roles step submit pressed');
     if (selectedRoles.length === 0) {
       Alert.alert('Required', 'Please select at least one role.');
       return;

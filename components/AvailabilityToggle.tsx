@@ -44,7 +44,6 @@ export function AvailabilityToggle({ isAvailable, onToggle, loading }: Availabil
   }, [isAvailable]);
 
   const handlePress = () => {
-    console.log('[AvailabilityToggle] Toggling availability:', !isAvailable);
     Animated.sequence([
       Animated.spring(scale, { toValue: 0.97, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }),
       Animated.spring(scale, { toValue: 1, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }),

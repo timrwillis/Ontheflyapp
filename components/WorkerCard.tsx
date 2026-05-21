@@ -207,7 +207,6 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
               {!worker.isVerified && (
                 <AnimatedPressable
                   onPress={() => {
-                    console.log('[WorkerCard] Verify worker pressed:', worker.id);
                     onVerify?.();
                   }}
                   style={{ flex: 1 }}
@@ -230,7 +229,6 @@ export function WorkerCard({ worker, onPress, showAdminActions, onVerify, onSusp
               )}
               <AnimatedPressable
                 onPress={() => {
-                  console.log('[WorkerCard] Suspend worker pressed:', worker.id);
                   onSuspend?.();
                 }}
                 style={{ flex: 1 }}

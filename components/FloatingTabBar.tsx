@@ -89,8 +89,6 @@ export default function FloatingTabBar({
   if (!tabs || tabs.length === 0) return null;
 
   const handleTabPress = (route: Href, index: number) => {
-    console.log('[FloatingTabBar] Tab pressed:', route, 'index:', index);
-
     const scaleVal = scaleValues[index];
     Animated.sequence([
       Animated.spring(scaleVal, {

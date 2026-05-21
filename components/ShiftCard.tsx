@@ -432,7 +432,6 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
             {showAcceptButton && (
               <AnimatedPressable
                 onPress={() => {
-                  console.log('[ShiftCard] Accept shift pressed:', shift.id);
                   onAccept?.();
                 }}
                 disabled={acceptLoading}

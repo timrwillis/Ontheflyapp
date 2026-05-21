@@ -44,7 +44,6 @@ export default function WorkerAvailabilityStep() {
   };
 
   const handleNext = async () => {
-    console.log('[WorkerOnboarding] Availability step submit pressed');
     if (selectedDays.length === 0) {
       Alert.alert('Required', 'Please select at least one available day.');
       return;

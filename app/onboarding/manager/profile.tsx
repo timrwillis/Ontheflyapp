@@ -28,7 +28,6 @@ export default function ManagerProfileStep() {
   const [loading, setLoading] = useState(false);
 
   const handleNext = async () => {
-    console.log('[ManagerOnboarding] Profile step submit pressed');
     if (!phone.trim()) {
       Alert.alert('Required', 'Please enter your phone number.');
       return;

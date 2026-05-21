@@ -28,11 +28,9 @@ export default function OnboardingRoleSelector() {
   const [loading, setLoading] = useState<'manager' | 'worker' | null>(null);
 
   const handleSelectRole = async (role: 'manager' | 'worker') => {
-    console.log('[Onboarding] Role selected:', role);
     setLoading(role);
     try {
       await apiPost('/api/onboarding/role', { role });
-      console.log('[Onboarding] Role set via API:', role);
       await setRole(role);
       if (role === 'worker') {
         router.push('/onboarding/worker/profile');
@@ -40,7 +38,6 @@ export default function OnboardingRoleSelector() {
         router.push('/onboarding/manager/profile');
       }
     } catch (err) {
-      console.error('[Onboarding] Error setting role:', err);
       Alert.alert('Error', 'Could not set your role. Please try again.');
     } finally {
       setLoading(null);
@@ -70,7 +67,7 @@ export default function OnboardingRoleSelector() {
 
       {/* Worker card */}
       <AnimatedPressable
-        onPress={() => { console.log('[Onboarding] Worker card pressed'); handleSelectRole('worker'); }}
+        onPress={() => { handleSelectRole('worker'); }}
         style={{ marginBottom: 14 }}
       >
         <View style={{
@@ -107,7 +104,7 @@ export default function OnboardingRoleSelector() {
 
       {/* Manager card */}
       <AnimatedPressable
-        onPress={() => { console.log('[Onboarding] Manager card pressed'); handleSelectRole('manager'); }}
+        onPress={() => { handleSelectRole('manager'); }}
         style={{ marginBottom: 32 }}
       >
         <View style={{

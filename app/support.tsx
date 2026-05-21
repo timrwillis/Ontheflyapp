@@ -64,7 +64,7 @@ function SelectRow({ label, options, selected, onSelect }: {
         {options.map((opt) => {
           const isActive = selected === opt;
           return (
-            <AnimatedPressable key={opt} onPress={() => { console.log('[Support] Option selected:', label, opt); onSelect(opt); }}>
+            <AnimatedPressable key={opt} onPress={() => { onSelect(opt); }}>
               <View style={{
                 backgroundColor: isActive ? COLORS.primary : 'rgba(255,255,255,0.04)',
                 borderRadius: 10,
@@ -98,13 +98,10 @@ export default function SupportScreen() {
 
   const loadTickets = useCallback(async () => {
     try {
-      console.log('[Support] Loading tickets...');
       const data = await apiGet<Ticket[] | { tickets: Ticket[] }>('/api/support/tickets/my');
       const list = Array.isArray(data) ? data : (data as any)?.tickets ?? [];
       setTickets(list);
-      console.log('[Support] Loaded', list.length, 'tickets');
     } catch (err) {
-      console.error('[Support] Error loading tickets:', err);
     } finally {
       setTicketsLoading(false);
     }
@@ -113,20 +110,16 @@ export default function SupportScreen() {
   useEffect(() => { loadTickets(); }, [loadTickets]);
 
   const handleSubmit = async () => {
-    console.log('[Support] Submit ticket pressed');
     if (!subject.trim()) { Alert.alert('Required', 'Please enter a subject.'); return; }
     if (!body.trim()) { Alert.alert('Required', 'Please describe your issue.'); return; }
     setLoading(true);
     try {
       const payload = { subject: subject.trim(), body: body.trim(), category, priority };
-      console.log('[Support] Submitting ticket:', payload);
       await apiPost('/api/support/tickets', payload);
-      console.log('[Support] Ticket submitted successfully');
       Alert.alert('Ticket Submitted', 'We\'ll get back to you as soon as possible.', [
         { text: 'OK', onPress: () => { setSubject(''); setBody(''); setShowForm(false); loadTickets(); } },
       ]);
     } catch (err) {
-      console.error('[Support] Error submitting ticket:', err);
       Alert.alert('Error', 'Could not submit your ticket. Please try again.');
     } finally {
       setLoading(false);
@@ -152,7 +145,7 @@ export default function SupportScreen() {
           {['New Ticket', 'My Tickets'].map((tab) => {
             const isActive = (tab === 'New Ticket') === showForm;
             return (
-              <AnimatedPressable key={tab} onPress={() => { console.log('[Support] Tab switched:', tab); setShowForm(tab === 'New Ticket'); }} style={{ flex: 1 }}>
+              <AnimatedPressable key={tab} onPress={() => { setShowForm(tab === 'New Ticket'); }} style={{ flex: 1 }}>
                 <View style={{ backgroundColor: isActive ? COLORS.primary : 'transparent', borderRadius: 9, paddingVertical: 9, alignItems: 'center' }}>
                   <Text style={{ color: isActive ? '#000' : COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-SemiBold' }}>
                     {tab}
@@ -171,7 +164,7 @@ export default function SupportScreen() {
               </Text>
               <TextInput
                 value={subject}
-                onChangeText={(t) => { console.log('[Support] Subject changed'); setSubject(t); }}
+                onChangeText={(t) => { setSubject(t); }}
                 placeholder="Brief description of your issue"
                 placeholderTextColor={COLORS.textTertiary}
                 style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', padding: 12, color: COLORS.text, fontSize: 15, fontFamily: 'SpaceGrotesk-Regular', marginBottom: 16 }}
@@ -181,7 +174,7 @@ export default function SupportScreen() {
               </Text>
               <TextInput
                 value={body}
-                onChangeText={(t) => { console.log('[Support] Body changed'); setBody(t); }}
+                onChangeText={(t) => { setBody(t); }}
                 placeholder="Describe your issue in detail..."
                 placeholderTextColor={COLORS.textTertiary}
                 multiline
@@ -214,7 +207,7 @@ export default function SupportScreen() {
           </>
         ) : (
           <>
-            <AnimatedPressable onPress={() => { console.log('[Support] New ticket button pressed'); setShowForm(true); }} style={{ marginBottom: 20 }}>
+            <AnimatedPressable onPress={() => { setShowForm(true); }} style={{ marginBottom: 20 }}>
               <View style={{ ...glass, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 }}>
                 <MaterialIcons name="add" size={18} color={COLORS.primary} />
                 <Text style={{ color: COLORS.primary, fontSize: 14, fontFamily: 'SpaceGrotesk-SemiBold' }}>

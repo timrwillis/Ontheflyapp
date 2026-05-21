@@ -72,7 +72,6 @@ export default function WorkerProfileStep() {
   const [loading, setLoading] = useState(false);
 
   const handleNext = async () => {
-    console.log('[WorkerOnboarding] Profile step submit pressed');
     if (!name.trim()) {
       Alert.alert('Required', 'Please enter your full name.');
       return;

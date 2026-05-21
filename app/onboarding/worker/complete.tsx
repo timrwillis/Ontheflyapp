@@ -29,9 +29,7 @@ export default function WorkerOnboardingComplete() {
   const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
-    console.log('[WorkerOnboarding] Complete screen mounted — refreshing worker profile');
     refreshWorkerProfile().finally(() => {
-      console.log('[WorkerOnboarding] Worker profile refresh complete');
       setProfileLoading(false);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -43,16 +41,12 @@ export default function WorkerOnboardingComplete() {
   const days = workerProfile?.availability_days ?? [];
 
   const handleStart = async () => {
-    console.log('[WorkerOnboarding] Complete — Start Finding Shifts pressed');
     setLoading(true);
     try {
       await apiPost('/api/onboarding/complete', {});
-      console.log('[WorkerOnboarding] Onboarding marked complete');
       await Promise.all([refreshWorkerProfile(), refreshOnboardingStatus()]);
-      console.log('[WorkerOnboarding] Profile and onboarding status refreshed — navigating to home');
       router.replace('/(tabs)/(home)');
     } catch (err) {
-      console.error('[WorkerOnboarding] Error completing onboarding:', err);
       Alert.alert('Error', 'Could not complete setup. Please try again.');
     } finally {
       setLoading(false);

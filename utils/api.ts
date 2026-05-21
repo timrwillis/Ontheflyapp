@@ -22,7 +22,6 @@ export const getBearerToken = async (): Promise<string | null> => {
       return await SecureStore.getItemAsync(BEARER_TOKEN_KEY);
     }
   } catch (error) {
-    console.error("[API] Error retrieving bearer token:", error);
     return null;
   }
 };
@@ -32,7 +31,6 @@ export const apiCall = async <T = unknown>(
   options?: RequestInit
 ): Promise<T> => {
   const url = `${BACKEND_URL}${endpoint}`;
-  console.log(`[API] ${options?.method ?? "GET"} ${url}`);
 
   const fetchOptions: RequestInit = {
     ...options,
@@ -54,12 +52,10 @@ export const apiCall = async <T = unknown>(
 
   if (!response.ok) {
     const text = await response.text();
-    console.error(`[API] Error ${response.status} for ${endpoint}:`, text);
     throw new Error(`API error ${response.status}: ${text}`);
   }
 
   const data = await response.json();
-  console.log(`[API] Response for ${endpoint}:`, data);
   return data as T;
 };
 
