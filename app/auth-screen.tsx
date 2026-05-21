@@ -1,23 +1,21 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   TextInput,
+  TouchableOpacity,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Animated,
-  Pressable,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '@/contexts/AuthContext';
-import { COLORS } from '@/constants/Colors';
 
-// ─── Brand logo components ───────────────────────────────────────────────────
+// ─── Brand logo components ────────────────────────────────────────────────────
 
 function AppleLogo({ size = 20, color = '#FFFFFF' }: { size?: number; color?: string }) {
   return (
@@ -38,53 +36,14 @@ function GoogleLogo({ size = 20 }: { size?: number }) {
   );
 }
 
-// ─── Animated pressable ───────────────────────────────────────────────────────
-
-function AnimatedPressable({
-  onPress,
-  style,
-  children,
-  disabled,
-}: {
-  onPress: () => void;
-  style?: object | object[];
-  children: React.ReactNode;
-  disabled?: boolean;
-}) {
-  const scale = useRef(new Animated.Value(1)).current;
-
-  const animateIn = useCallback(() => {
-    Animated.spring(scale, { toValue: 0.97, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start();
-  }, [scale]);
-
-  const animateOut = useCallback(() => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: Platform.OS !== 'web', speed: 50, bounciness: 4 }).start();
-  }, [scale]);
-
-  return (
-    <Animated.View style={[{ transform: [{ scale }] }, disabled && { opacity: 0.5 }]}>
-      <Pressable
-        onPressIn={animateIn}
-        onPressOut={animateOut}
-        onPress={onPress}
-        disabled={disabled}
-        style={style}
-      >
-        {children}
-      </Pressable>
-    </Animated.View>
-  );
-}
-
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
-type Tab = 'signin' | 'signup';
+type Screen = 'landing' | 'signin' | 'signup';
 
 export default function AuthScreen() {
-  const insets = useSafeAreaInsets();
   const { user, loading, signInWithEmail, signUpWithEmail, signInWithApple, signInWithGoogle } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<Tab>('signin');
+  const [screen, setScreen] = useState<Screen>('landing');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -92,518 +51,673 @@ export default function AuthScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [socialLoading, setSocialLoading] = useState<'apple' | 'google' | null>(null);
   const [error, setError] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [nameError, setNameError] = useState('');
+  const [selectedRole, setSelectedRole] = useState<'worker' | 'manager'>('worker');
 
-  // Fade-in entrance animation
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(24)).current;
+  const isSubmitting = useRef(false);
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: Platform.OS !== 'web' }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: Platform.OS !== 'web' }),
-    ]).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Navigate once authenticated
   useEffect(() => {
     if (!loading && user) {
+      console.log('[AuthScreen] User authenticated, navigating to home');
       router.replace('/(tabs)/(home)');
     }
   }, [user, loading]);
 
-  const clearErrors = () => {
-    setError('');
-    setEmailError('');
-    setPasswordError('');
-    setNameError('');
-  };
-
-  const validateEmail = (val: string) => {
-    if (!val) return 'Email is required';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return 'Enter a valid email address';
-    return '';
-  };
-
-  const validatePassword = (val: string) => {
-    if (!val) return 'Password is required';
-    if (activeTab === 'signup' && val.length < 8) return 'Password must be at least 8 characters';
-    return '';
-  };
-
-  const handleEmailBlur = () => {
-    setEmailError(validateEmail(email));
-  };
-
-  const handlePasswordBlur = () => {
-    setPasswordError(validatePassword(password));
-  };
-
-  const handleSubmit = async () => {
-    clearErrors();
-    const eErr = validateEmail(email);
-    const pErr = validatePassword(password);
-    if (eErr) setEmailError(eErr);
-    if (pErr) setPasswordError(pErr);
-    if (activeTab === 'signup' && !name.trim()) {
-      setNameError('Full name is required');
-      return;
-    }
-    if (eErr || pErr) return;
-
+  const handleSignIn = async () => {
+    console.log('[AuthScreen] Sign in button pressed', { email });
+    if (isSubmitting.current) return;
+    isSubmitting.current = true;
     setSubmitting(true);
+    setError('');
     try {
-      if (activeTab === 'signin') {
-        await signInWithEmail(email, password);
-      } else {
-        await signUpWithEmail(email, password, name || undefined);
-      }
+      console.log('[AuthScreen] Calling signInWithEmail');
+      await signInWithEmail(email, password);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      const msg = err instanceof Error ? err.message : 'Sign in failed. Please try again.';
+      console.log('[AuthScreen] Sign in error:', msg);
       setError(msg);
     } finally {
+      isSubmitting.current = false;
+      setSubmitting(false);
+    }
+  };
+
+  const handleSignUp = async () => {
+    console.log('[AuthScreen] Sign up button pressed', { email, name, selectedRole });
+    if (isSubmitting.current) return;
+    isSubmitting.current = true;
+    setSubmitting(true);
+    setError('');
+    try {
+      console.log('[AuthScreen] Calling signUpWithEmail');
+      await signUpWithEmail(email, password, name || undefined);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Sign up failed. Please try again.';
+      console.log('[AuthScreen] Sign up error:', msg);
+      setError(msg);
+    } finally {
+      isSubmitting.current = false;
       setSubmitting(false);
     }
   };
 
   const handleApple = async () => {
+    console.log('[AuthScreen] Continue with Apple pressed');
     setSocialLoading('apple');
     setError('');
     try {
       await signInWithApple();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Apple sign in failed';
-      if (!msg.toLowerCase().includes('cancel')) {
-        setError(msg);
-      }
+      console.log('[AuthScreen] Apple sign in error:', msg);
+      if (!msg.toLowerCase().includes('cancel')) setError(msg);
     } finally {
       setSocialLoading(null);
     }
   };
 
   const handleGoogle = async () => {
+    console.log('[AuthScreen] Continue with Google pressed');
     setSocialLoading('google');
     setError('');
     try {
       await signInWithGoogle();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Google sign in failed';
-      if (!msg.toLowerCase().includes('cancel')) {
-        setError(msg);
-      }
+      console.log('[AuthScreen] Google sign in error:', msg);
+      if (!msg.toLowerCase().includes('cancel')) setError(msg);
     } finally {
       setSocialLoading(null);
     }
   };
 
-  const switchTab = (tab: Tab) => {
-    setActiveTab(tab);
-    clearErrors();
-    setEmail('');
-    setPassword('');
-    setName('');
-  };
+  // ─── Landing ────────────────────────────────────────────────────────────────
 
-  const submitLabel = activeTab === 'signin' ? 'Sign in' : 'Create account';
-  const isAnyLoading = submitting || socialLoading !== null;
+  if (screen === 'landing') {
+    return (
+      <View style={styles.landingRoot}>
+        <View style={styles.landingTop}>
+          <Text style={styles.landingBolt}>⚡</Text>
+          <Text style={styles.landingTitle}>On The Fly</Text>
+          <Text style={styles.landingTagline}>Instant Coverage.</Text>
+        </View>
+        <View style={styles.landingBottom}>
+          <TouchableOpacity
+            style={styles.getStartedBtn}
+            onPress={() => {
+              console.log('[AuthScreen] Get Started pressed');
+              setScreen('signup');
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.getStartedBtnText}>Get Started</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.signInBtn}
+            onPress={() => {
+              console.log('[AuthScreen] Sign In pressed from landing');
+              setScreen('signin');
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.signInBtnText}>Sign In</Text>
+          </TouchableOpacity>
+          <Text style={styles.termsText}>By continuing you agree to our Terms of Service</Text>
+        </View>
+      </View>
+    );
+  }
 
-  return (
-    <KeyboardAvoidingView
-      style={[styles.root, { paddingTop: insets.top }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+  // ─── Sign In ─────────────────────────────────────────────────────────────────
+
+  if (screen === 'signin') {
+    return (
+      <KeyboardAvoidingView
+        style={styles.kvRoot}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          {/* Logo */}
-          <View style={styles.logoSection}>
-            <View style={styles.logoRow}>
-              <Text style={styles.bolt}>⚡</Text>
-              <Text style={styles.logoText}>On The Fly</Text>
-            </View>
-            <Text style={styles.tagline}>Instant Coverage.</Text>
-          </View>
-
-          {/* Tab switcher */}
-          <View style={styles.tabRow}>
-            <AnimatedPressable
-              onPress={() => switchTab('signin')}
-              style={[styles.tab, activeTab === 'signin' && styles.tabActive]}
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <SafeAreaView style={styles.safeArea}>
+            <TouchableOpacity
+              style={styles.backBtn}
+              onPress={() => {
+                console.log('[AuthScreen] Back pressed from sign in');
+                setScreen('landing');
+              }}
+              activeOpacity={0.7}
             >
-              <Text style={[styles.tabLabel, activeTab === 'signin' && styles.tabLabelActive]}>
-                Sign in
-              </Text>
-            </AnimatedPressable>
-            <AnimatedPressable
-              onPress={() => switchTab('signup')}
-              style={[styles.tab, activeTab === 'signup' && styles.tabActive]}
-            >
-              <Text style={[styles.tabLabel, activeTab === 'signup' && styles.tabLabelActive]}>
-                Sign up
-              </Text>
-            </AnimatedPressable>
-          </View>
+              <Text style={styles.backArrow}>←</Text>
+            </TouchableOpacity>
 
-          {/* Card */}
-          <View style={styles.card}>
-            {/* Global error */}
-            {!!error && (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorBannerText}>
-                  {error}
-                  {error.includes('Please sign in instead') && (
-                    <>
-                      {' '}
-                      <Text
-                        style={styles.errorBannerLink}
-                        onPress={() => switchTab('signin')}
-                      >
-                        Switch to sign in
-                      </Text>
-                    </>
-                  )}
-                </Text>
-              </View>
-            )}
-
-            {/* Name field (sign up only) */}
-            {activeTab === 'signup' && (
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Full name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. Alex Johnson"
-                  placeholderTextColor={COLORS.textTertiary}
-                  value={name}
-                  onChangeText={setName}
-                  autoCapitalize="words"
-                  returnKeyType="next"
-                  editable={!isAnyLoading}
-                />
-                {!!nameError && <Text style={styles.fieldError}>{nameError}</Text>}
-              </View>
-            )}
+            <Text style={styles.screenTitle}>Welcome Back</Text>
+            <Text style={styles.screenSubtitle}>Sign in to your On The Fly account</Text>
 
             {/* Email */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={[styles.input, !!emailError && styles.inputError]}
-                placeholder="e.g. you@example.com"
-                placeholderTextColor={COLORS.textTertiary}
-                value={email}
-                onChangeText={(v) => { setEmail(v); if (emailError) setEmailError(validateEmail(v)); }}
-                onBlur={handleEmailBlur}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="next"
-                editable={!isAnyLoading}
-              />
-              {!!emailError && <Text style={styles.fieldError}>{emailError}</Text>}
-            </View>
+            <Text style={styles.fieldLabel}>Email Address</Text>
+            <TextInput
+              style={[styles.textInput, styles.fieldMargin]}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholderTextColor="#555555"
+              placeholder="you@example.com"
+            />
 
             {/* Password */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Password</Text>
-              <View style={[styles.inputRow, !!passwordError && styles.inputError]}>
-                <TextInput
-                  style={styles.inputInner}
-                  placeholder={activeTab === 'signup' ? 'At least 8 characters' : 'Your password'}
-                  placeholderTextColor={COLORS.textTertiary}
-                  value={password}
-                  onChangeText={(v) => { setPassword(v); if (passwordError) setPasswordError(validatePassword(v)); }}
-                  onBlur={handlePasswordBlur}
-                  secureTextEntry={!showPassword}
-                  returnKeyType="done"
-                  onSubmitEditing={handleSubmit}
-                  editable={!isAnyLoading}
-                />
-                <Pressable
-                  onPress={() => setShowPassword((s) => !s)}
-                  style={styles.eyeBtn}
-                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  <Text style={styles.eyeText}>{showPassword ? 'Hide' : 'Show'}</Text>
-                </Pressable>
-              </View>
-              {!!passwordError && <Text style={styles.fieldError}>{passwordError}</Text>}
+            <Text style={styles.fieldLabel}>Password</Text>
+            <View style={[styles.passwordRow, styles.fieldMargin]}>
+              <TextInput
+                style={styles.passwordInput}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                placeholderTextColor="#555555"
+                placeholder="Your password"
+              />
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('[AuthScreen] Toggle password visibility');
+                  setShowPassword((v) => !v);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.showHideText}>{showPassword ? 'Hide' : 'Show'}</Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Submit */}
-            <AnimatedPressable
-              onPress={handleSubmit}
+            <TouchableOpacity
+              style={styles.forgotBtn}
+              onPress={() => console.log('[AuthScreen] Forgot password pressed')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.forgotText}>Forgot Password?</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={styles.primaryBtn}
-              disabled={isAnyLoading}
+              onPress={handleSignIn}
+              activeOpacity={0.85}
             >
               {submitting ? (
-                <ActivityIndicator color="#0A0A0A" size="small" />
+                <ActivityIndicator color="#000000" />
               ) : (
-                <Text style={styles.primaryBtnText}>{submitLabel}</Text>
+                <Text style={styles.primaryBtnText}>Sign In</Text>
               )}
-            </AnimatedPressable>
+            </TouchableOpacity>
+
+            {!!error && (
+              <View style={styles.errorBanner}>
+                <Text style={styles.errorBannerText}>{error}</Text>
+              </View>
+            )}
 
             {/* Divider */}
-            <View style={styles.dividerRow}>
+            <View style={styles.dividerContainer}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
+              <View style={styles.dividerLabelWrap}>
+                <Text style={styles.dividerLabel}>or</Text>
+              </View>
             </View>
 
-            {/* Apple — must be first per App Store rules */}
-            <AnimatedPressable
+            {/* Apple */}
+            <TouchableOpacity
+              style={[styles.socialBtn, styles.socialBtnMarginTop]}
               onPress={handleApple}
-              style={styles.socialBtn}
-              disabled={isAnyLoading}
+              activeOpacity={0.85}
             >
               {socialLoading === 'apple' ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
+                <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <>
                   <AppleLogo size={20} color="#FFFFFF" />
                   <Text style={styles.socialBtnText}>Continue with Apple</Text>
                 </>
               )}
-            </AnimatedPressable>
+            </TouchableOpacity>
 
             {/* Google */}
-            <AnimatedPressable
+            <TouchableOpacity
+              style={[styles.socialBtn, styles.socialBtnMarginTopSm]}
               onPress={handleGoogle}
-              style={[styles.socialBtn, styles.socialBtnGoogle]}
-              disabled={isAnyLoading}
+              activeOpacity={0.85}
             >
               {socialLoading === 'google' ? (
-                <ActivityIndicator color={COLORS.text} size="small" />
+                <ActivityIndicator color="#F0F0F0" />
               ) : (
                 <>
                   <GoogleLogo size={20} />
-                  <Text style={[styles.socialBtnText, styles.socialBtnTextGoogle]}>Continue with Google</Text>
+                  <Text style={styles.socialBtnText}>Continue with Google</Text>
                 </>
               )}
-            </AnimatedPressable>
+            </TouchableOpacity>
+
+            <View style={styles.switchRow}>
+              <Text style={styles.switchText}>Don't have an account? </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('[AuthScreen] Switch to sign up pressed');
+                  setScreen('signup');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.switchLink}>Sign up</Text>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  // ─── Sign Up ─────────────────────────────────────────────────────────────────
+
+  const workerSelected = selectedRole === 'worker';
+  const managerSelected = selectedRole === 'manager';
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.kvRoot}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <SafeAreaView style={styles.safeArea}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => {
+              console.log('[AuthScreen] Back pressed from sign up');
+              setScreen('landing');
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.backArrow}>←</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.screenTitle}>Create Account</Text>
+          <Text style={[styles.screenSubtitle, styles.signupSubtitle]}>Join On the Fly today</Text>
+
+          {/* Role selector */}
+          <View style={styles.roleRow}>
+            <TouchableOpacity
+              style={[
+                styles.roleCard,
+                workerSelected ? styles.roleCardSelected : styles.roleCardUnselected,
+              ]}
+              onPress={() => {
+                console.log('[AuthScreen] Role selected: worker');
+                setSelectedRole('worker');
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.roleEmoji}>👷</Text>
+              <Text style={styles.roleTitle}>Worker</Text>
+              <Text style={styles.roleSubtitle}>Pick up shifts</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.roleCard,
+                managerSelected ? styles.roleCardSelected : styles.roleCardUnselected,
+              ]}
+              onPress={() => {
+                console.log('[AuthScreen] Role selected: manager');
+                setSelectedRole('manager');
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.roleEmoji}>🏢</Text>
+              <Text style={styles.roleTitle}>Manager</Text>
+              <Text style={styles.roleSubtitle}>Post shifts</Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Footer */}
-          <Text style={styles.footer}>
-            {activeTab === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-            <Text
-              style={styles.footerLink}
-              onPress={() => switchTab(activeTab === 'signin' ? 'signup' : 'signin')}
+          {/* Full Name */}
+          <Text style={styles.fieldLabel}>Full Name</Text>
+          <TextInput
+            style={[styles.textInput, styles.fieldMargin]}
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+            placeholderTextColor="#555555"
+            placeholder="Alex Johnson"
+          />
+
+          {/* Email */}
+          <Text style={styles.fieldLabel}>Email Address</Text>
+          <TextInput
+            style={[styles.textInput, styles.fieldMargin]}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholderTextColor="#555555"
+            placeholder="you@example.com"
+          />
+
+          {/* Password */}
+          <Text style={styles.fieldLabel}>Password</Text>
+          <View style={[styles.passwordRow, styles.fieldMargin]}>
+            <TextInput
+              style={styles.passwordInput}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              placeholderTextColor="#555555"
+              placeholder="At least 8 characters"
+            />
+            <TouchableOpacity
+              onPress={() => {
+                console.log('[AuthScreen] Toggle password visibility');
+                setShowPassword((v) => !v);
+              }}
+              activeOpacity={0.7}
             >
-              {activeTab === 'signin' ? 'Sign up' : 'Sign in'}
-            </Text>
-          </Text>
-        </Animated.View>
+              <Text style={styles.showHideText}>{showPassword ? 'Hide' : 'Show'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.primaryBtn, styles.signupSubmitBtn]}
+            onPress={handleSignUp}
+            activeOpacity={0.85}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#000000" />
+            ) : (
+              <Text style={styles.primaryBtnText}>Create Account</Text>
+            )}
+          </TouchableOpacity>
+
+          {!!error && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>{error}</Text>
+            </View>
+          )}
+
+          <View style={[styles.switchRow, styles.signupSwitchRow]}>
+            <Text style={styles.switchText}>Already have an account? </Text>
+            <TouchableOpacity
+              onPress={() => {
+                console.log('[AuthScreen] Switch to sign in pressed');
+                setScreen('signin');
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.switchLink}>Sign in</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
+  // ── Landing ──────────────────────────────────────────────────────────────────
+  landingRoot: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#0A0A0A',
   },
-  scroll: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-  },
-  logoSection: {
+  landingTop: {
+    flex: 0.55,
     alignItems: 'center',
-    paddingTop: 48,
-    paddingBottom: 32,
+    justifyContent: 'center',
   },
-  logoRow: {
-    flexDirection: 'row',
+  landingBolt: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  landingTitle: {
+    color: '#00FF87',
+    fontSize: 44,
+    fontFamily: 'SpaceGrotesk-Bold',
+    letterSpacing: -1,
+  },
+  landingTagline: {
+    color: '#8A8A8A',
+    fontSize: 16,
+    marginTop: 8,
+  },
+  landingBottom: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    justifyContent: 'flex-end',
+  },
+  getStartedBtn: {
+    backgroundColor: '#00FF87',
+    height: 58,
+    borderRadius: 16,
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  getStartedBtnText: {
+    color: '#000000',
+    fontFamily: 'SpaceGrotesk-Bold',
+    fontSize: 17,
+  },
+  signInBtn: {
+    backgroundColor: 'transparent',
+    height: 58,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  signInBtnText: {
+    color: '#F0F0F0',
+    fontFamily: 'SpaceGrotesk-SemiBold',
+    fontSize: 17,
+  },
+  termsText: {
+    color: '#555555',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+
+  // ── Shared ────────────────────────────────────────────────────────────────────
+  kvRoot: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#0A0A0A',
+    paddingHorizontal: 24,
+  },
+  backBtn: {
+    marginBottom: 32,
+    marginTop: 16,
+  },
+  backArrow: {
+    color: '#00FF87',
+    fontSize: 24,
+  },
+  screenTitle: {
+    fontSize: 32,
+    fontFamily: 'SpaceGrotesk-Bold',
+    color: '#F0F0F0',
     marginBottom: 8,
   },
-  bolt: {
-    fontSize: 36,
-  },
-  logoText: {
-    color: COLORS.primary,
-    fontSize: 38,
-    fontWeight: '800',
-    letterSpacing: -1.5,
-    fontFamily: 'SpaceGrotesk-Bold',
-  },
-  tagline: {
-    color: COLORS.textSecondary,
+  screenSubtitle: {
     fontSize: 15,
-    fontFamily: 'SpaceGrotesk-Regular',
+    color: '#8A8A8A',
+    marginBottom: 40,
   },
-  tabRow: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    padding: 4,
+  signupSubtitle: {
+    marginBottom: 32,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    color: '#8A8A8A',
+    fontFamily: 'SpaceGrotesk-SemiBold',
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: '#141414',
+    borderRadius: 14,
+    padding: 18,
+    color: '#F0F0F0',
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    height: 58,
+  },
+  fieldMargin: {
     marginBottom: 20,
+  },
+  passwordRow: {
+    backgroundColor: '#141414',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 9,
-  },
-  tabActive: {
-    backgroundColor: COLORS.primary,
-  },
-  tabLabel: {
-    fontSize: 15,
-    fontFamily: 'SpaceGrotesk-SemiBold',
-    color: COLORS.textSecondary,
-  },
-  tabLabelActive: {
-    color: '#0A0A0A',
-  },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    gap: 16,
-  },
-  errorBanner: {
-    backgroundColor: 'rgba(255, 68, 68, 0.12)',
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 68, 68, 0.25)',
-  },
-  errorBannerText: {
-    color: COLORS.danger,
-    fontSize: 14,
-    fontFamily: 'SpaceGrotesk-Regular',
-    lineHeight: 20,
-  },
-  errorBannerLink: {
-    color: COLORS.primary,
-    fontFamily: 'SpaceGrotesk-SemiBold',
-    textDecorationLine: 'underline',
-  },
-  fieldGroup: {
-    gap: 6,
-  },
-  label: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontFamily: 'SpaceGrotesk-SemiBold',
-  },
-  input: {
-    backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    color: COLORS.text,
-    fontSize: 15,
-    fontFamily: 'SpaceGrotesk-Regular',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  inputError: {
-    borderColor: COLORS.danger,
-  },
-  inputRow: {
+    borderColor: 'rgba(255,255,255,0.08)',
+    height: 58,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 14,
+    paddingHorizontal: 18,
   },
-  inputInner: {
+  passwordInput: {
     flex: 1,
-    paddingVertical: 13,
-    color: COLORS.text,
-    fontSize: 15,
-    fontFamily: 'SpaceGrotesk-Regular',
+    color: '#F0F0F0',
+    fontSize: 16,
   },
-  eyeBtn: {
-    paddingLeft: 8,
-    paddingVertical: 13,
+  showHideText: {
+    color: '#00FF87',
+    fontSize: 14,
   },
-  eyeText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    fontFamily: 'SpaceGrotesk-SemiBold',
+  forgotBtn: {
+    alignSelf: 'flex-end',
+    marginBottom: 32,
   },
-  fieldError: {
-    color: COLORS.danger,
-    fontSize: 13,
-    fontFamily: 'SpaceGrotesk-Regular',
+  forgotText: {
+    color: '#00FF87',
+    fontSize: 14,
   },
   primaryBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingVertical: 15,
+    backgroundColor: '#00FF87',
+    height: 58,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 50,
+    width: '100%',
   },
   primaryBtnText: {
-    color: '#0A0A0A',
-    fontSize: 16,
+    color: '#000000',
     fontFamily: 'SpaceGrotesk-Bold',
+    fontSize: 17,
   },
-  dividerRow: {
-    flexDirection: 'row',
+  signupSubmitBtn: {
+    marginTop: 8,
+  },
+  errorBanner: {
+    backgroundColor: 'rgba(255,68,68,0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+  },
+  errorBannerText: {
+    color: '#FF6B6B',
+    fontSize: 14,
+  },
+  dividerContainer: {
+    marginTop: 32,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    position: 'relative',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 12,
   },
   dividerLine: {
-    flex: 1,
+    position: 'absolute',
+    left: 0,
+    right: 0,
     height: 1,
-    backgroundColor: COLORS.border,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  dividerText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    fontFamily: 'SpaceGrotesk-Regular',
+  dividerLabelWrap: {
+    backgroundColor: '#0A0A0A',
+    paddingHorizontal: 16,
+  },
+  dividerLabel: {
+    color: '#555555',
+    fontSize: 14,
   },
   socialBtn: {
+    backgroundColor: '#141414',
+    height: 56,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    minHeight: 50,
+    gap: 12,
   },
-  socialBtnGoogle: {
-    backgroundColor: COLORS.surfaceSecondary,
+  socialBtnMarginTop: {
+    marginTop: 32,
+  },
+  socialBtnMarginTopSm: {
+    marginTop: 12,
   },
   socialBtnText: {
-    color: COLORS.text,
+    color: '#F0F0F0',
+    fontSize: 16,
+    fontFamily: 'SpaceGrotesk-SemiBold',
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  signupSwitchRow: {
+    marginTop: 24,
+    marginBottom: 32,
+  },
+  switchText: {
+    color: '#8A8A8A',
+  },
+  switchLink: {
+    color: '#00FF87',
+    fontFamily: 'SpaceGrotesk-Bold',
+  },
+
+  // ── Sign Up role cards ────────────────────────────────────────────────────────
+  roleRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 28,
+  },
+  roleCard: {
+    flex: 1,
+    backgroundColor: '#141414',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+  },
+  roleCardSelected: {
+    borderWidth: 2,
+    borderColor: '#00FF87',
+    backgroundColor: 'rgba(0,255,135,0.06)',
+  },
+  roleCardUnselected: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  roleEmoji: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  roleTitle: {
+    fontFamily: 'SpaceGrotesk-Bold',
     fontSize: 15,
-    fontFamily: 'SpaceGrotesk-SemiBold',
+    color: '#F0F0F0',
   },
-  socialBtnTextGoogle: {
-    color: COLORS.text,
-  },
-  footer: {
-    textAlign: 'center',
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    fontFamily: 'SpaceGrotesk-Regular',
-    marginTop: 20,
-  },
-  footerLink: {
-    color: COLORS.primary,
-    fontFamily: 'SpaceGrotesk-SemiBold',
+  roleSubtitle: {
+    fontSize: 12,
+    color: '#8A8A8A',
+    marginTop: 4,
   },
 });
