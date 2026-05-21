@@ -111,7 +111,6 @@ export default function AuthScreen() {
   // Navigate once authenticated
   useEffect(() => {
     if (!loading && user) {
-      console.log('[AuthScreen] User authenticated, navigating to tabs');
       router.replace('/(tabs)/(home)');
     }
   }, [user, loading]);
@@ -158,15 +157,12 @@ export default function AuthScreen() {
     setSubmitting(true);
     try {
       if (activeTab === 'signin') {
-        console.log('[AuthScreen] Sign in with email pressed:', email);
         await signInWithEmail(email, password);
       } else {
-        console.log('[AuthScreen] Sign up with email pressed:', email);
         await signUpWithEmail(email, password, name || undefined);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
-      console.warn('[AuthScreen] Email auth error:', msg);
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -174,7 +170,6 @@ export default function AuthScreen() {
   };
 
   const handleApple = async () => {
-    console.log('[AuthScreen] Continue with Apple pressed');
     setSocialLoading('apple');
     setError('');
     try {
@@ -182,7 +177,6 @@ export default function AuthScreen() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Apple sign in failed';
       if (!msg.toLowerCase().includes('cancel')) {
-        console.warn('[AuthScreen] Apple auth error:', msg);
         setError(msg);
       }
     } finally {
@@ -191,7 +185,6 @@ export default function AuthScreen() {
   };
 
   const handleGoogle = async () => {
-    console.log('[AuthScreen] Continue with Google pressed');
     setSocialLoading('google');
     setError('');
     try {
@@ -199,7 +192,6 @@ export default function AuthScreen() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Google sign in failed';
       if (!msg.toLowerCase().includes('cancel')) {
-        console.warn('[AuthScreen] Google auth error:', msg);
         setError(msg);
       }
     } finally {
@@ -208,7 +200,6 @@ export default function AuthScreen() {
   };
 
   const switchTab = (tab: Tab) => {
-    console.log('[AuthScreen] Switched to tab:', tab);
     setActiveTab(tab);
     clearErrors();
     setEmail('');

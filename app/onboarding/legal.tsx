@@ -20,22 +20,18 @@ export default function LegalScreen() {
 
   const handleContinue = async () => {
     if (!canContinue) return;
-    console.log('[Legal] Continue button pressed, canContinue:', canContinue);
     setLoading(true);
     try {
-      console.log('[Legal] PATCH /api/me — saving agreement');
       await apiPatch('/api/me', {
         agreed_to_terms: true,
         agreed_at: new Date().toISOString(),
       });
-      console.log('[Legal] Terms agreed, navigating to complete screen');
       if (currentRole === 'manager') {
         router.push('/onboarding/manager/complete');
       } else {
         router.push('/onboarding/worker/complete');
       }
     } catch (err) {
-      console.error('[Legal] Error saving agreement:', err);
       Alert.alert('Error', 'Could not save your agreement. Please try again.');
     } finally {
       setLoading(false);
@@ -43,12 +39,10 @@ export default function LegalScreen() {
   };
 
   const handleToggleContractor = () => {
-    console.log('[Legal] Contractor checkbox toggled:', !agreedContractor);
     setAgreedContractor(!agreedContractor);
   };
 
   const handleToggleTerms = () => {
-    console.log('[Legal] Terms checkbox toggled:', !agreedTerms);
     setAgreedTerms(!agreedTerms);
   };
 

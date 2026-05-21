@@ -78,7 +78,6 @@ export default function ManagerBusinessStep() {
   const [loading, setLoading] = useState(false);
 
   const handleNext = async () => {
-    console.log('[ManagerOnboarding] Business step submit pressed');
     if (!name.trim()) { Alert.alert('Required', 'Please enter your business name.'); return; }
     if (!type) { Alert.alert('Required', 'Please select a business type.'); return; }
     if (!city.trim()) { Alert.alert('Required', 'Please enter your city.'); return; }

@@ -150,13 +150,10 @@ export default function RootLayout() {
     (async () => {
       try {
         const seen = await AsyncStorage.getItem('onthefly_beta_seen');
-        console.log('[RootLayout] onthefly_beta_seen value:', seen);
         if (!seen) {
-          console.log('[RootLayout] First launch detected — will show beta screen');
           setShowBeta(true);
         }
       } catch (e) {
-        console.warn('[RootLayout] AsyncStorage read error:', e);
       } finally {
         setBetaChecked(true);
       }
@@ -165,7 +162,6 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (splashDone && betaChecked && showBeta) {
-      console.log('[RootLayout] Navigating to /beta-welcome');
       router.replace('/beta-welcome');
     }
   }, [splashDone, betaChecked, showBeta]);

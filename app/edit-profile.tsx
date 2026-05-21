@@ -86,9 +86,7 @@ export default function EditProfileScreen() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        console.log('[EditProfile] Loading profile from /api/me...');
         const data = await apiGet<Record<string, unknown>>('/api/me');
-        console.log('[EditProfile] Profile loaded:', data);
         setName(String(data.name ?? ''));
         setPhone(String(data.phone ?? ''));
         if (currentRole === 'worker') {
@@ -99,7 +97,6 @@ export default function EditProfileScreen() {
           setRadius(String(wp?.preferred_radius_miles ?? '10'));
         }
       } catch (err) {
-        console.error('[EditProfile] Error loading profile:', err);
         // Fall back to context data
         setName(currentUser?.name ?? '');
         setPhone(currentUser?.phone ?? '');
@@ -118,13 +115,11 @@ export default function EditProfileScreen() {
   }, []);
 
   const handleSave = async () => {
-    console.log('[EditProfile] Save button pressed');
     if (!name.trim()) { Alert.alert('Required', 'Please enter your name.'); return; }
     setLoading(true);
     try {
       // Update base user
       const userPayload: Record<string, unknown> = { name: name.trim(), phone: phone.trim() || undefined };
-      console.log('[EditProfile] Saving user profile:', userPayload);
       await apiPut('/api/me', userPayload);
 
       // Update role-specific profile
@@ -135,21 +130,17 @@ export default function EditProfileScreen() {
           has_transportation: hasTransportation,
           preferred_radius_miles: Number(radius) || 10,
         };
-        console.log('[EditProfile] Saving worker profile:', workerPayload);
         await apiPut('/api/me/worker-profile', workerPayload);
         await refreshWorkerProfile();
       } else if (currentRole === 'manager') {
         const managerPayload = { phone: phone.trim() || undefined };
-        console.log('[EditProfile] Saving manager profile:', managerPayload);
         await apiPut('/api/me/manager-profile', managerPayload);
       }
 
-      console.log('[EditProfile] Profile saved successfully');
       Alert.alert('Saved!', 'Your profile has been updated.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (err) {
-      console.error('[EditProfile] Error saving profile:', err);
       Alert.alert('Error', 'Could not save your profile. Please try again.');
     } finally {
       setLoading(false);
@@ -172,7 +163,7 @@ export default function EditProfileScreen() {
         headerTintColor: COLORS.text,
         headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold' },
         headerLeft: () => (
-          <AnimatedPressable onPress={() => { console.log('[EditProfile] Back button pressed'); router.back(); }}>
+          <AnimatedPressable onPress={() => { router.back(); }}>
             <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', marginLeft: 4 }}>
               <MaterialIcons name="chevron-left" size={24} color={COLORS.text} />
             </View>
@@ -191,7 +182,7 @@ export default function EditProfileScreen() {
           <InputField
             label="Full Name"
             value={name}
-            onChangeText={(t) => { console.log('[EditProfile] Name changed'); setName(t); }}
+            onChangeText={(t) => { setName(t); }}
             placeholder="Your full name"
           />
           <InputField
@@ -234,7 +225,7 @@ export default function EditProfileScreen() {
               </View>
               <Switch
                 value={hasTransportation}
-                onValueChange={(v) => { console.log('[EditProfile] Transportation toggled:', v); setHasTransportation(v); }}
+                onValueChange={(v) => { setHasTransportation(v); }}
                 trackColor={{ false: COLORS.surfaceSecondary, true: COLORS.primaryMuted }}
                 thumbColor={hasTransportation ? COLORS.primary : COLORS.textSecondary}
               />
@@ -248,7 +239,7 @@ export default function EditProfileScreen() {
                 {['5', '10', '15', '25', '50'].map((r) => {
                   const isActive = radius === r;
                   return (
-                    <AnimatedPressable key={r} onPress={() => { console.log('[EditProfile] Radius selected:', r); setRadius(r); }}>
+                    <AnimatedPressable key={r} onPress={() => { setRadius(r); }}>
                       <View style={{
                         backgroundColor: isActive ? COLORS.primary : 'rgba(255,255,255,0.04)',
                         borderRadius: 10,

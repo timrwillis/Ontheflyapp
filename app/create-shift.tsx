@@ -281,7 +281,6 @@ export default function CreateShiftScreen() {
   };
 
   const handleSubmit = async () => {
-    console.log('[CreateShift] Blast shift button pressed');
     if (!selectedRole) {
       Alert.alert('Missing Role', 'Please select a role for this shift.');
       return;

@@ -39,7 +39,6 @@ export default function AuthCallbackScreen() {
     } catch (err) {
       setStatus("error");
       setMessage("Failed to process authentication");
-      console.error("Auth callback error:", err);
     }
   };
 
