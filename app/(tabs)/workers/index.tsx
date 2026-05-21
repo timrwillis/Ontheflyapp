@@ -9,6 +9,7 @@ import { WorkerCard, WorkerProfile } from '@/components/WorkerCard';
 import { WorkerCardSkeleton } from '@/components/SkeletonLoader';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { DEMO_MODE, DEMO_WORKERS } from '@/constants/DemoData';
 
 export default function WorkersScreen() {
   const { currentRole } = useRole();
@@ -24,6 +25,12 @@ export default function WorkersScreen() {
   const [isFocused, setIsFocused] = useState(false);
 
   const loadWorkers = useCallback(async () => {
+    if (DEMO_MODE) {
+      setWorkers(DEMO_WORKERS);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       const data = await apiGet<WorkerProfile[] | { workers: WorkerProfile[] }>('/api/workers');
       const list = Array.isArray(data) ? data : (data as any)?.workers ?? [];
@@ -38,7 +45,7 @@ export default function WorkersScreen() {
       }));
       setWorkers(normalized);
     } catch (err) {
-      console.error('[WorkersTab] Error loading workers:', err);
+      // silently fail
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -54,7 +61,7 @@ export default function WorkersScreen() {
       await apiPatch(`/api/worker-profiles/${workerId}/verify`, {});
       loadWorkers();
     } catch (err) {
-      console.error('[WorkersTab] Error verifying worker:', err);
+      // silently fail
     }
   };
 
@@ -63,7 +70,7 @@ export default function WorkersScreen() {
       await apiPatch(`/api/worker-profiles/${worker.id}/suspend`, { suspended: !worker.isSuspended });
       loadWorkers();
     } catch (err) {
-      console.error('[WorkersTab] Error suspending worker:', err);
+      // silently fail
     }
   };
 

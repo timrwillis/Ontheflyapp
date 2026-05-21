@@ -188,7 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const { error } = await authClient.signIn.social({
         provider: "apple",
-        idToken: credential.identityToken,
+        idToken: { token: credential.identityToken },
       });
       if (error) {
         throw new Error(error.message || "Apple sign in failed");
@@ -202,8 +202,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       await authClient.signOut();
-    } catch (error) {
-      console.error("Sign out failed (API):", error);
+    } catch {
+      // sign out errors are non-fatal
     } finally {
       await clearAuthTokens();
     }

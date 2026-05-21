@@ -30,18 +30,14 @@ export default function SettingsScreen() {
   const savePreferences = async (prefs: Record<string, boolean>) => {
     setSaving(true);
     try {
-      console.log('[Settings] Saving notification preferences:', prefs);
       await apiPut('/api/me', { notification_preferences: prefs });
-      console.log('[Settings] Preferences saved');
     } catch (err) {
-      console.error('[Settings] Error saving preferences:', err);
     } finally {
       setSaving(false);
     }
   };
 
   const handleToggle = (key: string, value: boolean) => {
-    console.log('[Settings] Notification toggle:', key, value);
     const prefs = {
       shift_alerts: key === 'shift_alerts' ? value : shiftAlerts,
       application_updates: key === 'application_updates' ? value : appUpdates,
@@ -52,7 +48,6 @@ export default function SettingsScreen() {
   };
 
   const handleDeleteAccount = () => {
-    console.log('[Settings] Delete account tapped');
     Alert.alert(
       'Delete Account',
       'This will permanently delete your account and all data. This cannot be undone.',
@@ -62,12 +57,9 @@ export default function SettingsScreen() {
           text: 'Delete Account',
           style: 'destructive',
           onPress: async () => {
-            console.log('[Settings] Delete account confirmed');
             try {
               await apiDelete('/api/me');
-              console.log('[Settings] Account deleted');
             } catch (err) {
-              console.error('[Settings] Delete account error:', err);
             }
             await setRole(null);
             router.replace('/');
@@ -131,14 +123,14 @@ export default function SettingsScreen() {
           LEGAL
         </Text>
         <View style={{ ...glass, marginBottom: 24 }}>
-          <AnimatedPressable onPress={() => { console.log('[Settings] Privacy Policy pressed'); Alert.alert('Privacy Policy', 'Our privacy policy is available at onthefly.app/privacy'); }}>
+          <AnimatedPressable onPress={() => { Alert.alert('Privacy Policy', 'Our privacy policy is available at onthefly.app/privacy'); }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', gap: 12 }}>
               <MaterialIcons name="privacy-tip" size={18} color={COLORS.textSecondary} />
               <Text style={{ color: COLORS.text, fontSize: 14, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>Privacy Policy</Text>
               <MaterialIcons name="chevron-right" size={18} color={COLORS.textSecondary} />
             </View>
           </AnimatedPressable>
-          <AnimatedPressable onPress={() => { console.log('[Settings] Terms of Service pressed'); Alert.alert('Terms of Service', 'Our terms of service are available at onthefly.app/terms'); }}>
+          <AnimatedPressable onPress={() => { Alert.alert('Terms of Service', 'Our terms of service are available at onthefly.app/terms'); }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 12 }}>
               <MaterialIcons name="description" size={18} color={COLORS.textSecondary} />
               <Text style={{ color: COLORS.text, fontSize: 14, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>Terms of Service</Text>
@@ -152,7 +144,7 @@ export default function SettingsScreen() {
           HELP
         </Text>
         <View style={{ ...glass, marginBottom: 24 }}>
-          <AnimatedPressable onPress={() => { console.log('[Settings] Support pressed'); router.push('/support'); }}>
+          <AnimatedPressable onPress={() => { router.push('/support'); }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 12 }}>
               <MaterialIcons name="support-agent" size={18} color={COLORS.textSecondary} />
               <Text style={{ color: COLORS.text, fontSize: 14, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>Contact Support</Text>

@@ -17,8 +17,9 @@ import { apiGet, apiPost, apiPatch } from '@/utils/api';
 import { ShiftCard, Shift } from '@/components/ShiftCard';
 import { AvailabilityToggle } from '@/components/AvailabilityToggle';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
-import { ShiftCardSkeleton } from '@/components/SkeletonLoader';
+import { ShiftCardSkeleton, SkeletonLine } from '@/components/SkeletonLoader';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { DEMO_MODE, DEMO_SHIFTS, DEMO_WORKERS } from '@/constants/DemoData';
 
 // ─── Shared glass style ───────────────────────────────────────────────────────
 
@@ -72,6 +73,27 @@ interface MarketplaceStats {
   recent_activity?: { text: string; time: string }[];
 }
 
+interface FullMarketplaceStats {
+  workers_available?: number;
+  restaurants_hiring?: number;
+  shifts_filled_week?: number;
+  recent_activity?: string[];
+}
+
+// Shared marketplace stats — fetched once, used by all dashboards
+let _cachedStats: FullMarketplaceStats = {
+  workers_available: 31,
+  restaurants_hiring: 14,
+  shifts_filled_week: 127,
+  recent_activity: [
+    '⚡ Bartender accepted at Prime Social KC',
+    '✅ Server filled shift at Midtown Tavern',
+    '🎯 VIP event staffed in 4 minutes',
+    '⚡ Line Cook confirmed at Neon Alley',
+    '✅ Barback filled at The Copper Mug',
+  ],
+};
+
 function LandingScreen() {
   const { setRole } = useRole();
   const router = useRouter();
@@ -86,10 +108,14 @@ function LandingScreen() {
         const data = await apiGet<MarketplaceStats>('/api/marketplace/stats');
         if (data) setStats(data);
       } catch {
-        // fallback to defaults already set
+        // keep defaults
+      } finally {
+        setStatsLoading(false);
       }
     };
     fetchStats();
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Pulsing dot animation
@@ -149,6 +175,22 @@ function LandingScreen() {
     { value: String(shiftsFilled), label: 'filled today' },
   ];
 
+  const activityFeed = (stats.recent_activity && stats.recent_activity.length > 0)
+    ? stats.recent_activity
+    : _cachedStats.recent_activity ?? [];
+
+  // Build live feed items from activityFeed for the LIVE ACTIVITY section
+  const liveFeedItems = activityFeed.slice(0, 5).map((text, idx) => {
+    const iconName = text.startsWith('✅') ? 'check-circle' as const
+      : text.startsWith('⚡') ? 'bolt' as const
+      : text.startsWith('🎯') ? 'star' as const
+      : 'check-circle' as const;
+    const iconColor = idx % 2 === 0 ? COLORS.primary : '#FFB800';
+    const timeLabels = ['just now', '2m', '8m', '14m', '22m'];
+    const cleanText = text.replace(/^[✅⚡🎯🔥📍]\s*/u, '');
+    return { iconName, iconColor, text: cleanText, time: timeLabels[idx] ?? '30m' };
+  });
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: COLORS.background }}
@@ -168,21 +210,32 @@ function LandingScreen() {
         </Text>
 
         {/* Live stats row */}
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24, width: '100%' }}>
-          {statRows.map((stat) => (
-            <View key={stat.label} style={{ flex: 1, ...glass, alignItems: 'center', paddingVertical: 14 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
-                <Animated.View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.primary, opacity: dotOpacity }} />
-                <Text style={{ color: COLORS.primary, fontSize: 30, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1 }}>
-                  {stat.value}
+        {statsLoading ? (
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24, width: '100%' }}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={{ flex: 1, ...glass, alignItems: 'center', paddingVertical: 14 }}>
+                <SkeletonLine width={48} height={30} borderRadius={6} style={{ marginBottom: 6 }} />
+                <SkeletonLine width={56} height={10} borderRadius={4} />
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24, width: '100%' }}>
+            {statRows.map((stat) => (
+              <View key={stat.label} style={{ flex: 1, ...glass, alignItems: 'center', paddingVertical: 14 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                  <Animated.View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.primary, opacity: dotOpacity }} />
+                  <Text style={{ color: COLORS.primary, fontSize: 30, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1 }}>
+                    {stat.value}
+                  </Text>
+                </View>
+                <Text style={{ color: COLORS.textSecondary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center' }}>
+                  {stat.label}
                 </Text>
               </View>
-              <Text style={{ color: COLORS.textSecondary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center' }}>
-                {stat.label}
-              </Text>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
 
         {/* Activity ticker */}
         <View style={{ width: '100%', overflow: 'hidden', marginBottom: 28 }}>
@@ -209,13 +262,7 @@ function LandingScreen() {
                   alignItems: 'center',
                   gap: 6,
                 }}>
-                  <Animated.View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.primary, opacity: dotOpacity }} />
-                  <Text style={{ color: COLORS.primary, fontSize: 12, fontFamily: 'SpaceGrotesk-SemiBold' }}>
-                    {firstWord}
-                  </Text>
-                  <Text style={{ color: COLORS.text, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
-                    {rest}
-                  </Text>
+                  <Animated.View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.primary, opacity: dotOpacity }} /><Text style={{ color: COLORS.primary, fontSize: 12, fontFamily: 'SpaceGrotesk-SemiBold' }}>{firstWord}</Text>{rest ? <Text style={{ color: COLORS.text, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>{rest}</Text> : null}
                 </View>
               );
             })}
@@ -476,6 +523,17 @@ function ManagerDashboard() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   const loadData = useCallback(async () => {
+    if (DEMO_MODE) {
+      const open = DEMO_SHIFTS.filter((s) => s.status === 'open').length;
+      const filled = DEMO_SHIFTS.filter((s) => s.status === 'filled').length;
+      const confirmed = DEMO_SHIFTS.filter((s) => s.status === 'pending').length;
+      setShifts(DEMO_SHIFTS);
+      setStats({ open, filled, confirmed });
+      setNearbyWorkers(DEMO_WORKERS.slice(0, 8).map((w) => ({ id: w.id, name: w.name, roles: w.roles, isAvailable: w.isAvailable ?? false })));
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       const [shiftsData, workersData, marketplaceData] = await Promise.all([
         apiGet<{ shifts: Shift[] }>('/api/shifts?role=manager'),
@@ -525,6 +583,48 @@ function ManagerDashboard() {
     { label: 'Filled Today', value: stats.filled, color: COLORS.accent, borderColor: COLORS.accent },
     { label: 'Confirmed', value: stats.confirmed, color: '#60A5FA', borderColor: '#60A5FA' },
   ];
+
+  const [marketStats, setMarketStats] = useState<FullMarketplaceStats>(_cachedStats);
+
+  useEffect(() => {
+    const fetchMarketStats = async () => {
+      try {
+        const data = await apiGet<FullMarketplaceStats>('/api/marketplace/stats');
+        if (data) {
+          _cachedStats = { ..._cachedStats, ...data };
+          setMarketStats(_cachedStats);
+        }
+      } catch { /* keep defaults */ }
+    };
+    fetchMarketStats();
+    const interval = setInterval(fetchMarketStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const scarcityPills = (marketStats.recent_activity && marketStats.recent_activity.length > 0)
+    ? marketStats.recent_activity.slice(0, 6).map((text) => {
+        const icon = text.startsWith('✅') ? '✅'
+          : text.startsWith('⚡') ? '⚡'
+          : text.startsWith('🎯') ? '🎯'
+          : text.startsWith('🔥') ? '🔥'
+          : '📍';
+        const cleanText = text.replace(/^[✅⚡🎯🔥📍]\s*/u, '');
+        return { icon, text: cleanText };
+      })
+    : SCARCITY_INSIGHTS;
+
+  const activityItems = (marketStats.recent_activity && marketStats.recent_activity.length > 0)
+    ? marketStats.recent_activity.slice(0, 5).map((text, idx) => {
+        const icon = text.startsWith('✅') ? '✅'
+          : text.startsWith('⚡') ? '⚡'
+          : text.startsWith('🎯') ? '🎯'
+          : text.startsWith('🔥') ? '🔥'
+          : '📍';
+        const color = idx % 2 === 0 ? COLORS.primary : COLORS.accent;
+        const timeLabels = ['just now', '3m ago', '11m ago', '28m ago', '45m ago'];
+        return { icon, text: text.replace(/^[✅⚡🎯🔥📍]\s*/u, ''), time: timeLabels[idx] ?? '1h ago', color };
+      })
+    : ACTIVITY_ITEMS;
 
   const bartenderCount = nearbyWorkers.filter((w) => w.roles?.[0] === 'Bartender').length;
   const scarcityBartenderCount = bartenderCount > 0 ? bartenderCount : 4;
@@ -631,7 +731,7 @@ function ManagerDashboard() {
           style={{ marginHorizontal: -20, marginBottom: 28 }}
           contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
         >
-          {SCARCITY_INSIGHTS.map((insight, i) => (
+          {scarcityPills.map((insight, i) => (
             <View key={i} style={{
               backgroundColor: 'rgba(255,255,255,0.05)',
               borderWidth: 1,
@@ -982,6 +1082,23 @@ function WorkerDashboard() {
   const tickerOffset = useRef(0);
   const liveDotOpacity = useRef(new Animated.Value(1)).current;
 
+  const [marketStats, setMarketStats] = useState<FullMarketplaceStats>(_cachedStats);
+
+  useEffect(() => {
+    const fetchMarketStats = async () => {
+      try {
+        const data = await apiGet<FullMarketplaceStats>('/api/marketplace/stats');
+        if (data) {
+          _cachedStats = { ..._cachedStats, ...data };
+          setMarketStats(_cachedStats);
+        }
+      } catch { /* keep defaults */ }
+    };
+    fetchMarketStats();
+    const interval = setInterval(fetchMarketStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const isAvailable = workerProfile?.isAvailable ?? false;
   const workerName = workerProfile?.name ?? currentUser?.name ?? null;
   const completedShifts = workerProfile?.completedShifts ?? 0;
@@ -1014,12 +1131,18 @@ function WorkerDashboard() {
   }, []);
 
   const loadShifts = useCallback(async () => {
+    if (DEMO_MODE) {
+      setShifts(DEMO_SHIFTS.filter((s) => s.status === 'open'));
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       const data = await apiGet<{ shifts: Shift[] }>('/api/shifts?status=open');
       const list = Array.isArray((data as any)?.shifts) ? (data as any).shifts : Array.isArray(data) ? data : [];
       setShifts(list);
-    } catch (err) {
-      console.error('[WorkerDashboard] Error loading shifts:', err);
+    } catch {
+      // silently fail — UI shows empty state
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -1038,8 +1161,7 @@ function WorkerDashboard() {
         is_available: !isAvailable,
       });
       await refreshWorkerProfile();
-    } catch (err) {
-      console.error('[WorkerDashboard] Error toggling availability:', err);
+    } catch {
       Alert.alert('Error', 'Could not update availability. Please try again.');
     } finally {
       setAvailabilityLoading(false);
@@ -1053,8 +1175,7 @@ function WorkerDashboard() {
       await apiPost(`/api/shifts/${shiftId}/apply`, { user_id: currentUser.id });
       Alert.alert('Applied!', 'Your application has been submitted. The manager will confirm shortly.');
       loadShifts();
-    } catch (err) {
-      console.error('[WorkerDashboard] Error applying to shift:', err);
+    } catch {
       Alert.alert('Error', 'Could not apply to this shift. Please try again.');
     } finally {
       setApplyingId(null);
@@ -1097,6 +1218,10 @@ function WorkerDashboard() {
 
   const shiftCount = filteredShifts.length;
 
+  const workerTickerItems = (marketStats.recent_activity && marketStats.recent_activity.length > 0)
+    ? marketStats.recent_activity
+    : WORKER_TICKER_ITEMS;
+
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <ScrollView
@@ -1120,7 +1245,7 @@ function WorkerDashboard() {
                 </Text>
               </View>
             </View>
-            {workerName && (
+            {!!workerName && (
               <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular', marginTop: 2 }}>
                 {workerName}
               </Text>
@@ -1276,7 +1401,7 @@ function WorkerDashboard() {
             scrollEnabled={false}
             contentContainerStyle={{ gap: 16, paddingHorizontal: 20 }}
           >
-            {[...WORKER_TICKER_ITEMS, ...WORKER_TICKER_ITEMS].map((item, i) => (
+            {[...workerTickerItems, ...workerTickerItems].map((item, i) => (
               <Text key={i} style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular' }}>
                 {`${item}  ·  `}
               </Text>
@@ -1393,8 +1518,8 @@ function AdminDashboard() {
       try {
         const data = await apiGet<Record<string, number>>('/api/admin/stats');
         setStats(data ?? {});
-      } catch (err) {
-        console.error('[AdminDashboard] Error loading stats:', err);
+      } catch {
+        // silently fail
       } finally {
         setLoading(false);
       }

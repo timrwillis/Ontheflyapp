@@ -9,7 +9,7 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
     '/api/me',
     {
       schema: {
-        description: 'Get current user profile from app users table',
+        description: 'Get current user profile with worker/manager profile and roles',
         tags: ['users'],
         response: {
           200: {
@@ -18,11 +18,48 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
               id: { type: 'string' },
               email: { type: 'string' },
               name: { type: 'string' },
-              role: { type: 'string' },
-              phone: { type: ['string', 'null'] },
+              role: { type: 'string', enum: ['worker', 'manager'] },
               onboarding_step: { type: 'integer' },
               profile_completed: { type: 'boolean' },
-              notification_preferences: { type: 'object' },
+              worker_profile: {
+                type: ['object', 'null'],
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  photo_url: { type: ['string', 'null'] },
+                  phone: { type: 'string' },
+                  city: { type: 'string' },
+                  bio: { type: ['string', 'null'] },
+                  is_available: { type: 'boolean' },
+                  reliability_score: { type: 'integer' },
+                  onboarding_completed: { type: 'boolean' },
+                  availability_days: { type: 'array', items: { type: 'string' } },
+                  availability_start: { type: ['string', 'null'] },
+                  availability_end: { type: ['string', 'null'] },
+                  worker_roles: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        role: { type: 'string' },
+                        years_experience: { type: ['integer', 'null'] },
+                        is_primary: { type: 'boolean' },
+                      },
+                    },
+                  },
+                },
+              },
+              manager_profile: {
+                type: ['object', 'null'],
+                properties: {
+                  id: { type: 'string' },
+                  phone: { type: ['string', 'null'] },
+                  is_verified: { type: 'boolean' },
+                  onboarding_completed: { type: 'boolean' },
+                },
+              },
+              subscription_status: { type: ['string', 'null'] },
             },
           },
           401: {
@@ -78,16 +115,69 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
         user = newUser as any;
       }
 
-      app.logger.info({ userId: user.id }, 'User profile retrieved');
+      // Fetch profile data based on role
+      let workerProfile: any = null;
+      let managerProfile: any = null;
+
+      if (user.role === 'worker') {
+        const profile = await app.db.query.workerProfiles.findFirst({
+          where: eq(schema.workerProfiles.userId, user.id),
+        });
+
+        if (profile) {
+          // Fetch worker roles for this worker profile
+          const roles = await app.db.query.workerRoles.findMany({
+            where: eq(schema.workerRoles.workerId, profile.id),
+          });
+
+          workerProfile = {
+            id: profile.id,
+            name: profile.name,
+            photo_url: profile.photoUrl,
+            phone: profile.phone,
+            city: profile.city,
+            bio: profile.bio,
+            is_available: profile.isAvailable,
+            reliability_score: profile.reliabilityScore,
+            onboarding_completed: profile.onboardingCompleted,
+            availability_days: profile.availabilityDays || [],
+            availability_start: profile.availabilityStart,
+            availability_end: profile.availabilityEnd,
+            worker_roles: roles.map((r) => ({
+              id: r.id,
+              role: r.role,
+              years_experience: r.yearsExperience,
+              is_primary: r.isPrimary,
+            })),
+          };
+        }
+      } else if (user.role === 'manager') {
+        const profile = await app.db.query.managerProfiles.findFirst({
+          where: eq(schema.managerProfiles.userId, user.id),
+        });
+
+        if (profile) {
+          managerProfile = {
+            id: profile.id,
+            phone: profile.phone,
+            is_verified: profile.isVerified,
+            onboarding_completed: profile.onboardingCompleted,
+          };
+        }
+      }
+
+      app.logger.info({ userId: user.id, role: user.role }, 'User profile retrieved');
+
       return {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
-        phone: user.phone || null,
         onboarding_step: user.onboardingStep,
         profile_completed: user.profileCompleted,
-        notification_preferences: user.notificationPreferences,
+        subscription_status: user.subscriptionStatus,
+        worker_profile: workerProfile,
+        manager_profile: managerProfile,
       };
     }
   );
@@ -361,6 +451,121 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
 
       app.logger.info({ userId: user.id, role }, 'Demo account deleted');
       return { success: true, message: 'Account deleted' };
+    }
+  );
+
+  fastify.patch(
+    '/api/me',
+    {
+      schema: {
+        description: 'Update current user profile (terms agreement)',
+        tags: ['users'],
+        body: {
+          type: 'object',
+          properties: {
+            agreed_to_terms: { type: 'boolean' },
+            agreed_at: { type: 'string', format: 'date-time' },
+            subscription_status: { type: 'string' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              email: { type: 'string' },
+              name: { type: 'string' },
+              role: { type: 'string' },
+              onboarding_step: { type: 'integer' },
+              profile_completed: { type: 'boolean' },
+              agreed_to_terms: { type: 'boolean' },
+              agreed_at: { type: ['string', 'null'], format: 'date-time' },
+              subscription_status: { type: ['string', 'null'] },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          404: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { agreed_to_terms, agreed_at, subscription_status } = request.body as {
+        agreed_to_terms?: boolean;
+        agreed_at?: string;
+        subscription_status?: string;
+      };
+
+      // Get authenticated user
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) {
+          headers.append(key, Array.isArray(value) ? value[0] : value);
+        }
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const userId = session.user.id;
+      app.logger.info({ userId, agreed_to_terms }, 'Updating user profile');
+
+      // Look up user
+      const user = await app.db.query.users.findFirst({
+        where: eq(schema.users.id, userId),
+      });
+
+      if (!user) {
+        app.logger.warn({ userId }, 'User not found');
+        return reply.status(404).send({ error: 'User not found' });
+      }
+
+      // Build updates object with only provided fields
+      const updates: any = {};
+      if (agreed_to_terms !== undefined) {
+        updates.agreedToTerms = agreed_to_terms;
+      }
+      if (agreed_at !== undefined) {
+        updates.agreedAt = agreed_at ? new Date(agreed_at) : null;
+      }
+      if (subscription_status !== undefined) {
+        updates.subscriptionStatus = subscription_status;
+      }
+
+      // Only update if there are fields to update
+      if (Object.keys(updates).length > 0) {
+        await app.db.update(schema.users).set(updates).where(eq(schema.users.id, userId));
+        app.logger.info({ userId }, 'User profile updated');
+      }
+
+      // Return updated user
+      const updated = await app.db.query.users.findFirst({
+        where: eq(schema.users.id, userId),
+      });
+
+      return {
+        id: updated?.id,
+        email: updated?.email,
+        name: updated?.name,
+        role: updated?.role,
+        onboarding_step: updated?.onboardingStep,
+        profile_completed: updated?.profileCompleted,
+        agreed_to_terms: updated?.agreedToTerms,
+        agreed_at: updated?.agreedAt?.toISOString() || null,
+        subscription_status: updated?.subscriptionStatus,
+      };
     }
   );
 }

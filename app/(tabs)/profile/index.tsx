@@ -62,7 +62,7 @@ function NotificationPreferencesSection() {
     try {
       await apiPut('/api/me', { notification_preferences: prefs });
     } catch (err) {
-      console.error('[Profile] Error saving notification preferences:', err);
+      // silently fail
     } finally {
       setSaving(false);
     }

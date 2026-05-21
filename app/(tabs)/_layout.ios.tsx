@@ -109,7 +109,7 @@ export default function TabLayout() {
           }
         }
       } catch (err) {
-        console.warn('[TabLayout iOS] Could not check onboarding status:', err);
+        // silently fail
       }
     };
     checkOnboarding();

@@ -56,13 +56,10 @@ export default function NotificationsScreen() {
 
   const loadNotifications = useCallback(async () => {
     try {
-      console.log('[Notifications] Loading notifications...');
       const data = await apiGet<Notification[] | { notifications: Notification[] }>('/api/notifications');
       const list = Array.isArray(data) ? data : (data as any)?.notifications ?? [];
       setNotifications(list);
-      console.log('[Notifications] Loaded', list.length, 'notifications');
     } catch (err) {
-      console.error('[Notifications] Error loading:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -74,24 +71,19 @@ export default function NotificationsScreen() {
   const onRefresh = () => { setRefreshing(true); loadNotifications(); };
 
   const handleMarkRead = async (id: string) => {
-    console.log('[Notifications] Marking notification read:', id);
     try {
       await apiPut(`/api/notifications/${id}/read`, {});
       setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
     } catch (err) {
-      console.error('[Notifications] Error marking read:', err);
     }
   };
 
   const handleMarkAllRead = async () => {
-    console.log('[Notifications] Mark all read pressed');
     setMarkingAll(true);
     try {
       await apiPut('/api/notifications/read-all', {});
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      console.log('[Notifications] All notifications marked read');
     } catch (err) {
-      console.error('[Notifications] Error marking all read:', err);
       Alert.alert('Error', 'Could not mark all as read.');
     } finally {
       setMarkingAll(false);
@@ -154,7 +146,6 @@ export default function NotificationsScreen() {
               <AnimatedPressable
                 key={notif.id}
                 onPress={() => {
-                  console.log('[Notifications] Notification tapped:', notif.id, notif.type);
                   if (!notif.read) handleMarkRead(notif.id);
                   if (notif.shift_id) router.push(`/shift/${notif.shift_id}`);
                 }}

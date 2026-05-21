@@ -71,6 +71,7 @@ function SkeletonCard() {
         Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
       ])
     ).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -98,6 +99,7 @@ function PulsingDot({ size = 8, color = COLORS.primary }: { size?: number; color
         Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
       ])
     ).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -124,6 +126,7 @@ function AnimatedListItem({ index, children }: { index: number; children: React.
       Animated.timing(opacity, { toValue: 1, duration: 350, delay: index * 60, useNativeDriver: Platform.OS !== 'web' }),
       Animated.timing(translateY, { toValue: 0, duration: 350, delay: index * 60, useNativeDriver: Platform.OS !== 'web' }),
     ]).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -201,19 +204,15 @@ function WorkerCard({ worker, index }: { worker: NearbyWorker; index: number }) 
       });
 
   const handleInvite = async () => {
-    console.log('[NearbyWorkers] Invite button pressed for worker:', worker.id, worker.name);
     setInviting(true);
     try {
-      console.log('[NearbyWorkers] POST /api/worker-invites', { workerId: worker.id });
       await apiPost('/api/worker-invites', { workerId: worker.id });
-      console.log('[NearbyWorkers] Invite sent successfully for worker:', worker.id);
       Alert.alert(
         'Invite Sent! 🎉',
         worker.name.split(' ')[0] + ' will be notified about your open shift.',
         [{ text: 'Got it', style: 'default' }]
       );
     } catch (err) {
-      console.error('[NearbyWorkers] Failed to send invite for worker:', worker.id, err);
       Alert.alert('Invite Sent!', worker.name.split(' ')[0] + ' will be notified about your open shift.');
     } finally {
       setInviting(false);
@@ -486,6 +485,7 @@ export default function NearbyWorkersScreen() {
         Animated.timing(headerPulse, { toValue: 0.4, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
       ])
     ).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchWorkers = useCallback(
@@ -493,7 +493,6 @@ export default function NearbyWorkersScreen() {
       setError(null);
       const roleParam = role !== 'All' ? `&role=${encodeURIComponent(role)}` : '';
       const url = `/api/worker-profiles?available=true${roleParam}&limit=20`;
-      console.log('[NearbyWorkers] Fetching workers:', url, 'sort:', sort);
       try {
         const data = await apiGet<NearbyWorker[] | { workers: NearbyWorker[] }>(url);
         let list: NearbyWorker[] = Array.isArray(data)
@@ -516,10 +515,8 @@ export default function NearbyWorkersScreen() {
           });
         }
 
-        console.log('[NearbyWorkers] Loaded', list.length, 'workers');
         setWorkers(list);
       } catch (err) {
-        console.error('[NearbyWorkers] Error fetching workers:', err);
         setError('Could not load workers. Check your connection and try again.');
       } finally {
         setLoading(false);
@@ -535,19 +532,16 @@ export default function NearbyWorkersScreen() {
   }, [activeRole, activeSort, fetchWorkers]);
 
   const onRefresh = () => {
-    console.log('[NearbyWorkers] Pull to refresh triggered');
     setRefreshing(true);
     fetchWorkers(activeRole, activeSort);
   };
 
   const handleRoleFilter = (role: string) => {
-    console.log('[NearbyWorkers] Role filter selected:', role);
     setActiveRole(role);
     setLoading(true);
   };
 
   const handleSort = (sort: SortOption) => {
-    console.log('[NearbyWorkers] Sort option selected:', sort);
     setActiveSort(sort);
   };
 
@@ -571,7 +565,6 @@ export default function NearbyWorkersScreen() {
           {/* Back button */}
           <AnimatedPressable
             onPress={() => {
-              console.log('[NearbyWorkers] Back button pressed');
               router.back();
             }}
           >
@@ -630,7 +623,6 @@ export default function NearbyWorkersScreen() {
           {/* Filter icon */}
           <AnimatedPressable
             onPress={() => {
-              console.log('[NearbyWorkers] Filter icon pressed');
             }}
           >
             <View
@@ -812,7 +804,6 @@ export default function NearbyWorkersScreen() {
               </Text>
               <AnimatedPressable
                 onPress={() => {
-                  console.log('[NearbyWorkers] Retry button pressed');
                   setLoading(true);
                   fetchWorkers(activeRole, activeSort);
                 }}

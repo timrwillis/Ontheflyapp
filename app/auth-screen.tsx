@@ -6,14 +6,12 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Animated,
-  Pressable,
   ActivityIndicator,
   Alert,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '@/contexts/AuthContext';
 import { COLORS } from '@/constants/Colors';
@@ -77,7 +75,6 @@ function GoogleLogo({ size = 20 }: { size?: number }) {
 }
 
 export default function AuthScreen() {
-  const insets = useSafeAreaInsets();
   const { user, loading, signInWithEmail, signUpWithEmail, signInWithApple, signInWithGoogle } = useAuth();
 
   const [screen, setScreen] = useState<Screen>('landing');
@@ -295,10 +292,11 @@ export default function AuthScreen() {
             </Text>
 
             {/* Divider */}
-            <View style={styles.dividerRow}>
+            <View style={styles.dividerContainer}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
+              <View style={styles.dividerLabelWrap}>
+                <Text style={styles.dividerLabel}>or</Text>
+              </View>
             </View>
 
             {/* Apple */}
@@ -482,9 +480,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryBtnText: {
-    color: '#0A0A0A',
-    fontSize: 16,
+    color: '#000000',
     fontFamily: 'SpaceGrotesk-Bold',
+    fontSize: 17,
   },
   outlineBtn: {
     borderRadius: 14,
@@ -632,18 +630,28 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   dividerLine: {
-    flex: 1,
+    position: 'absolute',
+    left: 0,
+    right: 0,
     height: 1,
-    backgroundColor: COLORS.border,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  dividerText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    fontFamily: 'SpaceGrotesk-Regular',
+  dividerLabelWrap: {
+    backgroundColor: '#0A0A0A',
+    paddingHorizontal: 16,
+  },
+  dividerLabel: {
+    color: '#555555',
+    fontSize: 14,
   },
 
   // Social buttons
   socialBtn: {
+    backgroundColor: '#141414',
+    height: 56,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -655,9 +663,58 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   socialBtnText: {
-    color: COLORS.text,
-    fontSize: 15,
+    color: '#F0F0F0',
+    fontSize: 16,
     fontFamily: 'SpaceGrotesk-SemiBold',
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  signupSwitchRow: {
+    marginTop: 24,
+    marginBottom: 32,
+  },
+  switchText: {
+    color: '#8A8A8A',
+  },
+  switchLink: {
+    color: '#00FF87',
+    fontFamily: 'SpaceGrotesk-Bold',
+  },
+
+  // ── Sign Up role cards ────────────────────────────────────────────────────────
+  roleRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 28,
+  },
+  roleCard: {
+    flex: 1,
+    backgroundColor: '#141414',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+  },
+  roleCardSelected: {
+    borderWidth: 2,
+    borderColor: '#00FF87',
+    backgroundColor: 'rgba(0,255,135,0.06)',
+  },
+  roleCardUnselected: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  roleEmoji: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  roleTitle: {
+    fontFamily: 'SpaceGrotesk-Bold',
+    fontSize: 15,
+    color: '#F0F0F0',
   },
   googleBtn: {
     backgroundColor: COLORS.surfaceSecondary,

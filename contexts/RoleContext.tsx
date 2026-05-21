@@ -15,7 +15,7 @@ export interface User {
   business_name?: string;
   business_type?: string;
   city?: string;
-  onboarding_step?: string;
+  onboarding_step?: number;
   profile_completed?: boolean;
   notification_preferences?: NotificationPreferences;
 }
@@ -157,7 +157,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         business_name: (data.business as Record<string, unknown>)?.name as string ?? (data.business_name as string | undefined),
         business_type: (data.business as Record<string, unknown>)?.type as string ?? (data.business_type as string | undefined),
         city: (data.worker_profile as Record<string, unknown>)?.city as string ?? (data.city as string | undefined),
-        onboarding_step: data.onboarding_step as string | undefined,
+        onboarding_step: data.onboarding_step != null ? Number(data.onboarding_step) : undefined,
         profile_completed: Boolean(data.profile_completed),
         notification_preferences: (data.notification_preferences as NotificationPreferences) ?? {},
       };
@@ -178,8 +178,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       }
 
       return user;
-    } catch (err) {
-      console.warn('[RoleContext] /api/me failed:', err);
+    } catch {
       return null;
     }
   }, []);
@@ -189,8 +188,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       const data = await apiGet<OnboardingStatus>('/api/onboarding/status');
       setOnboardingStatus(data);
       return data;
-    } catch (err) {
-      console.warn('[RoleContext] Could not fetch onboarding status:', err);
+    } catch {
       return null;
     }
   }, []);
@@ -202,8 +200,8 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         const wp = normalizeWorkerProfile(data.worker_profile as Record<string, unknown>);
         setWorkerProfile(wp);
       }
-    } catch (err) {
-      console.warn('[RoleContext] Could not refresh worker profile:', err);
+    } catch {
+      // silently fail — profile will be stale until next refresh
     }
   }, []);
 
@@ -223,7 +221,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     const init = async () => {
       try {
         // Check for an active auth session first — if none, skip fetchMe
-        let session = null;
+        let session: Awaited<ReturnType<typeof authClient.getSession>> | null = null;
         try {
           session = await authClient.getSession();
         } catch {

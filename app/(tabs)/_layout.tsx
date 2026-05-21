@@ -43,7 +43,7 @@ function getContainerWidth(tabCount: number): number {
 }
 
 export default function TabLayout() {
-  const { currentRole, isLoading, refreshOnboardingStatus } = useRole();
+  const { currentRole, isLoading, refreshOnboardingStatus, onboardingStatus } = useRole();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const tabs = getTabsForRole(currentRole);
@@ -64,6 +64,9 @@ export default function TabLayout() {
     if (isLoading) return;
     if (!user) return; // Don't check onboarding if not authenticated
     const checkOnboarding = async () => {
+      if (onboardingStatus?.onboarding_completed) {
+        return;
+      }
       try {
         const status = await refreshOnboardingStatus();
         if (!status) return;
@@ -94,12 +97,12 @@ export default function TabLayout() {
           }
         }
       } catch (err) {
-        console.warn('[TabLayout] Could not check onboarding status:', err);
+        // silently fail
       }
     };
     checkOnboarding();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, user]);
+  }, [isLoading, user, onboardingStatus]);
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>

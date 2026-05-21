@@ -1,0 +1,72 @@
+import type { Shift } from '@/components/ShiftCard';
+import type { WorkerProfile } from '@/contexts/RoleContext';
+
+export const DEMO_MODE = true;
+
+// ─── Businesses ───────────────────────────────────────────────────────────────
+
+export interface DemoBusiness {
+  id: string;
+  name: string;
+  type: string;
+  address: string;
+  city: string;
+}
+
+export const DEMO_BUSINESSES: DemoBusiness[] = [
+  { id: 'biz-1', name: 'The Rooftop at Power & Light', type: 'Bar', address: '1337 Grand Blvd', city: 'Kansas City, MO' },
+  { id: 'biz-2', name: 'Westport Ale House', type: 'Bar', address: '4128 Broadway St', city: 'Kansas City, MO' },
+  { id: 'biz-3', name: 'The Rieger Hotel Grill', type: 'Restaurant', address: '1924 Main St', city: 'Kansas City, MO' },
+  { id: 'biz-4', name: 'Plaza III The Steakhouse', type: 'Restaurant', address: '4749 Pennsylvania Ave', city: 'Kansas City, MO' },
+  { id: 'biz-5', name: 'Corvino Supper Club', type: 'Restaurant', address: '1830 Walnut St', city: 'Kansas City, MO' },
+  { id: 'biz-6', name: 'Neon Alley Bar & Grill', type: 'Bar', address: '3912 Main St', city: 'Kansas City, MO' },
+  { id: 'biz-7', name: 'The Copper Mug', type: 'Bar', address: '510 Westport Rd', city: 'Kansas City, MO' },
+  { id: 'biz-8', name: 'InterContinental Kansas City', type: 'Hotel', address: '401 Ward Pkwy', city: 'Kansas City, MO' },
+  { id: 'biz-9', name: 'Prime Social KC', type: 'Bar', address: '1329 Grand Blvd', city: 'Kansas City, MO' },
+  { id: 'biz-10', name: 'Midtown Tavern', type: 'Bar', address: '3101 Gillham Rd', city: 'Kansas City, MO' },
+];
+
+// ─── Workers ──────────────────────────────────────────────────────────────────
+
+export const DEMO_WORKERS: WorkerProfile[] = [
+  { id: 'w-1',  userId: 'u-1',  name: 'Marcus Johnson',   roles: ['Bartender'],   reliabilityScore: 98, reliability_score: 98, isAvailable: true,  is_available: true,  isVerified: true,  is_verified: true,  city: 'Kansas City, MO', yearsExperience: 6, avgRating: 4.9, avg_rating: 4.9, photoUrl: 'https://ui-avatars.com/api/?name=Marcus+Johnson&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-2',  userId: 'u-2',  name: 'Aaliyah Williams', roles: ['Server'],      reliabilityScore: 95, reliability_score: 95, isAvailable: true,  is_available: true,  isVerified: true,  is_verified: true,  city: 'Kansas City, MO', yearsExperience: 4, avgRating: 4.8, avg_rating: 4.8, photoUrl: 'https://ui-avatars.com/api/?name=Aaliyah+Williams&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-3',  userId: 'u-3',  name: 'Devon Carter',     roles: ['Cook'],        reliabilityScore: 91, reliability_score: 91, isAvailable: false, is_available: false, isVerified: true,  is_verified: true,  city: 'Overland Park, KS', yearsExperience: 8, avgRating: 4.7, avg_rating: 4.7, photoUrl: 'https://ui-avatars.com/api/?name=Devon+Carter&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-4',  userId: 'u-4',  name: 'Jasmine Torres',   roles: ['Bartender', 'Barback'], reliabilityScore: 97, reliability_score: 97, isAvailable: true,  is_available: true,  isVerified: true,  is_verified: true,  city: 'Kansas City, MO', yearsExperience: 5, avgRating: 4.9, avg_rating: 4.9, photoUrl: 'https://ui-avatars.com/api/?name=Jasmine+Torres&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-5',  userId: 'u-5',  name: 'Tyler Brooks',     roles: ['Security'],    reliabilityScore: 93, reliability_score: 93, isAvailable: true,  is_available: true,  isVerified: false, is_verified: false, city: 'Lee\'s Summit, MO', yearsExperience: 3, avgRating: 4.6, avg_rating: 4.6, photoUrl: 'https://ui-avatars.com/api/?name=Tyler+Brooks&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-6',  userId: 'u-6',  name: 'Priya Patel',      roles: ['Server', 'Host'], reliabilityScore: 99, reliability_score: 99, isAvailable: true,  is_available: true,  isVerified: true,  is_verified: true,  city: 'Kansas City, MO', yearsExperience: 7, avgRating: 5.0, avg_rating: 5.0, photoUrl: 'https://ui-avatars.com/api/?name=Priya+Patel&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-7',  userId: 'u-7',  name: 'Jordan Hayes',     roles: ['Event Staff'], reliabilityScore: 88, reliability_score: 88, isAvailable: false, is_available: false, isVerified: true,  is_verified: true,  city: 'Kansas City, KS', yearsExperience: 2, avgRating: 4.5, avg_rating: 4.5, photoUrl: 'https://ui-avatars.com/api/?name=Jordan+Hayes&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-8',  userId: 'u-8',  name: 'Keisha Robinson',  roles: ['Bartender'],   reliabilityScore: 96, reliability_score: 96, isAvailable: true,  is_available: true,  isVerified: true,  is_verified: true,  city: 'Kansas City, MO', yearsExperience: 9, avgRating: 4.9, avg_rating: 4.9, photoUrl: 'https://ui-avatars.com/api/?name=Keisha+Robinson&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-9',  userId: 'u-9',  name: 'Elijah Moore',     roles: ['Cook', 'Dishwasher'], reliabilityScore: 84, reliability_score: 84, isAvailable: true,  is_available: true,  isVerified: false, is_verified: false, city: 'Independence, MO', yearsExperience: 4, avgRating: 4.4, avg_rating: 4.4, photoUrl: 'https://ui-avatars.com/api/?name=Elijah+Moore&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-10', userId: 'u-10', name: 'Sofia Reyes',       roles: ['Server'],      reliabilityScore: 94, reliability_score: 94, isAvailable: true,  is_available: true,  isVerified: true,  is_verified: true,  city: 'Kansas City, MO', yearsExperience: 5, avgRating: 4.8, avg_rating: 4.8, photoUrl: 'https://ui-avatars.com/api/?name=Sofia+Reyes&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-11', userId: 'u-11', name: 'Nathan Kim',        roles: ['Barback'],     reliabilityScore: 90, reliability_score: 90, isAvailable: true,  is_available: true,  isVerified: true,  is_verified: true,  city: 'Shawnee, KS', yearsExperience: 2, avgRating: 4.6, avg_rating: 4.6, photoUrl: 'https://ui-avatars.com/api/?name=Nathan+Kim&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-12', userId: 'u-12', name: 'Destiny Washington', roles: ['Host', 'Server'], reliabilityScore: 92, reliability_score: 92, isAvailable: false, is_available: false, isVerified: true,  is_verified: true,  city: 'Kansas City, MO', yearsExperience: 3, avgRating: 4.7, avg_rating: 4.7, photoUrl: 'https://ui-avatars.com/api/?name=Destiny+Washington&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-13', userId: 'u-13', name: 'Caleb Thompson',    roles: ['Security'],    reliabilityScore: 87, reliability_score: 87, isAvailable: true,  is_available: true,  isVerified: false, is_verified: false, city: 'Raytown, MO', yearsExperience: 5, avgRating: 4.5, avg_rating: 4.5, photoUrl: 'https://ui-avatars.com/api/?name=Caleb+Thompson&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-14', userId: 'u-14', name: 'Amara Okafor',      roles: ['Event Staff', 'Host'], reliabilityScore: 96, reliability_score: 96, isAvailable: true,  is_available: true,  isVerified: true,  is_verified: true,  city: 'Kansas City, MO', yearsExperience: 6, avgRating: 4.9, avg_rating: 4.9, photoUrl: 'https://ui-avatars.com/api/?name=Amara+Okafor&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-15', userId: 'u-15', name: 'Ryan Nguyen',       roles: ['Cook'],        reliabilityScore: 89, reliability_score: 89, isAvailable: true,  is_available: true,  isVerified: true,  is_verified: true,  city: 'Lenexa, KS', yearsExperience: 7, avgRating: 4.6, avg_rating: 4.6, photoUrl: 'https://ui-avatars.com/api/?name=Ryan+Nguyen&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-16', userId: 'u-16', name: 'Brianna Scott',     roles: ['Bartender', 'Server'], reliabilityScore: 97, reliability_score: 97, isAvailable: true,  is_available: true,  isVerified: true,  is_verified: true,  city: 'Kansas City, MO', yearsExperience: 8, avgRating: 4.9, avg_rating: 4.9, photoUrl: 'https://ui-avatars.com/api/?name=Brianna+Scott&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-17', userId: 'u-17', name: 'Isaiah Davis',      roles: ['Barback'],     reliabilityScore: 85, reliability_score: 85, isAvailable: false, is_available: false, isVerified: false, is_verified: false, city: 'Kansas City, MO', yearsExperience: 1, avgRating: 4.3, avg_rating: 4.3, photoUrl: 'https://ui-avatars.com/api/?name=Isaiah+Davis&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-18', userId: 'u-18', name: 'Layla Martinez',    roles: ['Server', 'Event Staff'], reliabilityScore: 93, reliability_score: 93, isAvailable: true,  is_available: true,  isVerified: true,  is_verified: true,  city: 'Overland Park, KS', yearsExperience: 4, avgRating: 4.7, avg_rating: 4.7, photoUrl: 'https://ui-avatars.com/api/?name=Layla+Martinez&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-19', userId: 'u-19', name: 'Zach Freeman',      roles: ['Bartender'],   reliabilityScore: 91, reliability_score: 91, isAvailable: true,  is_available: true,  isVerified: true,  is_verified: true,  city: 'Kansas City, MO', yearsExperience: 5, avgRating: 4.7, avg_rating: 4.7, photoUrl: 'https://ui-avatars.com/api/?name=Zach+Freeman&background=1a1a2e&color=00FF87&size=128' },
+  { id: 'w-20', userId: 'u-20', name: 'Monique Bell',      roles: ['Host'],        reliabilityScore: 94, reliability_score: 94, isAvailable: true,  is_available: true,  isVerified: true,  is_verified: true,  city: 'Kansas City, MO', yearsExperience: 3, avgRating: 4.8, avg_rating: 4.8, photoUrl: 'https://ui-avatars.com/api/?name=Monique+Bell&background=1a1a2e&color=00FF87&size=128' },
+];
+
+// ─── Shifts ───────────────────────────────────────────────────────────────────
+
+export const DEMO_SHIFTS: Shift[] = [
+  { id: 's-1',  role: 'Bartender',   business_name: 'The Rooftop at Power & Light', location: '1337 Grand Blvd, Kansas City, MO', date: '2025-06-07', start_time: '8:00 PM', end_time: '2:00 AM', hourly_pay: 28, urgency: 'emergency', status: 'open',    workers_needed: 2, workers_confirmed: 0, dress_code: 'All Black', notes: 'Rooftop bar — must have TIPS cert' },
+  { id: 's-2',  role: 'Server',      business_name: 'Corvino Supper Club',           location: '1830 Walnut St, Kansas City, MO',  date: '2025-06-07', start_time: '5:00 PM', end_time: '11:00 PM', hourly_pay: 22, urgency: 'tonight',   status: 'open',    workers_needed: 3, workers_confirmed: 1, dress_code: 'Business Casual' },
+  { id: 's-3',  role: 'Bartender',   business_name: 'Westport Ale House',            location: '4128 Broadway St, Kansas City, MO', date: '2025-06-07', start_time: '9:00 PM', end_time: '3:00 AM', hourly_pay: 25, urgency: 'tonight',   status: 'open',    workers_needed: 1, workers_confirmed: 0, dress_code: 'All Black' },
+  { id: 's-4',  role: 'Cook',        business_name: 'The Rieger Hotel Grill',        location: '1924 Main St, Kansas City, MO',    date: '2025-06-08', start_time: '4:00 PM', end_time: '10:00 PM', hourly_pay: 20, urgency: 'high',      status: 'open',    workers_needed: 2, workers_confirmed: 0 },
+  { id: 's-5',  role: 'Event Staff', business_name: 'InterContinental Kansas City',  location: '401 Ward Pkwy, Kansas City, MO',   date: '2025-06-08', start_time: '6:00 PM', end_time: '12:00 AM', hourly_pay: 19, urgency: 'high',      status: 'open',    workers_needed: 5, workers_confirmed: 2, dress_code: 'Business Formal', notes: 'Corporate gala — professional attire required' },
+  { id: 's-6',  role: 'Security',    business_name: 'Prime Social KC',               location: '1329 Grand Blvd, Kansas City, MO', date: '2025-06-07', start_time: '9:00 PM', end_time: '3:00 AM', hourly_pay: 22, urgency: 'emergency', status: 'open',    workers_needed: 2, workers_confirmed: 0, notes: 'Must have valid security license' },
+  { id: 's-7',  role: 'Server',      business_name: 'Plaza III The Steakhouse',      location: '4749 Pennsylvania Ave, Kansas City, MO', date: '2025-06-08', start_time: '5:30 PM', end_time: '11:00 PM', hourly_pay: 24, urgency: 'tomorrow',  status: 'open',    workers_needed: 2, workers_confirmed: 0, dress_code: 'All Black' },
+  { id: 's-8',  role: 'Barback',     business_name: 'Neon Alley Bar & Grill',        location: '3912 Main St, Kansas City, MO',    date: '2025-06-07', start_time: '7:00 PM', end_time: '2:00 AM', hourly_pay: 18, urgency: 'tonight',   status: 'open',    workers_needed: 1, workers_confirmed: 0 },
+  { id: 's-9',  role: 'Bartender',   business_name: 'The Copper Mug',                location: '510 Westport Rd, Kansas City, MO', date: '2025-06-09', start_time: '6:00 PM', end_time: '1:00 AM', hourly_pay: 26, urgency: 'this_week', status: 'open',    workers_needed: 1, workers_confirmed: 0, dress_code: 'Casual' },
+  { id: 's-10', role: 'Host',        business_name: 'Corvino Supper Club',           location: '1830 Walnut St, Kansas City, MO',  date: '2025-06-09', start_time: '5:00 PM', end_time: '10:00 PM', hourly_pay: 19, urgency: 'this_week', status: 'open',    workers_needed: 1, workers_confirmed: 0, dress_code: 'Business Casual' },
+  { id: 's-11', role: 'Cook',        business_name: 'Midtown Tavern',                location: '3101 Gillham Rd, Kansas City, MO', date: '2025-06-10', start_time: '3:00 PM', end_time: '9:00 PM',  hourly_pay: 21, urgency: 'this_week', status: 'open',    workers_needed: 1, workers_confirmed: 0 },
+  { id: 's-12', role: 'Bartender',   business_name: 'The Rooftop at Power & Light', location: '1337 Grand Blvd, Kansas City, MO', date: '2025-06-14', start_time: '8:00 PM', end_time: '2:00 AM', hourly_pay: 35, urgency: 'this_week', status: 'open',    workers_needed: 3, workers_confirmed: 0, notes: 'Weekend premium rate — must have 3+ yrs experience' },
+  { id: 's-13', role: 'Server',      business_name: 'Westport Ale House',            location: '4128 Broadway St, Kansas City, MO', date: '2025-06-08', start_time: '11:00 AM', end_time: '5:00 PM', hourly_pay: 20, urgency: 'tomorrow',  status: 'pending', workers_needed: 2, workers_confirmed: 1 },
+  { id: 's-14', role: 'Event Staff', business_name: 'InterContinental Kansas City',  location: '401 Ward Pkwy, Kansas City, MO',   date: '2025-06-15', start_time: '2:00 PM', end_time: '10:00 PM', hourly_pay: 23, urgency: 'this_week', status: 'filled',  workers_needed: 4, workers_confirmed: 4, dress_code: 'Business Formal' },
+  { id: 's-15', role: 'Bartender',   business_name: 'Prime Social KC',               location: '1329 Grand Blvd, Kansas City, MO', date: '2025-06-01', start_time: '8:00 PM', end_time: '2:00 AM', hourly_pay: 27, urgency: 'this_week', status: 'completed', workers_needed: 2, workers_confirmed: 2 },
+];

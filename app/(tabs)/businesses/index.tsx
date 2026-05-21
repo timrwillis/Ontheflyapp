@@ -76,7 +76,7 @@ export default function BusinessesScreen() {
       const data = await apiGet<Business[]>('/api/businesses');
       setBusinesses(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('[BusinessesTab] Error loading businesses:', err);
+      // silently fail
     } finally {
       setLoading(false);
       setRefreshing(false);

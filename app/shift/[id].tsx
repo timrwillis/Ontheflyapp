@@ -164,7 +164,6 @@ export default function ShiftDetailScreen() {
   const loadData = useCallback(async () => {
     if (!id) return;
     try {
-      console.log('[ShiftDetail] Loading shift:', id);
       const [shiftData, appsData] = await Promise.all([
         apiGet<Shift>(`/api/shifts/${id}`),
         currentRole === 'manager' ? apiGet<Application[]>(`/api/shifts/${id}/applications`) : Promise.resolve([]),
@@ -172,7 +171,6 @@ export default function ShiftDetailScreen() {
       setShift(shiftData);
       setApplications(Array.isArray(appsData) ? appsData : []);
     } catch (err) {
-      console.error('[ShiftDetail] Error loading shift:', err);
     } finally {
       setLoading(false);
     }
@@ -184,12 +182,10 @@ export default function ShiftDetailScreen() {
     if (!currentUser?.id || !id) return;
     setApplying(true);
     try {
-      console.log('[ShiftDetail] Applying to shift:', id, 'user:', currentUser.id);
       await apiPost(`/api/shifts/${id}/apply`, { user_id: currentUser.id });
       Alert.alert('Applied!', 'Your application has been submitted. The manager will confirm shortly.');
       loadData();
     } catch (err) {
-      console.error('[ShiftDetail] Error applying:', err);
       Alert.alert('Error', 'Could not apply to this shift. Please try again.');
     } finally {
       setApplying(false);
@@ -199,11 +195,9 @@ export default function ShiftDetailScreen() {
   const handleConfirm = async (appId: string) => {
     setActionLoading(appId);
     try {
-      console.log('[ShiftDetail] Confirming application:', appId);
       await apiPut(`/api/applications/${appId}`, { status: 'confirmed' });
       loadData();
     } catch (err) {
-      console.error('[ShiftDetail] Error confirming:', err);
       Alert.alert('Error', 'Could not confirm this application.');
     } finally {
       setActionLoading(null);
@@ -213,11 +207,9 @@ export default function ShiftDetailScreen() {
   const handleReject = async (appId: string) => {
     setActionLoading(appId);
     try {
-      console.log('[ShiftDetail] Rejecting application:', appId);
       await apiPut(`/api/applications/${appId}`, { status: 'rejected' });
       loadData();
     } catch (err) {
-      console.error('[ShiftDetail] Error rejecting:', err);
       Alert.alert('Error', 'Could not reject this application.');
     } finally {
       setActionLoading(null);
@@ -255,7 +247,7 @@ export default function ShiftDetailScreen() {
         headerTintColor: COLORS.text,
         headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold' },
         headerLeft: () => (
-          <AnimatedPressable onPress={() => { console.log('[ShiftDetail] Back button pressed'); router.back(); }}>
+          <AnimatedPressable onPress={() => { router.back(); }}>
             <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', marginLeft: 4 }}>
               <MaterialIcons name="chevron-left" size={24} color={COLORS.text} />
             </View>
@@ -395,7 +387,7 @@ export default function ShiftDetailScreen() {
             {/* Worker: Accept button */}
             {currentRole === 'worker' && isOpen ? (
               <PulseButton
-                onPress={() => { console.log('[ShiftDetail] Accept shift pressed:', id); handleApply(); }}
+                onPress={() => { handleApply(); }}
                 disabled={applying}
                 label={applyButtonLabel}
               />
@@ -451,7 +443,7 @@ export default function ShiftDetailScreen() {
                         {isPending ? (
                           <View style={{ flexDirection: 'row', gap: 8 }}>
                             <AnimatedPressable
-                              onPress={() => { console.log('[ShiftDetail] Confirm application:', app.id); handleConfirm(app.id); }}
+                              onPress={() => { handleConfirm(app.id); }}
                               disabled={actionLoading === app.id}
                               style={{ flex: 1 }}
                             >
@@ -461,7 +453,7 @@ export default function ShiftDetailScreen() {
                               </View>
                             </AnimatedPressable>
                             <AnimatedPressable
-                              onPress={() => { console.log('[ShiftDetail] Reject application:', app.id); handleReject(app.id); }}
+                              onPress={() => { handleReject(app.id); }}
                               disabled={actionLoading === app.id}
                               style={{ flex: 1 }}
                             >

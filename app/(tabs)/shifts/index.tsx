@@ -1,18 +1,37 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Modal, TouchableWithoutFeedback, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { useRole } from '@/contexts/RoleContext';
-import { apiGet } from '@/utils/api';
+import { apiGet, apiPatch } from '@/utils/api';
 import { ShiftCard, Shift } from '@/components/ShiftCard';
 import { ReliabilityScore } from '@/components/ReliabilityScore';
-import { ShiftCardSkeleton } from '@/components/SkeletonLoader';
+import { ShiftCardSkeleton, WorkerCardSkeleton } from '@/components/SkeletonLoader';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
+import { WorkerCard, WorkerProfile } from '@/components/WorkerCard';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { DEMO_MODE, DEMO_SHIFTS } from '@/constants/DemoData';
 
 const MANAGER_TABS = ['Open', 'Pending', 'Filled', 'Completed'];
 const WORKER_TABS = ['Upcoming', 'Completed'];
+
+interface Application {
+  id: string;
+  shift_id: string;
+  worker_id: string;
+  status: string;
+  applied_at: string;
+  worker: {
+    id: string;
+    name: string;
+    city?: string;
+    reliability_score?: number;
+    is_available?: boolean;
+    is_verified?: boolean;
+    worker_roles?: { role: string; years_experience?: number; is_primary?: boolean }[];
+  };
+}
 
 function SegmentedControl({ options, selected, onSelect }: { options: string[]; selected: string; onSelect: (v: string) => void }) {
   return (
@@ -56,7 +75,22 @@ export default function ShiftsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTab, setSelectedTab] = useState(currentRole === 'worker' ? 'Upcoming' : 'Open');
 
+  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
   const loadShifts = useCallback(async () => {
+    if (DEMO_MODE) {
+      if (currentRole === 'worker') {
+        setShifts(DEMO_SHIFTS.filter((s) => s.status === 'open' || s.status === 'pending').slice(0, 5));
+      } else {
+        setShifts(DEMO_SHIFTS);
+      }
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       if (currentRole === 'worker') {
         const [appsData, assignData] = await Promise.all([
@@ -75,17 +109,60 @@ export default function ShiftsScreen() {
         const shiftList = Array.isArray(data) ? data : (data as any)?.shifts ?? [];
         setShifts(shiftList);
       }
-    } catch (err) {
-      console.error('[ShiftsTab] Error loading shifts:', err);
+    } catch {
+      // silently fail — UI shows empty state
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [currentRole, currentUser]);
+  }, [currentRole]);
 
   useEffect(() => { loadShifts(); }, [loadShifts]);
 
   const onRefresh = () => { setRefreshing(true); loadShifts(); };
+
+  const fetchApplications = async (shiftId: string) => {
+    setAppsLoading(true);
+    setApplications([]);
+    try {
+      const data = await apiGet<{ applications: Application[] }>(`/api/shifts/${shiftId}/applications`);
+      const list = Array.isArray(data) ? data : (data as any)?.applications ?? [];
+      setApplications(list);
+    } catch {
+      Alert.alert('Error', 'Could not load applicants. Please try again.');
+    } finally {
+      setAppsLoading(false);
+    }
+  };
+
+  const handleApprove = async (applicationId: string) => {
+    setActionLoading(applicationId);
+    try {
+      await apiPatch(`/api/applications/${applicationId}/confirm`, {});
+      setApplications((prev) => prev.map((a) => a.id === applicationId ? { ...a, status: 'confirmed' } : a));
+    } catch {
+      Alert.alert('Error', 'Could not approve applicant. Please try again.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async (applicationId: string) => {
+    setActionLoading(applicationId);
+    try {
+      await apiPatch(`/api/applications/${applicationId}/reject`, {});
+      setApplications((prev) => prev.map((a) => a.id === applicationId ? { ...a, status: 'rejected' } : a));
+    } catch {
+      Alert.alert('Error', 'Could not reject applicant. Please try again.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const openSheetForShift = (shift: Shift) => {
+    setSelectedShift(shift);
+    fetchApplications(shift.id);
+  };
 
   const filteredShifts = shifts.filter((s) => {
     const status = s.status?.toLowerCase() ?? '';
@@ -106,51 +183,26 @@ export default function ShiftsScreen() {
 
   const titleText = currentRole === 'worker' ? 'My Shifts' : 'Shift Manager';
 
-  return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: COLORS.background }}
-      contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 140 }}
-      showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
-    >
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <Text style={{ color: COLORS.text, fontSize: 26, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5, flex: 1 }}>
-          {titleText}
-        </Text>
-        {shifts.length > 0 && (
-          <View style={{ backgroundColor: COLORS.primaryMuted, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-            <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-              {shifts.length}
-            </Text>
-          </View>
-        )}
-      </View>
+  const sheetRoleText = (selectedShift as any)?.role_needed ?? selectedShift?.roleNeeded ?? '';
+  const sheetApplicantCount = applications.length;
 
-      {/* Worker reliability score */}
-      {currentRole === 'worker' && workerProfile && (
-        <View style={{
-          backgroundColor: 'rgba(255,255,255,0.04)',
-          borderRadius: 16,
-          padding: 20,
-          borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.08)',
-          marginBottom: 20,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 16,
-        }}>
-          <ReliabilityScore score={score} size={72} />
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginBottom: 4 }}>
-              Reliability Score
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2, marginBottom: 6 }}>
-              <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                {score}
-              </Text>
-              <Text style={{ color: COLORS.textSecondary, fontSize: 14, fontFamily: 'SpaceGrotesk-Regular' }}>
-                /100
+  return (
+    <>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: COLORS.background }}
+        contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 140 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+      >
+        {/* Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <Text style={{ color: COLORS.text, fontSize: 26, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5, flex: 1 }}>
+            {titleText}
+          </Text>
+          {shifts.length > 0 && (
+            <View style={{ backgroundColor: COLORS.primaryMuted, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+              <Text style={{ color: COLORS.primary, fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+                {shifts.length}
               </Text>
             </View>
             {/* Progress bar */}

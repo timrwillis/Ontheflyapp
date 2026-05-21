@@ -19,7 +19,7 @@ const glass = {
 export default function ManagerOnboardingComplete() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { currentUser } = useRole();
+  const { currentUser, refreshOnboardingStatus } = useRole();
   const [loading, setLoading] = useState(false);
 
   const businessName = currentUser?.business_name ?? 'Your Business';
@@ -30,7 +30,6 @@ export default function ManagerOnboardingComplete() {
       await apiPost('/api/onboarding/complete', {});
       router.replace('/create-shift');
     } catch (err) {
-      console.error('[ManagerOnboarding] Error completing onboarding:', err);
       Alert.alert('Error', 'Could not complete setup. Please try again.');
     } finally {
       setLoading(false);

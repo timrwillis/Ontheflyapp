@@ -57,6 +57,34 @@
       "when": 1778613166251,
       "tag": "20260512191246_furry_payback",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1779204303701,
+      "tag": "20260519152503_lowly_shocker",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1779204348305,
+      "tag": "20260519152548_magenta_meltdown",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1779205484487,
+      "tag": "20260519154444_damp_vivisector",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1779206792389,
+      "tag": "20260519160632_uneven_joseph",
+      "breakpoints": true
     }
   ]
 }

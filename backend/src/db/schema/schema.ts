@@ -108,6 +108,7 @@ export const supportTicketCategoryEnum = pgEnum('support_ticket_category', [
   'payment',
   'technical',
   'other',
+  'general',
 ]);
 
 export const assignmentStatusEnum = pgEnum('assignment_status', [
@@ -133,6 +134,9 @@ export const users = pgTable('users', {
     reminders: true,
     marketing: false,
   }).notNull(),
+  agreedToTerms: boolean('agreed_to_terms').default(false).notNull(),
+  agreedAt: timestamp('agreed_at', { withTimezone: true }),
+  subscriptionStatus: text('subscription_status').default('inactive'),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
@@ -273,7 +277,7 @@ export const documents = pgTable('documents', {
 
 export const supportTickets = pgTable('support_tickets', {
   id: text('id').primaryKey(),
-  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
   subject: text('subject').notNull(),
   body: text('body').notNull(),
   status: supportTicketStatusEnum('status').default('open').notNull(),

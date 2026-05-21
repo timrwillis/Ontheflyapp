@@ -1,12 +1,15 @@
+// Capture native fetch BEFORE any polyfill can override it
+const nativeFetch = global.fetch;
+
 import { createAuthClient } from "better-auth/react";
 import { expoClient } from "@better-auth/expo/client";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import Constants from "expo-constants";
 
-const API_URL = "https://zqdg2aguqavazwnbcyv4744dv5nv2nxg.app.specular.dev";
+const API_URL = "https://u8y8kzvzgndjkymacqmf8v9manbx8fwa.app.specular.dev";
 
-export const BEARER_TOKEN_KEY = "on-the-fly_bearer_token";
+export const BEARER_TOKEN_KEY = "onthefly_bearer_token";
 
 // Platform-specific storage: localStorage for web, SecureStore for native
 const storage = Platform.OS === "web"
@@ -21,8 +24,8 @@ export const authClient = createAuthClient({
   baseURL: API_URL,
   plugins: [
     expoClient({
-      scheme: "on-the-fly",
-      storagePrefix: "on-the-fly",
+      scheme: "onthefly",
+      storagePrefix: "onthefly",
       storage,
     }),
   ],

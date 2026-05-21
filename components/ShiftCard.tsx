@@ -395,7 +395,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
                 )}
               </View>
             )}
-            {shift.location && (
+            {!!shift.location && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <MaterialIcons name="place" size={14} color={COLORS.textSecondary} />
                 <Text
@@ -423,16 +423,7 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             {shift.workers_needed ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Text style={{ fontSize: 12 }}>👥</Text>
-                <Text style={{ color: COLORS.textTertiary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
-                  {workersConfirmed}
-                </Text>
-                <Text style={{ color: COLORS.textTertiary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
-                  /
-                </Text>
-                <Text style={{ color: COLORS.textTertiary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
-                  {shift.workers_needed} filled
-                </Text>
+                <Text style={{ fontSize: 12 }}>{'👥'}</Text><Text style={{ color: COLORS.textTertiary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>{`${workersConfirmed}/${shift.workers_needed} filled`}</Text>
               </View>
             ) : (
               <View />
@@ -441,7 +432,6 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
             {showAcceptButton && (
               <AnimatedPressable
                 onPress={() => {
-                  console.log('[ShiftCard] Accept shift pressed:', shift.id);
                   onAccept?.();
                 }}
                 disabled={acceptLoading}

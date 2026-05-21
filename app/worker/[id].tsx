@@ -108,7 +108,6 @@ export default function WorkerDetailScreen() {
   const loadData = useCallback(async () => {
     if (!id) return;
     try {
-      console.log('[WorkerDetail] Loading worker:', id);
       const [workerData, ratingsData] = await Promise.all([
         apiGet<WorkerDetail>(`/api/workers/${id}`),
         apiGet<Rating[]>(`/api/ratings/worker/${id}`).catch(() => []),
@@ -125,7 +124,6 @@ export default function WorkerDetailScreen() {
       setWorker(workerData);
       setRatings(Array.isArray(ratingsData) ? ratingsData : []);
     } catch (err) {
-      console.error('[WorkerDetail] Error loading worker:', err);
     } finally {
       setLoading(false);
     }
@@ -188,7 +186,7 @@ export default function WorkerDetailScreen() {
         headerTintColor: COLORS.text,
         headerTitleStyle: { fontFamily: 'SpaceGrotesk-Bold' },
         headerLeft: () => (
-          <AnimatedPressable onPress={() => { console.log('[WorkerDetail] Back button pressed'); router.back(); }}>
+          <AnimatedPressable onPress={() => { router.back(); }}>
             <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', marginLeft: 4 }}>
               <MaterialIcons name="chevron-left" size={24} color={COLORS.text} />
             </View>
@@ -399,7 +397,6 @@ export default function WorkerDetailScreen() {
         borderTopColor: 'rgba(255,255,255,0.06)',
       }}>
         <AnimatedPressable onPress={() => {
-          console.log('[WorkerDetail] Invite to Shift pressed for worker:', worker.id, worker.name);
           Alert.alert('Invite Sent!', `${worker.name} will be notified about your open shift.`);
         }}>
           <View style={{

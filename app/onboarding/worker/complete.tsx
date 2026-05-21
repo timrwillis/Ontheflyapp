@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,8 +24,16 @@ const primaryGlow = Platform.select({
 export default function WorkerOnboardingComplete() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { workerProfile, currentUser, refreshWorkerProfile } = useRole();
+  const { workerProfile, currentUser, refreshWorkerProfile, refreshOnboardingStatus } = useRole();
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  useEffect(() => {
+    refreshWorkerProfile().finally(() => {
+      setProfileLoading(false);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const name = workerProfile?.name ?? currentUser?.name ?? 'Worker';
   const city = workerProfile?.city ?? '—';
@@ -39,7 +47,6 @@ export default function WorkerOnboardingComplete() {
       await refreshWorkerProfile();
       router.replace('/(tabs)/(home)');
     } catch (err) {
-      console.error('[WorkerOnboarding] Error completing onboarding:', err);
       Alert.alert('Error', 'Could not complete setup. Please try again.');
     } finally {
       setLoading(false);
@@ -97,9 +104,11 @@ export default function WorkerOnboardingComplete() {
           { icon: 'calendar-today' as const, label: 'Available', value: daysDisplay },
         ].map((item, i) => (
           <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: i < 3 ? 1 : 0, borderBottomColor: 'rgba(255,255,255,0.05)', gap: 12 }}>
-            <MaterialIcons name={item.icon} size={16} color={COLORS.primary} />
+            <MaterialIcons name={item.icon} size={16} color={profileLoading ? 'rgba(0,255,135,0.3)' : COLORS.primary} />
             <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular', width: 70 }}>{item.label}</Text>
-            <Text style={{ color: COLORS.text, fontSize: 13, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }} numberOfLines={1}>{item.value}</Text>
+            <Text style={{ color: profileLoading ? 'rgba(255,255,255,0.2)' : COLORS.text, fontSize: 13, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }} numberOfLines={1}>
+              {profileLoading ? '···' : item.value}
+            </Text>
           </View>
         ))}
       </View>

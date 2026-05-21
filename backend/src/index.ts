@@ -12,6 +12,7 @@ import { registerRatingRoutes } from './routes/ratings.js';
 import { registerNotificationRoutes } from './routes/notifications.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerMarketplaceRoutes } from './routes/marketplace.js';
+import { registerWaitlistRoutes } from './routes/waitlist.js';
 
 // Merge schemas
 const schema = { ...appSchema, ...authSchema };
@@ -39,6 +40,7 @@ registerRatingRoutes(app, app.fastify);
 registerNotificationRoutes(app, app.fastify);
 registerAdminRoutes(app, app.fastify);
 registerMarketplaceRoutes(app, app.fastify);
+registerWaitlistRoutes(app, app.fastify);
 
 await app.run();
 app.logger.info('Application running');

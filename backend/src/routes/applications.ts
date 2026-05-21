@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { eq } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
 import type { App } from '../index.js';
@@ -22,12 +22,27 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
           200: {
             type: 'object',
             properties: {
-              id: { type: 'string' },
-              shiftId: { type: 'string' },
-              workerId: { type: 'string' },
-              status: { type: 'string' },
-              appliedAt: { type: 'string', format: 'date-time' },
-              confirmedAt: { type: ['string', 'null'], format: 'date-time' },
+              success: { type: 'boolean' },
+              application: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  status: { type: 'string' },
+                  confirmed_at: { type: 'string', format: 'date-time' },
+                },
+              },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          403: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
             },
           },
           404: {
@@ -36,13 +51,34 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
               error: { type: 'string' },
             },
           },
+          409: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
         },
       },
     },
-    async (request, reply) => {
+    async (request: FastifyRequest, reply: FastifyReply) => {
       const { id } = request.params as { id: string };
 
-      app.logger.info({ id }, 'Confirming application');
+      // Authenticate the request
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) {
+          headers.append(key, Array.isArray(value) ? value[0] : value);
+        }
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const userId = session.user.id;
+      app.logger.info({ id, userId }, 'Confirming application');
 
       const application = await app.db.query.shiftApplications.findFirst({
         where: eq(schema.shiftApplications.id, id),
@@ -51,6 +87,30 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
       if (!application) {
         app.logger.warn({ id }, 'Application not found');
         return reply.status(404).send({ error: 'Application not found' });
+      }
+
+      if (application.status === 'confirmed' || application.status === 'rejected') {
+        app.logger.warn({ id, status: application.status }, 'Application already in terminal state');
+        return reply.status(409).send({ error: 'Application already in terminal state' });
+      }
+
+      // Look up shift and verify authorization
+      const shift = await app.db.query.shifts.findFirst({
+        where: eq(schema.shifts.id, application.shiftId),
+      });
+
+      if (!shift) {
+        app.logger.warn({ shiftId: application.shiftId }, 'Shift not found');
+        return reply.status(404).send({ error: 'Shift not found' });
+      }
+
+      const business = await app.db.query.businesses.findFirst({
+        where: eq(schema.businesses.id, shift.businessId),
+      });
+
+      if (!business || business.userId !== userId) {
+        app.logger.warn({ id, userId }, 'Forbidden: User does not own the business');
+        return reply.status(403).send({ error: 'Forbidden' });
       }
 
       const confirmedAt = new Date();
@@ -62,15 +122,13 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
         })
         .where(eq(schema.shiftApplications.id, id));
 
-      const updated = { ...application, status: 'confirmed' as const, confirmedAt };
-
       await app.db
         .update(schema.shifts)
         .set({ status: 'filled' as const })
         .where(eq(schema.shifts.id, application.shiftId));
 
       const worker = await app.db.query.workerProfiles.findFirst({
-        where: eq(schema.workerProfiles.id, application.workerId),
+        where: eq(schema.workerProfiles.userId, application.workerId),
       });
 
       const shift = await app.db.query.shifts.findFirst({
@@ -113,7 +171,14 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
       }
 
       app.logger.info({ id }, 'Application confirmed');
-      return updated;
+      return {
+        success: true,
+        application: {
+          id: application.id,
+          status: 'confirmed',
+          confirmed_at: confirmedAt.toISOString(),
+        },
+      };
     }
   );
 
@@ -134,12 +199,26 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
           200: {
             type: 'object',
             properties: {
-              id: { type: 'string' },
-              shiftId: { type: 'string' },
-              workerId: { type: 'string' },
-              status: { type: 'string' },
-              appliedAt: { type: 'string', format: 'date-time' },
-              confirmedAt: { type: ['string', 'null'], format: 'date-time' },
+              success: { type: 'boolean' },
+              application: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  status: { type: 'string' },
+                },
+              },
+            },
+          },
+          401: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
+          403: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
             },
           },
           404: {
@@ -148,13 +227,34 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
               error: { type: 'string' },
             },
           },
+          409: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+            },
+          },
         },
       },
     },
-    async (request, reply) => {
+    async (request: FastifyRequest, reply: FastifyReply) => {
       const { id } = request.params as { id: string };
 
-      app.logger.info({ id }, 'Rejecting application');
+      // Authenticate the request
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) {
+          headers.append(key, Array.isArray(value) ? value[0] : value);
+        }
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) {
+        app.logger.warn({}, 'Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const userId = session.user.id;
+      app.logger.info({ id, userId }, 'Rejecting application');
 
       const application = await app.db.query.shiftApplications.findFirst({
         where: eq(schema.shiftApplications.id, id),
@@ -165,12 +265,34 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Application not found' });
       }
 
+      if (application.status === 'confirmed' || application.status === 'rejected') {
+        app.logger.warn({ id, status: application.status }, 'Application already in terminal state');
+        return reply.status(409).send({ error: 'Application already in terminal state' });
+      }
+
+      // Look up shift and verify authorization
+      const shift = await app.db.query.shifts.findFirst({
+        where: eq(schema.shifts.id, application.shiftId),
+      });
+
+      if (!shift) {
+        app.logger.warn({ shiftId: application.shiftId }, 'Shift not found');
+        return reply.status(404).send({ error: 'Shift not found' });
+      }
+
+      const business = await app.db.query.businesses.findFirst({
+        where: eq(schema.businesses.id, shift.businessId),
+      });
+
+      if (!business || business.userId !== userId) {
+        app.logger.warn({ id, userId }, 'Forbidden: User does not own the business');
+        return reply.status(403).send({ error: 'Forbidden' });
+      }
+
       await app.db
         .update(schema.shiftApplications)
         .set({ status: 'rejected' as const })
         .where(eq(schema.shiftApplications.id, id));
-
-      const updated = { ...application, status: 'rejected' as const };
 
       const otherApplications = await app.db
         .select()
@@ -231,7 +353,13 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
       }
 
       app.logger.info({ id }, 'Application rejected');
-      return updated;
+      return {
+        success: true,
+        application: {
+          id: application.id,
+          status: 'rejected',
+        },
+      };
     }
   );
 

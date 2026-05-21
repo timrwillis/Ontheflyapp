@@ -1,5 +1,5 @@
 import { SymbolView, SymbolViewProps, SymbolWeight } from "expo-symbols";
-import { StyleProp, ViewStyle } from "react-native";
+import { Pressable, StyleProp, ViewStyle } from "react-native";
 
 export function IconSymbol({
   ios_icon_name,
@@ -29,22 +29,28 @@ export function IconSymbol({
   accessibilityLabel?: any;
 }) {
   // onClick, onMouseOver, onMouseLeave are web-only DOM events — omit them on iOS native
+  if (onPress) {
+    return (
+      <Pressable onPress={onPress} testID={testID} accessibilityLabel={accessibilityLabel}>
+        <SymbolView
+          weight={weight}
+          tintColor={color}
+          resizeMode="scaleAspectFit"
+          name={ios_icon_name}
+          style={[{ width: size, height: size }, style]}
+        />
+      </Pressable>
+    );
+  }
   return (
     <SymbolView
-      onPress={onPress}
       testID={testID}
       accessibilityLabel={accessibilityLabel}
       weight={weight}
       tintColor={color}
       resizeMode="scaleAspectFit"
       name={ios_icon_name}
-      style={[
-        {
-          width: size,
-          height: size,
-        },
-        style,
-      ]}
+      style={[{ width: size, height: size }, style]}
     />
   );
 }
