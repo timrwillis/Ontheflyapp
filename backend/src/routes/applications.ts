@@ -77,13 +77,15 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
         where: eq(schema.shifts.id, application.shiftId),
       });
 
-      const business = await app.db.query.businesses.findFirst({
-        where: eq(schema.businesses.id, shift!.businessId),
-      });
+      const business = shift
+        ? await app.db.query.businesses.findFirst({
+            where: eq(schema.businesses.id, shift.businessId),
+          })
+        : null;
 
-      if (worker && business) {
+      if (worker && shift && business) {
         const title = 'You got the shift!';
-        const body = `You have been confirmed for the ${shift!.roleNeeded} shift at ${business.name}`;
+        const body = `You have been confirmed for the ${shift.roleNeeded} shift at ${business.name}`;
 
         const notifId = `notif-${Date.now()}`;
         await app.db
@@ -194,13 +196,15 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
         where: eq(schema.shifts.id, application.shiftId),
       });
 
-      const business = await app.db.query.businesses.findFirst({
-        where: eq(schema.businesses.id, shift!.businessId),
-      });
+      const business = shift
+        ? await app.db.query.businesses.findFirst({
+            where: eq(schema.businesses.id, shift.businessId),
+          })
+        : null;
 
-      if (worker && business) {
+      if (worker && shift && business) {
         const title = 'Application Not Selected';
-        const body = `You were not selected for the ${shift!.roleNeeded} shift at ${business.name}`;
+        const body = `You were not selected for the ${shift.roleNeeded} shift at ${business.name}`;
 
         const notifId = `notif-${Date.now()}`;
         await app.db
@@ -299,15 +303,14 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
           const shift = await app.db.query.shifts.findFirst({
             where: eq(schema.shifts.id, app_item.shiftId),
           });
-          const business = await app.db.query.businesses.findFirst({
-            where: eq(schema.businesses.id, shift!.businessId),
-          });
+          const business = shift
+            ? await app.db.query.businesses.findFirst({
+                where: eq(schema.businesses.id, shift.businessId),
+              })
+            : null;
           return {
             ...app_item,
-            shift: {
-              ...shift,
-              business,
-            },
+            shift: shift ? { ...shift, business } : null,
           };
         })
       );
