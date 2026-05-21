@@ -111,7 +111,6 @@ export default function AuthScreen() {
   // Navigate once authenticated
   useEffect(() => {
     if (!loading && user) {
-      console.log('[AuthScreen] User authenticated, navigating to tabs');
       router.replace('/(tabs)/(home)');
     }
   }, [user, loading]);
@@ -158,10 +157,8 @@ export default function AuthScreen() {
     setSubmitting(true);
     try {
       if (activeTab === 'signin') {
-        console.log('[AuthScreen] Sign in with email pressed:', email);
         await signInWithEmail(email, password);
       } else {
-        console.log('[AuthScreen] Sign up with email pressed:', email);
         await signUpWithEmail(email, password, name || undefined);
       }
     } catch (err: unknown) {
@@ -174,7 +171,6 @@ export default function AuthScreen() {
   };
 
   const handleApple = async () => {
-    console.log('[AuthScreen] Continue with Apple pressed');
     setSocialLoading('apple');
     setError('');
     try {
@@ -191,7 +187,6 @@ export default function AuthScreen() {
   };
 
   const handleGoogle = async () => {
-    console.log('[AuthScreen] Continue with Google pressed');
     setSocialLoading('google');
     setError('');
     try {
@@ -208,7 +203,6 @@ export default function AuthScreen() {
   };
 
   const switchTab = (tab: Tab) => {
-    console.log('[AuthScreen] Switched to tab:', tab);
     setActiveTab(tab);
     clearErrors();
     setEmail('');

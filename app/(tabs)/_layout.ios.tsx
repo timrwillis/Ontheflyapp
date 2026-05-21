@@ -44,10 +44,7 @@ function BlastShiftFAB() {
   if (currentRole !== 'manager') return null;
   return (
     <Pressable
-      onPress={() => {
-        console.log('[BlastShiftFAB] Blast Shift FAB pressed (iOS)');
-        router.push('/create-shift');
-      }}
+      onPress={() => router.push('/create-shift')}
       style={{
         position: 'absolute',
         left: 24,

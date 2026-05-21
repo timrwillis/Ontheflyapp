@@ -54,7 +54,6 @@ export default function TabLayout() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      console.log('[TabLayout] No authenticated user — redirecting to /auth-screen');
       router.replace('/auth-screen');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -68,11 +67,9 @@ export default function TabLayout() {
       try {
         const status = await refreshOnboardingStatus();
         if (!status) return;
-        console.log('[TabLayout] Onboarding status:', status);
         if (!status.onboarding_completed) {
           const role = status.role ?? currentRole;
           if (!role) {
-            console.log('[TabLayout] No role set, redirecting to onboarding role selector');
             router.replace('/onboarding/worker/index' as any);
           } else if (role === 'worker') {
             const step = status.onboarding_step;
