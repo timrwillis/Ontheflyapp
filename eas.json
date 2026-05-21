@@ -1,4 +1,7 @@
 {
+  "cli": {
+    "version": ">= 10.0.0"
+  },
   "build": {
     "development": {
       "developmentClient": true,
@@ -7,10 +10,28 @@
     },
     "preview": {
       "distribution": "internal",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "ios": {
+        "simulator": false
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "timrwillis@gmail.com",
+        "ascAppId": "",
+        "appleTeamId": ""
+      }
     }
   }
 }
