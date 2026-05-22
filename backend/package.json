@@ -8,6 +8,7 @@
     "build": "esbuild src/index.ts --bundle --outdir=dist --platform=node --target=node20 --format=esm --packages=external --sourcemap",
     "typecheck": "tsc --noEmit",
     "start": "node --import @specific-dev/framework/telemetry dist/index.js",
+    "migrate": "tsx src/db/migrate.ts",
     "db:generate": "tsx node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:push": "npm run db:generate && npm run db:migrate"
