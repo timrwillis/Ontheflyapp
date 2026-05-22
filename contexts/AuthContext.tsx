@@ -141,16 +141,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (result.error) {
         throw new Error(result.error.message || 'Sign in failed. Please check your credentials.');
       }
-      // Extract token directly from the sign-in response so it is in
-      // SecureStore before the caller tries to make authenticated requests.
-      // Falling back to fetchUser() causes a second getSession() round-trip
-      // that races against SecureStore persistence on native and wipes the token.
-      const token = (result.data as any)?.session?.token;
+      // better-auth signIn.email() returns { token, user } at the top level —
+      // NOT nested under session. We must set this in SecureStore immediately
+      // so any authenticated call made right after signInWithEmail resolves
+      // finds the token. Do NOT call fetchUser() here: its getSession() is a
+      // second network round-trip that races with SecureStore writes and may
+      // return null, triggering clearAuthTokens() which wipes the token.
+      const token = (result.data as any)?.token as string | undefined;
+      console.log('[Auth] signIn result keys:', Object.keys((result.data as any) ?? {}));
       if (token) {
         await setBearerToken(token);
-      } else {
-        await fetchUser();
       }
+      // If token is absent from the response body (unusual), the reactive
+      // useSession() effect in AuthProvider will call setBearerToken once
+      // the session propagates — we just can't guarantee it's set synchronously.
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('Kotlin') || msg.includes('convert')) {
