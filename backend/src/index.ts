@@ -1,4 +1,9 @@
-import { createApplication } from "@specific-dev/framework";
+import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import { betterAuth } from 'better-auth';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import * as appSchema from './db/schema/schema.js';
 import * as authSchema from './db/schema/auth-schema.js';
 import { seedDatabase } from './db/seed.js';
@@ -14,33 +19,96 @@ import { registerAdminRoutes } from './routes/admin.js';
 import { registerMarketplaceRoutes } from './routes/marketplace.js';
 import { registerWaitlistRoutes } from './routes/waitlist.js';
 
-// Merge schemas
 const schema = { ...appSchema, ...authSchema };
 
-// Create application with schema for full database type support
-export const app = await createApplication(schema);
+// ── Database ─────────────────────────────────────────────────────────────────
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) throw new Error('DATABASE_URL environment variable is required');
 
-// Export App type for use in route files
+const client = postgres(databaseUrl, { max: 10 });
+const db = drizzle(client, { schema });
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+const auth = betterAuth({
+  database: drizzleAdapter(db, { provider: 'pg' }),
+  emailAndPassword: { enabled: true },
+  trustedOrigins: ['*'],
+  ...(process.env.GOOGLE_CLIENT_ID ? {
+    socialProviders: {
+      google: {
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+      },
+    },
+  } : {}),
+});
+
+// ── Fastify ───────────────────────────────────────────────────────────────────
+const fastify = Fastify({
+  logger: {
+    transport: process.env.NODE_ENV !== 'production'
+      ? { target: 'pino-pretty' }
+      : undefined,
+  },
+});
+
+await fastify.register(cors, {
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+});
+
+// App context object passed to all route registrars and seed
+export const app = {
+  fastify,
+  db,
+  logger: fastify.log,
+  auth,
+};
+
 export type App = typeof app;
 
-// Enable authentication
-app.withAuth();
+// ── Better-auth HTTP handler ──────────────────────────────────────────────────
+fastify.all('/api/auth/*', async (request, reply) => {
+  const protocol = (request.headers['x-forwarded-proto'] as string) ?? request.protocol;
+  const host = (request.headers['x-forwarded-host'] as string) ?? request.hostname;
+  const url = `${protocol}://${host}${request.url}`;
 
-// Seed database if needed
+  const webRequest = new Request(url, {
+    method: request.method,
+    headers: request.headers as HeadersInit,
+    body: ['GET', 'HEAD'].includes(request.method)
+      ? undefined
+      : JSON.stringify(request.body),
+  });
+
+  const response = await auth.handler(webRequest);
+
+  reply.status(response.status);
+  response.headers.forEach((value: string, key: string) => {
+    reply.header(key, value);
+  });
+
+  return reply.send(await response.text());
+});
+
+// ── Seed ──────────────────────────────────────────────────────────────────────
 await seedDatabase(app);
 
-// Register routes
-registerOnboardingRoutes(app, app.fastify);
-registerUserRoutes(app, app.fastify);
-registerBusinessRoutes(app, app.fastify);
-registerWorkerRoutes(app, app.fastify);
-registerShiftRoutes(app, app.fastify);
-registerApplicationRoutes(app, app.fastify);
-registerRatingRoutes(app, app.fastify);
-registerNotificationRoutes(app, app.fastify);
-registerAdminRoutes(app, app.fastify);
-registerMarketplaceRoutes(app, app.fastify);
-registerWaitlistRoutes(app, app.fastify);
+// ── Routes ────────────────────────────────────────────────────────────────────
+registerOnboardingRoutes(app, fastify);
+registerUserRoutes(app, fastify);
+registerBusinessRoutes(app, fastify);
+registerWorkerRoutes(app, fastify);
+registerShiftRoutes(app, fastify);
+registerApplicationRoutes(app, fastify);
+registerRatingRoutes(app, fastify);
+registerNotificationRoutes(app, fastify);
+registerAdminRoutes(app, fastify);
+registerMarketplaceRoutes(app, fastify);
+registerWaitlistRoutes(app, fastify);
 
-await app.run();
-app.logger.info('Application running');
+// ── Start ─────────────────────────────────────────────────────────────────────
+const port = parseInt(process.env.PORT ?? '3000', 10);
+await fastify.listen({ port, host: '0.0.0.0' });
