@@ -32,7 +32,7 @@ export default function WaitlistScreen() {
     setError('');
     setSubmitting(true);
     try {
-      const res = await fetch('https://u8y8kzvzgndjkymacqmf8v9manbx8fwa.app.specular.dev/api/waitlist', {
+      const res = await fetch('https://ontheflyapp-production.up.railway.app/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), phone: phone.trim(), email: email.trim(), role }),

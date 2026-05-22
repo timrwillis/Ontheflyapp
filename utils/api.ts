@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { BEARER_TOKEN_KEY } from "@/lib/auth";
 
-const HARDCODED_URL = "https://u8y8kzvzgndjkymacqmf8v9manbx8fwa.app.specular.dev";
+const HARDCODED_URL = "https://ontheflyapp-production.up.railway.app";
 
 export const BACKEND_URL: string =
   (Constants.expoConfig?.extra?.backendUrl as string) || HARDCODED_URL;

@@ -5,7 +5,7 @@ import { expoClient } from "@better-auth/expo/client";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
-const API_URL = "https://u8y8kzvzgndjkymacqmf8v9manbx8fwa.app.specular.dev";
+const API_URL = "https://ontheflyapp-production.up.railway.app";
 
 export const BEARER_TOKEN_KEY = "onthefly_bearer_token";
 

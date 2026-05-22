@@ -54,7 +54,8 @@
           "color": "#00FF87",
           "sounds": []
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "scheme": "onthefly",
     "experiments": {
@@ -62,7 +63,7 @@
     },
     "extra": {
       "router": {},
-      "backendUrl": "https://u8y8kzvzgndjkymacqmf8v9manbx8fwa.app.specular.dev"
+      "backendUrl": "https://ontheflyapp-production.up.railway.app"
     }
   }
 }
