@@ -137,11 +137,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
-      const { error } = await authClient.signIn.email({ email, password });
-      if (error) {
-        throw new Error(error.message || 'Sign in failed. Please check your credentials.');
+      const result = await authClient.signIn.email({ email, password });
+      if (result.error) {
+        throw new Error(result.error.message || 'Sign in failed. Please check your credentials.');
       }
-      await fetchUser();
+      // Extract token directly from the sign-in response so it is in
+      // SecureStore before the caller tries to make authenticated requests.
+      // Falling back to fetchUser() causes a second getSession() round-trip
+      // that races against SecureStore persistence on native and wipes the token.
+      const token = (result.data as any)?.session?.token;
+      if (token) {
+        await setBearerToken(token);
+      } else {
+        await fetchUser();
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('Kotlin') || msg.includes('convert')) {
