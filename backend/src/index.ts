@@ -2,8 +2,11 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import * as appSchema from './db/schema/schema.js';
 import * as authSchema from './db/schema/auth-schema.js';
 import { seedDatabase } from './db/seed.js';
@@ -92,6 +95,16 @@ fastify.all('/api/auth/*', async (request, reply) => {
 
   return reply.send(await response.text());
 });
+
+// ── Migrations ───────────────────────────────────────────────────────────────
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const migrationsFolder = path.resolve(__dirname, '../drizzle');
+try {
+  await migrate(db, { migrationsFolder });
+  fastify.log.info('Database migrations applied');
+} catch (err) {
+  fastify.log.error({ err }, 'Migration failed — continuing startup');
+}
 
 // ── Seed ──────────────────────────────────────────────────────────────────────
 await seedDatabase(app);
