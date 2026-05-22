@@ -109,6 +109,10 @@ registerAdminRoutes(app, fastify);
 registerMarketplaceRoutes(app, fastify);
 registerWaitlistRoutes(app, fastify);
 
+// ── Health ────────────────────────────────────────────────────────────────────
+fastify.get('/health', async () => ({ status: 'ok' }));
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 const port = parseInt(process.env.PORT ?? '3000', 10);
-await fastify.listen({ port, host: '0.0.0.0' });
+const host = process.env.HOST ?? '0.0.0.0';
+await fastify.listen({ port, host });
