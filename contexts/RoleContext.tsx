@@ -79,7 +79,12 @@ interface RoleContextType {
   isLoading: boolean;
   onboardingStatus: OnboardingStatus | null;
   notificationPreferences: NotificationPreferences;
+  // Admin demo mode
+  adminOverrideRole: Role | null;
+  demoDataActive: boolean;
   setRole: (role: Role) => Promise<void>;
+  setAdminRole: (role: Role | null) => Promise<void>;
+  setDemoDataActive: (active: boolean) => Promise<void>;
   refreshWorkerProfile: () => Promise<void>;
   refreshOnboardingStatus: () => Promise<OnboardingStatus | null>;
   setCurrentUser: (user: User | null) => void;
@@ -92,13 +97,19 @@ const RoleContext = createContext<RoleContextType>({
   isLoading: true,
   onboardingStatus: null,
   notificationPreferences: {},
+  adminOverrideRole: null,
+  demoDataActive: false,
   setRole: async () => {},
+  setAdminRole: async () => {},
+  setDemoDataActive: async () => {},
   refreshWorkerProfile: async () => {},
   refreshOnboardingStatus: async () => null,
   setCurrentUser: () => {},
 });
 
 const ROLE_STORAGE_KEY = '@onthefly_role';
+const ADMIN_ROLE_KEY = '@onthefly_admin_role';
+const DEMO_ACTIVE_KEY = '@onthefly_demo_active';
 
 function normalizeWorkerProfile(raw: Record<string, unknown>): WorkerProfile {
   return {
@@ -136,12 +147,20 @@ function normalizeWorkerProfile(raw: Record<string, unknown>): WorkerProfile {
 }
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
-  const [currentRole, setCurrentRole] = useState<Role>(null);
+  // Real role from DB/session — never changes unless user actually changes role
+  const [realRole, setRealRole] = useState<Role>(null);
+  // Admin-only override for demo mode (display only, no DB changes)
+  const [adminOverrideRole, setAdminOverrideRoleState] = useState<Role | null>(null);
+  const [demoDataActive, setDemoDataActiveState] = useState(false);
+
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [workerProfile, setWorkerProfile] = useState<WorkerProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
   const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>({});
+
+  // Effective role: admin override wins, falls back to real role
+  const currentRole: Role = adminOverrideRole ?? realRole;
 
   const fetchMe = useCallback(async () => {
     try {
@@ -166,7 +185,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 
       const role = user.role as Role;
       if (role && (role === 'manager' || role === 'worker' || role === 'admin')) {
-        setCurrentRole(role);
+        setRealRole(role);
         await AsyncStorage.setItem(ROLE_STORAGE_KEY, role);
       }
 
@@ -206,7 +225,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setRole = useCallback(async (role: Role) => {
-    setCurrentRole(role);
+    setRealRole(role);
     if (role) {
       await AsyncStorage.setItem(ROLE_STORAGE_KEY, role);
     } else {
@@ -217,6 +236,20 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const setAdminRole = useCallback(async (role: Role | null) => {
+    setAdminOverrideRoleState(role);
+    if (role) {
+      await AsyncStorage.setItem(ADMIN_ROLE_KEY, role);
+    } else {
+      await AsyncStorage.removeItem(ADMIN_ROLE_KEY);
+    }
+  }, []);
+
+  const setDemoDataActive = useCallback(async (active: boolean) => {
+    setDemoDataActiveState(active);
+    await AsyncStorage.setItem(DEMO_ACTIVE_KEY, String(active));
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -225,7 +258,6 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         try {
           session = await authClient.getSession();
         } catch {
-          // getSession throws on web when no session exists — treat as no session
           setIsLoading(false);
           return;
         }
@@ -234,10 +266,24 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
+        // Load persisted role
         const stored = await AsyncStorage.getItem(ROLE_STORAGE_KEY);
         if (stored && (stored === 'manager' || stored === 'worker' || stored === 'admin')) {
-          setCurrentRole(stored as Role);
+          setRealRole(stored as Role);
         }
+
+        // Load admin override
+        const adminRole = await AsyncStorage.getItem(ADMIN_ROLE_KEY);
+        if (adminRole && (adminRole === 'manager' || adminRole === 'worker')) {
+          setAdminOverrideRoleState(adminRole as Role);
+        }
+
+        // Load demo data toggle
+        const demoActive = await AsyncStorage.getItem(DEMO_ACTIVE_KEY);
+        if (demoActive === 'true') {
+          setDemoDataActiveState(true);
+        }
+
         await fetchMe();
       } catch (err) {
         console.error('[RoleContext] Init error:', err);
@@ -256,7 +302,11 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       onboardingStatus,
       notificationPreferences,
+      adminOverrideRole,
+      demoDataActive,
       setRole,
+      setAdminRole,
+      setDemoDataActive,
       refreshWorkerProfile,
       refreshOnboardingStatus,
       setCurrentUser,

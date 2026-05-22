@@ -23,6 +23,8 @@ import { WidgetProvider } from "@/contexts/WidgetContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AdminSwitcher } from "@/components/AdminSwitcher";
+import { ADMIN_MODE } from "@/constants/AdminMode";
 
 // Suppress Babel inject-source-location dev prop warning on web
 if (Platform.OS === 'web' && typeof console !== 'undefined') {
@@ -346,6 +348,7 @@ export default function RootLayout() {
                   {!splashDone && (
                     <SplashOverlay onFadeComplete={handleSplashFadeComplete} />
                   )}
+                  {ADMIN_MODE && <AdminSwitcher />}
                 </GestureHandlerRootView>
               </WidgetProvider>
             </RoleProvider>
