@@ -438,6 +438,7 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
             properties: {
               onboarding_step: { type: 'string', enum: ['profile', 'roles', 'availability', 'complete'] },
               onboarding_completed: { type: 'boolean' },
+              role: { type: 'string' },
             },
           },
           401: errorSchema,
@@ -486,6 +487,7 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
       return {
         onboarding_step: onboardingCompleted ? 'complete' : onboardingStepLabel,
         onboarding_completed: onboardingCompleted,
+        role: user.role,
       };
     }
   );

@@ -17,6 +17,7 @@ import { router } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRole } from '@/contexts/RoleContext';
+import { authenticatedGet } from '@/utils/api';
 
 type Screen = 'landing' | 'signin' | 'signup';
 type Role = 'worker' | 'manager' | null;
@@ -96,8 +97,31 @@ export default function AuthScreen() {
     setSiLoading(true);
     setSiError('');
     try {
+      console.log('[Auth] Calling signInWithEmail...');
       await signInWithEmail(siEmail.trim(), siPassword);
+      console.log('[Auth] Sign in succeeded, checking onboarding status...');
+
+      try {
+        const status = await authenticatedGet<{
+          onboarding_completed: boolean;
+          onboarding_step: string;
+          role: string;
+        }>('/api/onboarding/status');
+        console.log('[Auth] Onboarding status:', JSON.stringify(status));
+
+        if (status.onboarding_completed) {
+          router.replace('/(tabs)/(home)');
+        } else if (status.role === 'manager') {
+          router.replace('/onboarding/manager/profile');
+        } else {
+          router.replace('/onboarding/worker');
+        }
+      } catch (statusErr) {
+        console.error('[Auth] Onboarding status check failed:', statusErr);
+        router.replace('/(tabs)/(home)');
+      }
     } catch (err) {
+      console.error('[Auth] Sign in error:', err);
       setSiError(err instanceof Error ? err.message : 'Please check your credentials and try again.');
     } finally {
       setSiLoading(false);
