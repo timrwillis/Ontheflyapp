@@ -5,6 +5,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { bearer } from 'better-auth/plugins';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import * as appSchema from './db/schema/schema.js';
@@ -36,6 +37,7 @@ const auth = betterAuth({
   database: drizzleAdapter(db, { provider: 'pg' }),
   emailAndPassword: { enabled: true },
   trustedOrigins: ['*'],
+  plugins: [bearer()],
   ...(process.env.GOOGLE_CLIENT_ID ? {
     socialProviders: {
       google: {
