@@ -26,15 +26,6 @@
     }
   },
   "submit": {
-    "production": {
-      "ios": {
-        "appleId": "timrwillis@gmail.com",
-        "ascAppId": "",
-        "appleTeamId": ""
-      }
-    }
-  },
-  "submit": {
     "production": {}
   }
 }

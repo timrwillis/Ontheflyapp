@@ -11,10 +11,12 @@ import {
   Animated,
   StyleSheet,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRole } from '@/contexts/RoleContext';
 
 type Screen = 'landing' | 'signin' | 'signup';
 type Role = 'worker' | 'manager' | null;
@@ -42,6 +44,7 @@ function GoogleLogo({ size = 20 }: { size?: number }) {
 
 export default function AuthScreen() {
   const { user, loading, signInWithEmail, signUpWithEmail, signInWithApple, signInWithGoogle } = useAuth();
+  const { setRole } = useRole();
   const insets = useSafeAreaInsets();
 
   const [screen, setScreen] = useState<Screen>('landing');
@@ -87,6 +90,7 @@ export default function AuthScreen() {
   }, [fadeAnim, slideX]);
 
   const handleSignIn = async () => {
+    console.log('[Auth] Sign In pressed', { email: siEmail.trim() });
     if (!siEmail.trim()) { setSiError('Please enter your email address.'); return; }
     if (!siPassword) { setSiError('Please enter your password.'); return; }
     setSiLoading(true);
@@ -101,16 +105,35 @@ export default function AuthScreen() {
   };
 
   const handleSignUp = async () => {
-    if (!selectedRole) { setSuError('Please select Worker or Manager.'); return; }
+    console.log('[Auth] Create Account pressed', { role: selectedRole, email: suEmail.trim() });
     if (!suName.trim()) { setSuError('Please enter your full name.'); return; }
-    if (!suEmail.trim()) { setSuError('Please enter your email address.'); return; }
+    if (!suEmail.trim() || !suEmail.includes('@')) { setSuError('Please enter a valid email address.'); return; }
     if (suPassword.length < 8) { setSuError('Password must be at least 8 characters.'); return; }
+
+    // Default to 'worker' if no role card was tapped
+    const role: 'worker' | 'manager' = selectedRole ?? 'worker';
+
     setSuLoading(true);
     setSuError('');
     try {
+      console.log('[Auth] Calling signUpWithEmail', { email: suEmail.trim(), name: suName.trim(), role });
       await signUpWithEmail(suEmail.trim(), suPassword, suName.trim());
-    } catch (err) {
-      setSuError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+
+      // Persist role so onboarding screens can read it
+      await AsyncStorage.setItem('pendingRole', role);
+      await setRole(role);
+
+      console.log('[Auth] Sign up successful, navigating to onboarding for role:', role);
+      if (role === 'manager') {
+        router.replace('/onboarding/manager/profile');
+      } else {
+        router.replace('/onboarding/worker');
+      }
+    } catch (err: unknown) {
+      const errObj = err as { message?: string; error?: { message?: string } };
+      const msg = errObj?.message || errObj?.error?.message || String(err);
+      console.log('[Auth] Sign up error:', msg);
+      setSuError(msg || 'Something went wrong. Please try again.');
     } finally {
       setSuLoading(false);
     }

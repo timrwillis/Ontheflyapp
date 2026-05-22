@@ -1,5 +1,4 @@
-// Capture native fetch BEFORE any polyfill can override it
-const nativeFetch = global.fetch;
+import { nativeFetch } from '@/utils/polyfills/nativeFetch';
 
 import { createAuthClient } from "better-auth/react";
 import { expoClient } from "@better-auth/expo/client";
