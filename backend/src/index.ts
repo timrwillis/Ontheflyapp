@@ -77,7 +77,7 @@ fastify.all('/api/auth/*', async (request, reply) => {
 
   const webRequest = new Request(url, {
     method: request.method,
-    headers: request.headers as HeadersInit,
+    headers: request.headers as Record<string, string>,
     body: ['GET', 'HEAD'].includes(request.method)
       ? undefined
       : JSON.stringify(request.body),

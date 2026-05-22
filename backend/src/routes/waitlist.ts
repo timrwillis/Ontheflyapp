@@ -11,8 +11,6 @@ export function registerWaitlistRoutes(app: App, fastify: FastifyInstance) {
     '/api/waitlist',
     {
       schema: {
-        description: 'Join the waitlist (public endpoint)',
-        tags: ['waitlist'],
         body: {
           type: 'object',
           required: ['name', 'phone', 'email', 'role'],

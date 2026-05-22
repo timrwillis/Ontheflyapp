@@ -9,8 +9,6 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
     '/api/applications/:id/confirm',
     {
       schema: {
-        description: 'Confirm a shift application',
-        tags: ['applications'],
         params: {
           type: 'object',
           required: ['id'],
@@ -131,16 +129,6 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
         where: eq(schema.workerProfiles.userId, application.workerId),
       });
 
-      const shift = await app.db.query.shifts.findFirst({
-        where: eq(schema.shifts.id, application.shiftId),
-      });
-
-      const business = shift
-        ? await app.db.query.businesses.findFirst({
-            where: eq(schema.businesses.id, shift.businessId),
-          })
-        : null;
-
       if (worker && shift && business) {
         const title = 'You got the shift!';
         const body = `You have been confirmed for the ${shift.roleNeeded} shift at ${business.name}`;
@@ -186,8 +174,6 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
     '/api/applications/:id/reject',
     {
       schema: {
-        description: 'Reject a shift application',
-        tags: ['applications'],
         params: {
           type: 'object',
           required: ['id'],
@@ -314,16 +300,6 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
         where: eq(schema.workerProfiles.id, application.workerId),
       });
 
-      const shift = await app.db.query.shifts.findFirst({
-        where: eq(schema.shifts.id, application.shiftId),
-      });
-
-      const business = shift
-        ? await app.db.query.businesses.findFirst({
-            where: eq(schema.businesses.id, shift.businessId),
-          })
-        : null;
-
       if (worker && shift && business) {
         const title = 'Application Not Selected';
         const body = `You were not selected for the ${shift.roleNeeded} shift at ${business.name}`;
@@ -367,8 +343,6 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
     '/api/my-applications',
     {
       schema: {
-        description: 'Get all applications for current worker',
-        tags: ['applications'],
         response: {
           200: {
             type: 'object',
