@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { apiPost } from '@/utils/api';
+import { authenticatedPost } from '@/utils/api';
 import { useRole } from '@/contexts/RoleContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -30,7 +30,7 @@ export default function OnboardingRoleSelector() {
   const handleSelectRole = async (role: 'manager' | 'worker') => {
     setLoading(role);
     try {
-      await apiPost('/api/onboarding/role', { role });
+      await authenticatedPost('/api/onboarding/role', { role });
       await setRole(role);
       if (role === 'worker') {
         router.push('/onboarding/worker/profile');

@@ -105,7 +105,7 @@ export default function AuthScreen() {
         const status = await authenticatedGet<{
           onboarding_completed: boolean;
           onboarding_step: string;
-          role: string;
+          role: string | null;
         }>('/api/onboarding/status');
         console.log('[Auth] Onboarding status:', JSON.stringify(status));
 
@@ -113,7 +113,10 @@ export default function AuthScreen() {
           router.replace('/(tabs)/(home)');
         } else if (status.role === 'manager') {
           router.replace('/onboarding/manager/profile');
+        } else if (status.role === 'worker') {
+          router.replace('/onboarding/worker/profile');
         } else {
+          // No role set yet — send to role selection
           router.replace('/onboarding/worker');
         }
       } catch (statusErr) {

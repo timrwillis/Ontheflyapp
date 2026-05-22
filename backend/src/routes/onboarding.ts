@@ -436,13 +436,12 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
           200: {
             type: 'object',
             properties: {
-              onboarding_step: { type: 'string', enum: ['profile', 'roles', 'availability', 'complete'] },
+              onboarding_step: { type: 'string' },
               onboarding_completed: { type: 'boolean' },
-              role: { type: 'string' },
+              role: { type: 'string', nullable: true },
             },
           },
           401: errorSchema,
-          404: errorSchema,
         },
       },
     },
@@ -452,7 +451,10 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
       if (!session) return reply.status(401).send({ error: 'Unauthorized' });
 
       const user = await app.db.query.users.findFirst({ where: eq(schema.users.id, session.user.id) });
-      if (!user) return reply.status(404).send({ error: 'User not found' });
+      if (!user) {
+        // Auth session valid but user hasn't started app onboarding yet (no role chosen)
+        return { onboarding_completed: false, onboarding_step: 'role_selection', role: null };
+      }
 
       app.logger.info({ userId: session.user.id, role: user.role }, 'Getting onboarding status');
 
