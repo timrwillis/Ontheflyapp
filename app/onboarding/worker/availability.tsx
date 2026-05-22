@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TextInput, Switch, Alert, Platform } from 'reac
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { apiPatch, apiPost } from '@/utils/api';
+import { authenticatedPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -57,7 +57,7 @@ export default function WorkerAvailabilityStep() {
         is_available: isAvailable,
         onboarding_step: 3,
       };
-      await apiPost('/api/onboarding/worker/availability', payload);
+      await authenticatedPost('/api/onboarding/worker/availability', payload);
       router.push('/onboarding/worker/complete');
     } catch (err) {
       console.error('[WorkerOnboarding] Availability save failed:', err);

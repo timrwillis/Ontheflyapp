@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TextInput, Alert, Platform } from 'react-native
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { apiPost } from '@/utils/api';
+import { authenticatedPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -95,7 +95,7 @@ export default function ManagerBusinessStep() {
         description: description.trim() || undefined,
         website: website.trim() || undefined,
       };
-      await apiPost('/api/onboarding/business', payload);
+      await authenticatedPost('/api/onboarding/business', payload);
       router.push('/onboarding/manager/complete');
     } catch (err) {
       console.error('[ManagerOnboarding] Business save failed:', err);

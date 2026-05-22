@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { apiPatch, apiPost } from '@/utils/api';
+import { authenticatedPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -72,7 +72,7 @@ export default function WorkerRolesStep() {
     setLoading(true);
     try {
       const payload = { roles: selectedRoles };
-      await apiPost('/api/onboarding/worker/roles', payload);
+      await authenticatedPost('/api/onboarding/worker/roles', payload);
       router.push('/onboarding/worker/availability');
     } catch (err) {
       console.error('[WorkerOnboarding] Roles save failed:', err);

@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TextInput, Alert, Platform } from 'react-native
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { apiPost } from '@/utils/api';
+import { authenticatedPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -35,7 +35,7 @@ export default function ManagerProfileStep() {
     setLoading(true);
     try {
       const payload = { phone: phone.trim() };
-      await apiPost('/api/onboarding/manager', payload);
+      await authenticatedPost('/api/onboarding/manager', payload);
       router.push('/onboarding/manager/business');
     } catch (err) {
       console.error('[ManagerOnboarding] Profile save failed:', err);

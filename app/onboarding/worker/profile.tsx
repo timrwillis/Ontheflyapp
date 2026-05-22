@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TextInput, Switch, Alert, Platform } from 'reac
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { apiPatch, apiPost } from '@/utils/api';
+import { authenticatedPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -95,7 +95,7 @@ export default function WorkerProfileStep() {
         preferred_radius_miles: Number(radius) || 10,
         onboarding_step: 1,
       };
-      await apiPost('/api/onboarding/worker', payload);
+      await authenticatedPost('/api/onboarding/worker', payload);
       router.push('/onboarding/worker/roles');
     } catch (err) {
       console.error('[WorkerOnboarding] Profile save failed:', err);
