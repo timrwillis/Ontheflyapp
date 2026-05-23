@@ -3,8 +3,9 @@ import { View, Text, ScrollView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { authenticatedPost } from '@/utils/api';
+import { authenticatedPost, getBearerToken } from '@/utils/api';
 import { useRole } from '@/contexts/RoleContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -25,11 +26,21 @@ export default function OnboardingRoleSelector() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { setRole } = useRole();
+  const { fetchUser } = useAuth();
   const [loading, setLoading] = useState<'manager' | 'worker' | null>(null);
 
   const handleSelectRole = async (role: 'manager' | 'worker') => {
     setLoading(role);
     try {
+      // After sign-up/sign-in, the reactive useSession effect in AuthProvider
+      // writes the bearer token to SecureStore asynchronously. If the user
+      // reaches this screen and taps before that write completes, getBearerToken()
+      // returns null and authenticatedPost throws. Force-sync the token from the
+      // active session here so the write is guaranteed before the API call.
+      const token = await getBearerToken();
+      if (!token) {
+        await fetchUser();
+      }
       await authenticatedPost('/api/onboarding/role', { role });
       await setRole(role);
       if (role === 'worker') {
