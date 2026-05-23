@@ -68,9 +68,14 @@ export default function AuthScreen() {
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideX = useRef(new Animated.Value(0)).current;
+  // Prevents the auto-redirect useEffect from firing while a sign-in/sign-up
+  // is already in progress and doing its own onboarding-aware navigation.
+  const isHandlingAuth = useRef(false);
 
   useEffect(() => {
-    if (!loading && user) router.replace('/(tabs)/(home)');
+    if (!loading && user && !isHandlingAuth.current) {
+      router.replace('/(tabs)/(home)');
+    }
   }, [user, loading]);
 
   const navigateTo = useCallback((next: Screen) => {
@@ -94,6 +99,7 @@ export default function AuthScreen() {
     console.log('[Auth] Sign In pressed', { email: siEmail.trim() });
     if (!siEmail.trim()) { setSiError('Please enter your email address.'); return; }
     if (!siPassword) { setSiError('Please enter your password.'); return; }
+    isHandlingAuth.current = true;
     setSiLoading(true);
     setSiError('');
     try {
@@ -125,6 +131,7 @@ export default function AuthScreen() {
       }
     } catch (err) {
       console.error('[Auth] Sign in error:', err);
+      isHandlingAuth.current = false;
       setSiError(err instanceof Error ? err.message : 'Please check your credentials and try again.');
     } finally {
       setSiLoading(false);
@@ -140,6 +147,7 @@ export default function AuthScreen() {
     // Default to 'worker' if no role card was tapped
     const role: 'worker' | 'manager' = selectedRole ?? 'worker';
 
+    isHandlingAuth.current = true;
     setSuLoading(true);
     setSuError('');
     try {
@@ -160,6 +168,7 @@ export default function AuthScreen() {
       const errObj = err as { message?: string; error?: { message?: string } };
       const msg = errObj?.message || errObj?.error?.message || String(err);
       console.log('[Auth] Sign up error:', msg);
+      isHandlingAuth.current = false;
       setSuError(msg || 'Something went wrong. Please try again.');
     } finally {
       setSuLoading(false);

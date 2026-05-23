@@ -166,15 +166,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUpWithEmail = async (email: string, password: string, name?: string) => {
     try {
-      const { error } = await authClient.signUp.email({
+      const result = await authClient.signUp.email({
         email,
         password,
         name: name || email.split('@')[0],
       });
-      if (error) {
-        throw new Error(error.message || 'Sign up failed. Please try again.');
+      if (result.error) {
+        throw new Error(result.error.message || 'Sign up failed. Please try again.');
       }
-      await fetchUser();
+      // Mirror the same pattern as signInWithEmail: extract the token directly from
+      // the response and persist it immediately. Do NOT call fetchUser() here —
+      // fetchUser()'s getSession() round-trip may return null before the session
+      // propagates, causing clearAuthTokens() to wipe the token. That leaves every
+      // subsequent onboarding API call without a Bearer header → 401.
+      const token = (result.data as any)?.token as string | undefined;
+      console.log('[Auth] signUp result keys:', Object.keys((result.data as any) ?? {}));
+      if (token) {
+        await setBearerToken(token);
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('Kotlin') || msg.includes('convert')) {

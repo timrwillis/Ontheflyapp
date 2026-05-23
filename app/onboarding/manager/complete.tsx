@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { apiPost } from '@/utils/api';
+import { authenticatedPost } from '@/utils/api';
 import { useRole } from '@/contexts/RoleContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -27,7 +27,7 @@ export default function ManagerOnboardingComplete() {
   const handleStart = async () => {
     setLoading(true);
     try {
-      await apiPost('/api/onboarding/complete', {});
+      await authenticatedPost('/api/onboarding/complete', {});
       router.replace('/create-shift');
     } catch (err) {
       Alert.alert('Error', 'Could not complete setup. Please try again.');
@@ -107,6 +107,4 @@ export default function ManagerOnboardingComplete() {
           </Text>
         </View>
       </AnimatedPressable>
-    </ScrollView>
-  );
-}
+    </Sc
