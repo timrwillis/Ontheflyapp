@@ -1,7 +1,7 @@
 import type { Shift } from '@/components/ShiftCard';
 import type { WorkerProfile } from '@/contexts/RoleContext';
 
-export const DEMO_MODE = true;
+export const DEMO_MODE = false;
 
 // ─── Businesses ───────────────────────────────────────────────────────────────
 
@@ -69,4 +69,4 @@ export const DEMO_SHIFTS: Shift[] = [
   { id: 's-13', role: 'Server',      business_name: 'Westport Ale House',            location: '4128 Broadway St, Kansas City, MO', date: '2025-06-08', start_time: '11:00 AM', end_time: '5:00 PM', hourly_pay: 20, urgency: 'tomorrow',  status: 'pending', workers_needed: 2, workers_confirmed: 1 },
   { id: 's-14', role: 'Event Staff', business_name: 'InterContinental Kansas City',  location: '401 Ward Pkwy, Kansas City, MO',   date: '2025-06-15', start_time: '2:00 PM', end_time: '10:00 PM', hourly_pay: 23, urgency: 'this_week', status: 'filled',  workers_needed: 4, workers_confirmed: 4, dress_code: 'Business Formal' },
   { id: 's-15', role: 'Bartender',   business_name: 'Prime Social KC',               location: '1329 Grand Blvd, Kansas City, MO', date: '2025-06-01', start_time: '8:00 PM', end_time: '2:00 AM', hourly_pay: 27, urgency: 'this_week', status: 'completed', workers_needed: 2, workers_confirmed: 2 },
-];
+];

@@ -13,13 +13,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { useRole } from '@/contexts/RoleContext';
-import { apiGet, apiPost, apiPatch } from '@/utils/api';
+import { apiGet, authenticatedGet, authenticatedPost, authenticatedPatch } from '@/utils/api';
 import { ShiftCard, Shift } from '@/components/ShiftCard';
 import { AvailabilityToggle } from '@/components/AvailabilityToggle';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { ShiftCardSkeleton, SkeletonLine } from '@/components/SkeletonLoader';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { DEMO_MODE, DEMO_SHIFTS, DEMO_WORKERS } from '@/constants/DemoData';
+import { DEMO_SHIFTS, DEMO_WORKERS } from '@/constants/DemoData';
 
 // ─── Shared glass style ───────────────────────────────────────────────────────
 
@@ -77,7 +77,8 @@ interface FullMarketplaceStats {
   workers_available?: number;
   restaurants_hiring?: number;
   shifts_filled_week?: number;
-  recent_activity?: string[];
+  // Backend returns objects { text, time } — same shape as MarketplaceStats
+  recent_activity?: { text: string; time: string }[];
 }
 
 // Shared marketplace stats — fetched once, used by all dashboards
@@ -86,11 +87,11 @@ let _cachedStats: FullMarketplaceStats = {
   restaurants_hiring: 14,
   shifts_filled_week: 127,
   recent_activity: [
-    '⚡ Bartender accepted at Prime Social KC',
-    '✅ Server filled shift at Midtown Tavern',
-    '🎯 VIP event staffed in 4 minutes',
-    '⚡ Line Cook confirmed at Neon Alley',
-    '✅ Barback filled at The Copper Mug',
+    { text: 'Bartender accepted at Prime Social KC', time: '2m' },
+    { text: 'Server filled shift at Midtown Tavern', time: '8m' },
+    { text: 'VIP event staffed in 4 minutes', time: '14m' },
+    { text: 'Line Cook confirmed at Neon Alley', time: '22m' },
+    { text: 'Barback filled at The Copper Mug', time: '35m' },
   ],
 };
 
@@ -147,11 +148,11 @@ function LandingScreen() {
       await setRole(role);
       return;
     }
-    if (role === 'manager') {
-      router.push('/onboarding/manager/profile' as any);
-    } else {
-      router.push('/onboarding/worker/index' as any);
-    }
+    // Always go through the role selector (onboarding/worker/index) so that
+    // POST /api/onboarding/role is called before any profile screen. Navigating
+    // directly to a profile screen skips that API call and leaves the user
+    // with no role persisted in the backend.
+    router.push('/onboarding/worker/index' as any);
   };
 
   const workersAvailable = stats.workers_available ?? 31;
@@ -468,7 +469,7 @@ function SectionHeader({
 // ─── Manager Dashboard ────────────────────────────────────────────────────────
 
 function ManagerDashboard() {
-  const { currentUser } = useRole();
+  const { currentUser, demoDataActive } = useRole();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -508,7 +509,7 @@ function ManagerDashboard() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   const loadData = useCallback(async () => {
-    if (DEMO_MODE) {
+    if (demoDataActive) {
       const open = DEMO_SHIFTS.filter((s) => s.status === 'open').length;
       const filled = DEMO_SHIFTS.filter((s) => s.status === 'filled').length;
       const confirmed = DEMO_SHIFTS.filter((s) => s.status === 'pending').length;
@@ -521,8 +522,8 @@ function ManagerDashboard() {
     }
     try {
       const [shiftsData, workersData, marketplaceData] = await Promise.all([
-        apiGet<{ shifts: Shift[] }>('/api/shifts?role=manager'),
-        apiGet<WorkerMini[]>('/api/worker-profiles?available=true').catch(() => []),
+        authenticatedGet<{ shifts: Shift[] }>('/api/shifts?role=manager'),
+        authenticatedGet<WorkerMini[]>('/api/worker-profiles?available=true').catch(() => []),
         apiGet<MarketplaceStats>('/api/marketplace/stats').catch(() => null),
       ]);
       const shiftList = Array.isArray((shiftsData as any)?.shifts) ? (shiftsData as any).shifts : Array.isArray(shiftsData) ? shiftsData : [];
@@ -587,13 +588,15 @@ function ManagerDashboard() {
   }, []);
 
   const scarcityPills = (marketStats.recent_activity && marketStats.recent_activity.length > 0)
-    ? marketStats.recent_activity.slice(0, 6).map((text) => {
-        const icon = text.startsWith('✅') ? '✅'
-          : text.startsWith('⚡') ? '⚡'
-          : text.startsWith('🎯') ? '🎯'
-          : text.startsWith('🔥') ? '🔥'
+    ? marketStats.recent_activity.slice(0, 6).map((item) => {
+        // recent_activity items are objects { text, time } from the backend
+        const rawText = item.text ?? '';
+        const icon = rawText.startsWith('✅') ? '✅'
+          : rawText.startsWith('⚡') ? '⚡'
+          : rawText.startsWith('🎯') ? '🎯'
+          : rawText.startsWith('🔥') ? '🔥'
           : '📍';
-        const cleanText = text.replace(/^[✅⚡🎯🔥📍]\s*/u, '');
+        const cleanText = rawText.replace(/^[✅⚡🎯🔥📍]\s*/u, '');
         return { icon, text: cleanText };
       })
     : SCARCITY_INSIGHTS;
@@ -1040,7 +1043,7 @@ const WORKER_TICKER_ITEMS = [
 ];
 
 function WorkerDashboard() {
-  const { currentUser, workerProfile, refreshWorkerProfile } = useRole();
+  const { currentUser, workerProfile, refreshWorkerProfile, demoDataActive } = useRole();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -1103,14 +1106,14 @@ function WorkerDashboard() {
   }, []);
 
   const loadShifts = useCallback(async () => {
-    if (DEMO_MODE) {
+    if (demoDataActive) {
       setShifts(DEMO_SHIFTS.filter((s) => s.status === 'open'));
       setLoading(false);
       setRefreshing(false);
       return;
     }
     try {
-      const data = await apiGet<{ shifts: Shift[] }>('/api/shifts?status=open');
+      const data = await authenticatedGet<{ shifts: Shift[] }>('/api/shifts?status=open');
       const list = Array.isArray((data as any)?.shifts) ? (data as any).shifts : Array.isArray(data) ? data : [];
       setShifts(list);
     } catch {
@@ -1129,7 +1132,7 @@ function WorkerDashboard() {
     if (!workerProfile?.id) return;
     setAvailabilityLoading(true);
     try {
-      await apiPatch(`/api/worker-profiles/${workerProfile.id}/availability`, {
+      await authenticatedPatch(`/api/worker-profiles/${workerProfile.id}/availability`, {
         is_available: !isAvailable,
       });
       await refreshWorkerProfile();
@@ -1144,7 +1147,7 @@ function WorkerDashboard() {
     if (!currentUser?.id) return;
     setApplyingId(shiftId);
     try {
-      await apiPost(`/api/shifts/${shiftId}/apply`, { user_id: currentUser.id });
+      await authenticatedPost(`/api/shifts/${shiftId}/apply`, { user_id: currentUser.id });
       Alert.alert('Applied!', 'Your application has been submitted. The manager will confirm shortly.');
       loadShifts();
     } catch {
@@ -1190,8 +1193,9 @@ function WorkerDashboard() {
 
   const shiftCount = filteredShifts.length;
 
+  // recent_activity items are objects { text, time } — extract .text for the ticker
   const workerTickerItems = (marketStats.recent_activity && marketStats.recent_activity.length > 0)
-    ? marketStats.recent_activity
+    ? marketStats.recent_activity.map((item) => item.text ?? '')
     : WORKER_TICKER_ITEMS;
 
   return (
@@ -1621,22 +1625,4 @@ function AdminDashboard() {
   );
 }
 
-// ─── Root export ──────────────────────────────────────────────────────────────
-
-export default function HomeScreen() {
-  const { currentRole, isLoading } = useRole();
-
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontSize: 32 }}>⚡</Text>
-      </View>
-    );
-  }
-
-  if (!currentRole) return <LandingScreen />;
-  if (currentRole === 'manager') return <ManagerDashboard />;
-  if (currentRole === 'worker') return <WorkerDashboard />;
-  if (currentRole === 'admin') return <AdminDashboard />;
-  return <LandingScreen />;
-}
+// ─── Root export ───────────�

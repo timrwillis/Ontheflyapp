@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { apiPatch } from '@/utils/api';
+import { authenticatedPatch } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { useRole } from '@/contexts/RoleContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -22,7 +22,7 @@ export default function LegalScreen() {
     if (!canContinue) return;
     setLoading(true);
     try {
-      await apiPatch('/api/me', {
+      await authenticatedPatch('/api/me', {
         agreed_to_terms: true,
         agreed_at: new Date().toISOString(),
       });
@@ -305,6 +305,3 @@ export default function LegalScreen() {
           </View>
         </AnimatedPressable>
       </ScrollView>
-    </>
-  );
-}
