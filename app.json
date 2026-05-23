@@ -31,7 +31,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.onthefly.app",
-      "versionCode": 1,
+      "versionCode": 2,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "CAMERA",
@@ -63,7 +63,11 @@
     },
     "extra": {
       "router": {},
-      "backendUrl": "https://ontheflyapp-production.up.railway.app"
-    }
+      "backendUrl": "https://ontheflyapp-production.up.railway.app",
+      "eas": {
+        "projectId": "5ee13dfd-b323-47f1-b5f0-e4ccdadae6be"
+      }
+    },
+    "owner": "twil1430"
   }
 }

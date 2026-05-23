@@ -148,4 +148,6 @@ export default function WorkerOnboardingComplete() {
           </Text>
         </View>
       </AnimatedPressable>
-    </Sc
+    </ScrollView>
+  );
+}

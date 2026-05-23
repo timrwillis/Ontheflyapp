@@ -107,4 +107,6 @@ export default function ManagerOnboardingComplete() {
           </Text>
         </View>
       </AnimatedPressable>
-    </Sc
+    </ScrollView>
+  );
+}
