@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { useRole } from '@/contexts/RoleContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiGet, authenticatedGet, authenticatedPost, authenticatedPatch } from '@/utils/api';
 import { ShiftCard, Shift } from '@/components/ShiftCard';
 import { AvailabilityToggle } from '@/components/AvailabilityToggle';
@@ -470,6 +471,7 @@ function SectionHeader({
 
 function ManagerDashboard() {
   const { currentUser, demoDataActive } = useRole();
+  const { user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -509,6 +511,7 @@ function ManagerDashboard() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   const loadData = useCallback(async () => {
+    if (!user) return;
     if (demoDataActive) {
       const open = DEMO_SHIFTS.filter((s) => s.status === 'open').length;
       const filled = DEMO_SHIFTS.filter((s) => s.status === 'filled').length;
@@ -551,7 +554,7 @@ function ManagerDashboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [demoDataActive, user]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -1044,6 +1047,7 @@ const WORKER_TICKER_ITEMS = [
 
 function WorkerDashboard() {
   const { currentUser, workerProfile, refreshWorkerProfile, demoDataActive } = useRole();
+  const { user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -1106,6 +1110,7 @@ function WorkerDashboard() {
   }, []);
 
   const loadShifts = useCallback(async () => {
+    if (!user) return;
     if (demoDataActive) {
       setShifts(DEMO_SHIFTS.filter((s) => s.status === 'open'));
       setLoading(false);
@@ -1122,7 +1127,7 @@ function WorkerDashboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [demoDataActive, user]);
 
   useEffect(() => { loadShifts(); }, [loadShifts]);
 
@@ -1625,4 +1630,22 @@ function AdminDashboard() {
   );
 }
 
-// ─── Root export ───────────�
+// ─── Root export ──────────────────────────────────────────────────────────────
+
+export default function HomeScreen() {
+  const { currentRole, isLoading } = useRole();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 32 }}>⚡</Text>
+      </View>
+    );
+  }
+
+  if (!currentRole) return <LandingScreen />;
+  if (currentRole === 'manager') return <ManagerDashboard />;
+  if (currentRole === 'worker') return <WorkerDashboard />;
+  if (currentRole === 'admin') return <AdminDashboard />;
+  return <LandingScreen />;
+}
