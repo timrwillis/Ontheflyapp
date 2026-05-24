@@ -35,8 +35,8 @@ const ALL_ROLES = [
 
 interface SelectedRole {
   role: string;
-  years_experience: number;
-  is_primary: boolean;
+  yearsExperience: number;
+  isPrimary: boolean;
 }
 
 export default function WorkerRolesStep() {
@@ -52,16 +52,16 @@ export default function WorkerRolesStep() {
         return prev.filter((r) => r.role !== roleValue);
       }
       const isPrimary = prev.length === 0;
-      return [...prev, { role: roleValue, years_experience: 1, is_primary: isPrimary }];
+      return [...prev, { role: roleValue, yearsExperience: 1, isPrimary }];
     });
   };
 
   const setYears = (roleValue: string, years: number) => {
-    setSelectedRoles((prev) => prev.map((r) => r.role === roleValue ? { ...r, years_experience: years } : r));
+    setSelectedRoles((prev) => prev.map((r) => r.role === roleValue ? { ...r, yearsExperience: years } : r));
   };
 
   const setPrimary = (roleValue: string) => {
-    setSelectedRoles((prev) => prev.map((r) => ({ ...r, is_primary: r.role === roleValue })));
+    setSelectedRoles((prev) => prev.map((r) => ({ ...r, isPrimary: r.role === roleValue })));
   };
 
   const handleNext = async () => {
@@ -110,7 +110,7 @@ export default function WorkerRolesStep() {
         {ALL_ROLES.map((r) => {
           const selected = selectedRoles.find((s) => s.role === r.value);
           const isSelected = Boolean(selected);
-          const isPrimary = selected?.is_primary ?? false;
+          const isPrimary = selected?.isPrimary ?? false;
           return (
             <AnimatedPressable
               key={r.value}
@@ -155,30 +155,30 @@ export default function WorkerRolesStep() {
                 <Text style={{ color: COLORS.text, fontSize: 14, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
                   {roleInfo?.label ?? sr.role}
                 </Text>
-                <AnimatedPressable onPress={() => setYears(sr.role, Math.max(0, sr.years_experience - 1))}>
+                <AnimatedPressable onPress={() => setYears(sr.role, Math.max(0, sr.yearsExperience - 1))}>
                   <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' }}>
                     <MaterialIcons name="remove" size={16} color={COLORS.primary} />
                   </View>
                 </AnimatedPressable>
                 <Text style={{ color: COLORS.primary, fontSize: 16, fontFamily: 'SpaceGrotesk-Bold', minWidth: 24, textAlign: 'center' }}>
-                  {sr.years_experience}
+                  {sr.yearsExperience}
                 </Text>
-                <AnimatedPressable onPress={() => setYears(sr.role, Math.min(30, sr.years_experience + 1))}>
+                <AnimatedPressable onPress={() => setYears(sr.role, Math.min(30, sr.yearsExperience + 1))}>
                   <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' }}>
                     <MaterialIcons name="add" size={16} color={COLORS.primary} />
                   </View>
                 </AnimatedPressable>
                 <AnimatedPressable onPress={() => setPrimary(sr.role)}>
                   <View style={{
-                    backgroundColor: sr.is_primary ? COLORS.primaryMuted : 'rgba(255,255,255,0.04)',
+                    backgroundColor: sr.isPrimary ? COLORS.primaryMuted : 'rgba(255,255,255,0.04)',
                     borderRadius: 8,
                     paddingHorizontal: 10,
                     paddingVertical: 5,
                     borderWidth: 1,
-                    borderColor: sr.is_primary ? COLORS.primary : 'rgba(255,255,255,0.1)',
+                    borderColor: sr.isPrimary ? COLORS.primary : 'rgba(255,255,255,0.1)',
                   }}>
-                    <Text style={{ color: sr.is_primary ? COLORS.primary : COLORS.textSecondary, fontSize: 10, fontFamily: 'SpaceGrotesk-SemiBold' }}>
-                      {sr.is_primary ? '★ Primary' : 'Set Primary'}
+                    <Text style={{ color: sr.isPrimary ? COLORS.primary : COLORS.textSecondary, fontSize: 10, fontFamily: 'SpaceGrotesk-SemiBold' }}>
+                      {sr.isPrimary ? '★ Primary' : 'Set Primary'}
                     </Text>
                   </View>
                 </AnimatedPressable>

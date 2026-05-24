@@ -51,11 +51,10 @@ export default function WorkerAvailabilityStep() {
     setLoading(true);
     try {
       const payload = {
-        availability_days: selectedDays,
-        availability_start: startTime,
-        availability_end: endTime,
-        is_available: isAvailable,
-        onboarding_step: 3,
+        availabilityDays: selectedDays,
+        availabilityStart: startTime,
+        availabilityEnd: endTime,
+        isAvailable,
       };
       await authenticatedPost('/api/onboarding/worker/availability', payload);
       router.push('/onboarding/worker/complete');

@@ -44,7 +44,7 @@ export default function WorkerOnboardingComplete() {
     setLoading(true);
     try {
       await authenticatedPost('/api/onboarding/complete', {});
-      await refreshWorkerProfile();
+      await Promise.all([refreshWorkerProfile(), refreshOnboardingStatus()]);
       router.replace('/(tabs)/(home)');
     } catch (err) {
       Alert.alert('Error', 'Could not complete setup. Please try again.');

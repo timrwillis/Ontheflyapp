@@ -20,6 +20,8 @@ export default function ManagerOnboardingComplete() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { currentUser, refreshOnboardingStatus } = useRole();
+  // refreshOnboardingStatus is called after completing so the tabs layout
+  // doesn't re-check and redirect back to onboarding.
   const [loading, setLoading] = useState(false);
 
   const businessName = currentUser?.business_name ?? 'Your Business';
@@ -28,7 +30,8 @@ export default function ManagerOnboardingComplete() {
     setLoading(true);
     try {
       await authenticatedPost('/api/onboarding/complete', {});
-      router.replace('/create-shift');
+      await refreshOnboardingStatus();
+      router.replace('/(tabs)/(home)');
     } catch (err) {
       Alert.alert('Error', 'Could not complete setup. Please try again.');
     } finally {

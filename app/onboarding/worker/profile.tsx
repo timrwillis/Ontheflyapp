@@ -91,9 +91,8 @@ export default function WorkerProfileStep() {
         phone: phone.trim(),
         city: city.trim(),
         bio: bio.trim() || undefined,
-        has_transportation: hasTransportation,
-        preferred_radius_miles: Number(radius) || 10,
-        onboarding_step: 1,
+        hasTransportation,
+        preferredRadiusMiles: Number(radius) || 10,
       };
       await authenticatedPost('/api/onboarding/worker', payload);
       router.push('/onboarding/worker/roles');
