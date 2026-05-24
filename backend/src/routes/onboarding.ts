@@ -483,4 +483,21 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
         onboardingCompleted = workerProfile?.onboardingCompleted ?? false;
       } else if (user.role === 'manager') {
         const managerProfile = await app.db.query.managerProfiles.findFirst({
-          where: eq(schema.managerProfiles.userId, sessi
+          where: eq(schema.managerProfiles.userId, session.user.id),
+        });
+        onboardingCompleted = managerProfile?.onboardingCompleted ?? false;
+      }
+
+      app.logger.info(
+        { userId: session.user.id, onboardingStep: onboardingStepLabel, onboardingCompleted },
+        'Onboarding status retrieved'
+      );
+
+      return {
+        onboarding_step: onboardingCompleted ? 'complete' : onboardingStepLabel,
+        onboarding_completed: onboardingCompleted,
+        role: user.role,
+      };
+    }
+  );
+}

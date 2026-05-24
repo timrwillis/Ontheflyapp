@@ -305,4 +305,5 @@ export const notifications = pgTable('notifications', {
   type: notificationTypeEnum('type').notNull(),
   read: boolean('read').default(false).notNull(),
   shiftId: text('shift_id'),
-  createdAt: timestamp('created_at', { withTimezone: true })
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});

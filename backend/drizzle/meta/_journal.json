@@ -87,3 +87,11 @@
       "breakpoints": true
     },
     {
+      "idx": 12,
+      "version": "7",
+      "when": 1748088000000,
+      "tag": "20260524120000_add_line_cook_catering_to_worker_role_enum",
+      "breakpoints": true
+    }
+  ]
+}

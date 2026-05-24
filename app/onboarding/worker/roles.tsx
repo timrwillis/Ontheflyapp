@@ -262,4 +262,61 @@ export default function WorkerRolesStep() {
                       >
                         {r.label}
                       </Text>
-                  
+                    </View>
+                  </View>
+                </AnimatedPressable>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+
+      {/* Selection count — uppercase, dim, letterSpacing 1 */}
+      <Text
+        style={{
+          color: COLORS.textSecondary,
+          fontSize: 11,
+          fontFamily: 'SpaceGrotesk-SemiBold',
+          textAlign: 'center',
+          letterSpacing: 1,
+          textTransform: 'uppercase',
+          marginBottom: 16,
+          minHeight: 18,
+        }}
+      >
+        {selectedRoles.length > 0
+          ? `${selectedRoles.length} role${selectedRoles.length === 1 ? '' : 's'} selected`
+          : ''}
+      </Text>
+
+      {/* Continue button — disabled until a role is selected, matches other onboarding screens */}
+      <AnimatedPressable onPress={handleNext} disabled={!canContinue}>
+        <View
+          style={{
+            backgroundColor: canContinue ? COLORS.primary : COLORS.surface,
+            borderRadius: 14,
+            paddingVertical: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'row',
+            gap: 8,
+            ...(canContinue ? primaryGlow : {}),
+          }}
+        >
+          <Text
+            style={{
+              color: canContinue ? COLORS.background : COLORS.textTertiary,
+              fontSize: 17,
+              fontFamily: 'SpaceGrotesk-Bold',
+            }}
+          >
+            {loading ? 'Saving...' : 'Continue'}
+          </Text>
+          {canContinue && !loading && (
+            <MaterialIcons name="arrow-forward" size={18} color={COLORS.background} />
+          )}
+        </View>
+      </AnimatedPressable>
+    </ScrollView>
+  );
+}
