@@ -1,36 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Alert, Platform } from 'react-native';
+import { View, Text, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS } from '@/constants/Colors';
 import { authenticatedPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-const glass = {
-  backgroundColor: 'rgba(255,255,255,0.04)' as const,
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.08)' as const,
-  borderRadius: 16,
-  padding: 16,
-};
-
-const primaryGlow = Platform.select({
-  web: { boxShadow: '0 0 24px rgba(0, 255, 135, 0.35)' },
-  default: { shadowColor: '#00FF87', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 10 },
-}) as object;
-
 const ALL_ROLES = [
-  { value: 'bartender', label: 'Bartender', icon: 'local-bar' as const },
-  { value: 'server', label: 'Server', icon: 'room-service' as const },
-  { value: 'cook', label: 'Cook', icon: 'outdoor-grill' as const },
-  { value: 'dishwasher', label: 'Dishwasher', icon: 'water-drop' as const },
-  { value: 'event_staff', label: 'Event Staff', icon: 'celebration' as const },
-  { value: 'security', label: 'Security', icon: 'security' as const },
-  { value: 'barback', label: 'Barback', icon: 'sports-bar' as const },
-  { value: 'host', label: 'Host', icon: 'person' as const },
-  { value: 'runner', label: 'Runner', icon: 'directions-run' as const },
-  { value: 'busser', label: 'Busser', icon: 'cleaning-services' as const },
+  { value: 'bartender',   label: 'Bartender',    emoji: '🍸' },
+  { value: 'server',      label: 'Server',        emoji: '🍽️' },
+  { value: 'cook',        label: 'Cook',          emoji: '👨‍🍳' },
+  { value: 'busser',      label: 'Busser',        emoji: '🥗' },
+  { value: 'barback',     label: 'Barback',       emoji: '🍹' },
+  { value: 'event_staff', label: 'Event Staff',   emoji: '🎪' },
+  { value: 'security',    label: 'Security',      emoji: '🔒' },
+  { value: 'host',        label: 'Host/Hostess',  emoji: '🏨' },
+  { value: 'runner',      label: 'Runner',        emoji: '🚀' },
+  { value: 'line_cook',   label: 'Line Cook',     emoji: '🍳' },
+  { value: 'dishwasher',  label: 'Dishwasher',    emoji: '🧹' },
+  { value: 'catering',    label: 'Catering',      emoji: '🎭' },
 ];
 
 interface SelectedRole {
@@ -57,11 +45,15 @@ export default function WorkerRolesStep() {
   };
 
   const setYears = (roleValue: string, years: number) => {
-    setSelectedRoles((prev) => prev.map((r) => r.role === roleValue ? { ...r, yearsExperience: years } : r));
+    setSelectedRoles((prev) =>
+      prev.map((r) => (r.role === roleValue ? { ...r, yearsExperience: years } : r))
+    );
   };
 
   const setPrimary = (roleValue: string) => {
-    setSelectedRoles((prev) => prev.map((r) => ({ ...r, isPrimary: r.role === roleValue })));
+    setSelectedRoles((prev) =>
+      prev.map((r) => ({ ...r, isPrimary: r.role === roleValue }))
+    );
   };
 
   const handleNext = async () => {
@@ -71,8 +63,7 @@ export default function WorkerRolesStep() {
     }
     setLoading(true);
     try {
-      const payload = { roles: selectedRoles };
-      await authenticatedPost('/api/onboarding/worker/roles', payload);
+      await authenticatedPost('/api/onboarding/worker/roles', { roles: selectedRoles });
       router.push('/onboarding/worker/availability');
     } catch (err) {
       console.error('[WorkerOnboarding] Roles save failed:', err);
@@ -82,127 +73,148 @@ export default function WorkerRolesStep() {
     }
   };
 
+  const canContinue = selectedRoles.length > 0 && !loading;
+
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: COLORS.background }}
-      contentContainerStyle={{ paddingTop: insets.top + 20, paddingHorizontal: 24, paddingBottom: 60 }}
+      style={{ flex: 1, backgroundColor: '#0A0A0A' }}
+      contentContainerStyle={{
+        paddingTop: insets.top + 20,
+        paddingHorizontal: 24,
+        paddingBottom: 60,
+      }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Progress */}
+      {/* Progress bar */}
       <View style={{ flexDirection: 'row', gap: 6, marginBottom: 28 }}>
         {[0, 1, 2, 3].map((i) => (
-          <View key={i} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i <= 1 ? COLORS.primary : 'rgba(255,255,255,0.1)' }} />
+          <View
+            key={i}
+            style={{
+              flex: 1,
+              height: 3,
+              borderRadius: 2,
+              backgroundColor: i <= 1 ? '#00FF87' : 'rgba(255,255,255,0.1)',
+            }}
+          />
         ))}
       </View>
 
-      <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-SemiBold', letterSpacing: 1.5, marginBottom: 6 }}>
-        STEP 2 OF 4
+      <Text
+        style={{
+          color: '#F0F0F0',
+          fontSize: 28,
+          fontFamily: 'SpaceGrotesk-Bold',
+          marginBottom: 8,
+        }}
+      >
+        What do you do?
       </Text>
-      <Text style={{ color: COLORS.text, fontSize: 26, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5, marginBottom: 6 }}>
-        Your Roles
-      </Text>
-      <Text style={{ color: COLORS.textSecondary, fontSize: 14, fontFamily: 'SpaceGrotesk-Regular', marginBottom: 28, lineHeight: 22 }}>
-        Select all roles you can fill. Tap a selected role to set experience and mark as primary.
+      <Text
+        style={{
+          color: '#8A8A8A',
+          fontSize: 15,
+          fontFamily: 'SpaceGrotesk-Regular',
+          marginBottom: 32,
+        }}
+      >
+        Select all roles you can work
       </Text>
 
       {/* Role grid */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
         {ALL_ROLES.map((r) => {
-          const selected = selectedRoles.find((s) => s.role === r.value);
-          const isSelected = Boolean(selected);
-          const isPrimary = selected?.isPrimary ?? false;
+          const isSelected = Boolean(selectedRoles.find((s) => s.role === r.value));
           return (
             <AnimatedPressable
               key={r.value}
               onPress={() => toggleRole(r.value)}
-              style={{ width: '47%' }}
+              style={{ width: '48%' }}
             >
-              <View style={{
-                backgroundColor: isSelected ? (isPrimary ? COLORS.primary : COLORS.primaryMuted) : 'rgba(255,255,255,0.04)',
-                borderRadius: 14,
-                borderWidth: isSelected ? 2 : 1,
-                borderColor: isSelected ? COLORS.primary : 'rgba(255,255,255,0.1)',
-                padding: 14,
-                alignItems: 'center',
-                gap: 6,
-                ...(isSelected && isPrimary ? primaryGlow : {}),
-              }}>
-                <MaterialIcons name={r.icon} size={26} color={isSelected ? (isPrimary ? '#000' : COLORS.primary) : COLORS.textSecondary} />
-                <Text style={{ color: isSelected ? (isPrimary ? '#000' : COLORS.primary) : COLORS.text, fontSize: 13, fontFamily: 'SpaceGrotesk-SemiBold', textAlign: 'center' }}>
-                  {r.label}
-                </Text>
-                {isPrimary && (
-                  <View style={{ backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
-                    <Text style={{ color: '#000', fontSize: 9, fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 1 }}>PRIMARY</Text>
+              <View
+                style={{
+                  backgroundColor: isSelected ? 'rgba(0,255,135,0.06)' : '#141414',
+                  borderRadius: 16,
+                  borderWidth: isSelected ? 2 : 1,
+                  borderColor: isSelected ? '#00FF87' : 'rgba(255,255,255,0.08)',
+                  height: 120,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  position: 'relative',
+                }}
+              >
+                {isSelected && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: 10,
+                      right: 10,
+                      width: 20,
+                      height: 20,
+                      borderRadius: 10,
+                      backgroundColor: '#00FF87',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <MaterialIcons name="check" size={13} color="#000" />
                   </View>
                 )}
+                <Text style={{ fontSize: 32 }}>{r.emoji}</Text>
+                <Text
+                  style={{
+                    color: '#F0F0F0',
+                    fontSize: 14,
+                    fontFamily: 'SpaceGrotesk-SemiBold',
+                    textAlign: 'center',
+                    paddingHorizontal: 8,
+                  }}
+                >
+                  {r.label}
+                </Text>
               </View>
             </AnimatedPressable>
           );
         })}
       </View>
 
-      {/* Selected roles — experience steppers */}
-      {selectedRoles.length > 0 && (
-        <View style={{ ...glass, marginBottom: 24 }}>
-          <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-SemiBold', letterSpacing: 1.5, marginBottom: 14 }}>
-            YEARS OF EXPERIENCE
-          </Text>
-          {selectedRoles.map((sr) => {
-            const roleInfo = ALL_ROLES.find((r) => r.value === sr.role);
-            return (
-              <View key={sr.role} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 }}>
-                <Text style={{ color: COLORS.text, fontSize: 14, fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
-                  {roleInfo?.label ?? sr.role}
-                </Text>
-                <AnimatedPressable onPress={() => setYears(sr.role, Math.max(0, sr.yearsExperience - 1))}>
-                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' }}>
-                    <MaterialIcons name="remove" size={16} color={COLORS.primary} />
-                  </View>
-                </AnimatedPressable>
-                <Text style={{ color: COLORS.primary, fontSize: 16, fontFamily: 'SpaceGrotesk-Bold', minWidth: 24, textAlign: 'center' }}>
-                  {sr.yearsExperience}
-                </Text>
-                <AnimatedPressable onPress={() => setYears(sr.role, Math.min(30, sr.yearsExperience + 1))}>
-                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center' }}>
-                    <MaterialIcons name="add" size={16} color={COLORS.primary} />
-                  </View>
-                </AnimatedPressable>
-                <AnimatedPressable onPress={() => setPrimary(sr.role)}>
-                  <View style={{
-                    backgroundColor: sr.isPrimary ? COLORS.primaryMuted : 'rgba(255,255,255,0.04)',
-                    borderRadius: 8,
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
-                    borderWidth: 1,
-                    borderColor: sr.isPrimary ? COLORS.primary : 'rgba(255,255,255,0.1)',
-                  }}>
-                    <Text style={{ color: sr.isPrimary ? COLORS.primary : COLORS.textSecondary, fontSize: 10, fontFamily: 'SpaceGrotesk-SemiBold' }}>
-                      {sr.isPrimary ? '★ Primary' : 'Set Primary'}
-                    </Text>
-                  </View>
-                </AnimatedPressable>
-              </View>
-            );
-          })}
-        </View>
-      )}
+      {/* Selected count */}
+      <Text
+        style={{
+          color: '#00FF87',
+          fontSize: 14,
+          fontFamily: 'SpaceGrotesk-SemiBold',
+          textAlign: 'center',
+          marginBottom: 16,
+          minHeight: 20,
+        }}
+      >
+        {selectedRoles.length > 0
+          ? `${selectedRoles.length} role${selectedRoles.length === 1 ? '' : 's'} selected`
+          : ''}
+      </Text>
 
-      <AnimatedPressable onPress={handleNext} disabled={loading}>
-        <View style={{
-          backgroundColor: loading ? 'rgba(0,255,135,0.5)' : COLORS.primary,
-          borderRadius: 16,
-          height: 56,
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'row',
-          gap: 8,
-          ...primaryGlow,
-        }}>
-          <Text style={{ color: '#000', fontSize: 16, fontFamily: 'SpaceGrotesk-Bold' }}>
+      {/* Continue button */}
+      <AnimatedPressable onPress={handleNext} disabled={!canContinue}>
+        <View
+          style={{
+            backgroundColor: canContinue ? '#00FF87' : 'rgba(255,255,255,0.1)',
+            borderRadius: 14,
+            height: 56,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text
+            style={{
+              color: canContinue ? '#000' : 'rgba(255,255,255,0.3)',
+              fontSize: 17,
+              fontFamily: 'SpaceGrotesk-Bold',
+            }}
+          >
             {loading ? 'Saving...' : 'Continue'}
           </Text>
-          {!loading && <MaterialIcons name="arrow-forward" size={18} color="#000" />}
         </View>
       </AnimatedPressable>
     </ScrollView>
