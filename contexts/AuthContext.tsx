@@ -80,14 +80,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const user = (sessionData?.user as User | null) ?? null;
   const loading = isPending;
 
-  // Sync bearer token and register push token whenever session state changes
+  // Sync bearer token and register push token whenever session state changes.
+  // IMPORTANT: clearAuthTokens() is debounced with a 3-second delay to avoid
+  // a race condition where useSession() briefly shows {data: null, isPending: false}
+  // immediately after a successful sign-in, before the session propagates. Without
+  // the delay, the useEffect fires during that null flash and wipes the token that
+  // signInWithEmail just wrote — causing the first authenticated call to fail.
   useEffect(() => {
     if (sessionData?.session?.token) {
       setBearerToken(sessionData.session.token).then(() => {
         registerPushToken();
       });
     } else if (!isPending) {
-      clearAuthTokens();
+      const timer = setTimeout(() => {
+        clearAuthTokens();
+      }, 3000);
+      return () => clearTimeout(timer);
     }
   }, [sessionData, isPending]);
 

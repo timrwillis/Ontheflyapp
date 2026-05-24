@@ -107,6 +107,12 @@ export default function AuthScreen() {
       await signInWithEmail(siEmail.trim(), siPassword);
       console.log('[Auth] Sign in succeeded, checking onboarding status...');
 
+      // Give the reactive useSession() hook time to propagate the session token.
+      // Without this pause, useSession() can briefly show {data: null} after
+      // sign-in, which fires clearAuthTokens() and wipes the token before the
+      // onboarding screen can use it.
+      await new Promise<void>((res) => setTimeout(res, 400));
+
       try {
         const status = await authenticatedGet<{
           onboarding_completed: boolean;
@@ -157,6 +163,9 @@ export default function AuthScreen() {
       // Persist role so onboarding screens can read it
       await AsyncStorage.setItem('pendingRole', role);
       await setRole(role);
+
+      // Give the reactive useSession() hook time to propagate the session token.
+      await new Promise<void>((res) => setTimeout(res, 400));
 
       console.log('[Auth] Sign up successful, navigating to onboarding for role:', role);
       if (role === 'manager') {
