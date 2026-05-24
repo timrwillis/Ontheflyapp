@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
-import { authenticatedPost, getBearerToken } from '@/utils/api';
+import { authenticatedPost } from '@/utils/api';
 import { useRole } from '@/contexts/RoleContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -30,20 +30,9 @@ export default function OnboardingRoleSelector() {
   const handleSelectRole = async (role: 'manager' | 'worker') => {
     setLoading(role);
     try {
-      // After sign-up/sign-in, the reactive useSession effect in AuthProvider
-      // writes the bearer token to SecureStore asynchronously. Poll briefly
-      // so the write is guaranteed before the API call. We do NOT call
-      // fetchUser() here — its getSession() round-trip can race and call
-      // clearAuthTokens(), wiping a token that was already correctly set.
-      let token = await getBearerToken();
-      if (!token) {
-        await new Promise<void>((r) => setTimeout(r, 600));
-        token = await getBearerToken();
-      }
-      if (!token) {
-        await new Promise<void>((r) => setTimeout(r, 1000));
-        token = await getBearerToken();
-      }
+      // authenticatedPost will get the token from SecureStore, or fall back to
+      // authClient.getSession() if the manual cache was cleared by a race — so
+      // no manual token-fetching needed here.
       await authenticatedPost('/api/onboarding/role', { role });
       await setRole(role);
       if (role === 'worker') {

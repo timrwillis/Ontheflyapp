@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
-import { BEARER_TOKEN_KEY } from "@/lib/auth";
+import { BEARER_TOKEN_KEY, authClient, setBearerToken } from "@/lib/auth";
 
 const HARDCODED_URL = "https://ontheflyapp-production.up.railway.app";
 
@@ -106,10 +106,31 @@ export const authenticatedApiCall = async <T = unknown>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> => {
-  const token = await getBearerToken();
+  // Fast path: read from the manually-cached bearer token in SecureStore.
+  let token = await getBearerToken();
+
+  // Fallback: if the manual cache is empty (e.g. cleared by a useSession() race),
+  // read directly from better-auth's own session storage. The expo adapter keeps
+  // this cache independently of our manual BEARER_TOKEN_KEY — it cannot be wiped
+  // by our AuthContext useEffect. This is the authoritative source of truth.
+  if (!token) {
+    try {
+      const session = await authClient.getSession();
+      const sessionToken = session?.data?.session?.token as string | undefined;
+      if (sessionToken) {
+        token = sessionToken;
+        // Restore to manual cache so subsequent calls take the fast path.
+        await setBearerToken(sessionToken);
+      }
+    } catch {
+      // Session unavailable — fall through to the error below.
+    }
+  }
+
   if (!token) {
     throw new Error("Authentication token not found. Please sign in.");
   }
+
   return apiCall<T>(endpoint, {
     ...options,
     headers: {
