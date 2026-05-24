@@ -17,7 +17,10 @@ export const COLORS = {
   danger: '#FF4444',
   dangerMuted: 'rgba(255, 68, 68, 0.12)',
   border: 'rgba(255, 255, 255, 0.08)',
+  borderStrong: '#26262C',
   divider: 'rgba(255, 255, 255, 0.04)',
+  surface2: '#1C1C21',
+  textDim: '#8A8A93',
   white: '#FFFFFF',
   overlay: 'rgba(0, 0, 0, 0.7)',
 };
@@ -55,7 +58,4 @@ export const Colors = {
     background: "#151718",
     tint: tintColorDark,
     icon: "#9BA1A6",
-    tabIconDefault: "#9BA1A6",
-    tabIconSelected: tintColorDark,
-  },
-};
+    

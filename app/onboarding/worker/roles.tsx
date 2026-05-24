@@ -6,22 +6,25 @@ import { COLORS } from '@/constants/Colors';
 import { authenticatedPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import Feather from '@expo/vector-icons/Feather';
 
-// Original role list — keys and emojis preserved exactly
+// Role list — keys preserved exactly, emojis replaced with line-icon descriptors
 const ALL_ROLES = [
-  { value: 'bartender',   label: 'Bartender',    emoji: '🍸' },
-  { value: 'server',      label: 'Server',        emoji: '🍽️' },
-  { value: 'cook',        label: 'Cook',          emoji: '👨‍🍳' },
-  { value: 'busser',      label: 'Busser',        emoji: '🥗' },
-  { value: 'barback',     label: 'Barback',       emoji: '🍹' },
-  { value: 'event_staff', label: 'Event Staff',   emoji: '🎪' },
-  { value: 'security',    label: 'Security',      emoji: '🔒' },
-  { value: 'host',        label: 'Host/Hostess',  emoji: '🏨' },
-  { value: 'runner',      label: 'Runner',        emoji: '🚀' },
-  { value: 'line_cook',   label: 'Line Cook',     emoji: '🍳' },
-  { value: 'dishwasher',  label: 'Dishwasher',    emoji: '🧹' },
-  { value: 'catering',    label: 'Catering',      emoji: '🎭' },
-];
+  { value: 'bartender',   label: 'Bartender',    lib: 'mci',      icon: 'glass-cocktail'       },
+  { value: 'server',      label: 'Server',        lib: 'mci',      icon: 'silverware-fork-knife' },
+  { value: 'cook',        label: 'Cook',          lib: 'mci',      icon: 'chef-hat'             },
+  { value: 'busser',      label: 'Busser',        lib: 'mci',      icon: 'bowl-mix-outline'     },
+  { value: 'barback',     label: 'Barback',       lib: 'mci',      icon: 'bottle-wine'          },
+  { value: 'event_staff', label: 'Event Staff',   lib: 'ionicons', icon: 'people-outline'       },
+  { value: 'security',    label: 'Security',      lib: 'ionicons', icon: 'shield-outline'       },
+  { value: 'host',        label: 'Host/Hostess',  lib: 'feather',  icon: 'home'                 },
+  { value: 'runner',      label: 'Runner',        lib: 'mci',      icon: 'run-fast'             },
+  { value: 'line_cook',   label: 'Line Cook',     lib: 'mci',      icon: 'pot-steam-outline'    },
+  { value: 'dishwasher',  label: 'Dishwasher',    lib: 'mci',      icon: 'dishwasher'           },
+  { value: 'catering',    label: 'Catering',      lib: 'mci',      icon: 'silverware-variant'   },
+] as const;
 
 interface SelectedRole {
   role: string;
@@ -55,6 +58,17 @@ const primaryGlow = Platform.select({
     elevation: 10,
   },
 }) as object;
+
+// Render the correct icon component based on the library tag
+function RoleIcon({ lib, icon, color }: { lib: string; icon: string; color: string }) {
+  if (lib === 'ionicons') {
+    return <Ionicons name={icon as any} size={18} color={color} />;
+  }
+  if (lib === 'feather') {
+    return <Feather name={icon as any} size={18} color={color} />;
+  }
+  return <MaterialCommunityIcons name={icon as any} size={18} color={color} />;
+}
 
 export default function WorkerRolesStep() {
   const router = useRouter();
@@ -111,9 +125,9 @@ export default function WorkerRolesStep() {
   const canContinue = selectedRoles.length > 0 && !loading;
 
   // Pair roles into explicit 2-column rows — the most reliable approach in RN
-  const rows: (typeof ALL_ROLES)[] = [];
+  const rows: (typeof ALL_ROLES[number])[][] = [];
   for (let i = 0; i < ALL_ROLES.length; i += 2) {
-    rows.push(ALL_ROLES.slice(i, i + 2));
+    rows.push(ALL_ROLES.slice(i, i + 2) as any);
   }
 
   return (
@@ -195,8 +209,25 @@ export default function WorkerRolesStep() {
                       ...(isSelected ? cardSelectedGlow : {}),
                     }}
                   >
-                    {/* Emoji — top-left, 28px (not oversized) */}
-                    <Text style={{ fontSize: 28, lineHeight: 34 }}>{r.emoji}</Text>
+                    {/* Icon tile — top-left, 34×34, replaces emoji */}
+                    <View
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 10,
+                        backgroundColor: isSelected ? COLORS.primary : COLORS.surface2,
+                        borderWidth: isSelected ? 0 : 1,
+                        borderColor: COLORS.borderStrong,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <RoleIcon
+                        lib={r.lib}
+                        icon={r.icon}
+                        color={isSelected ? COLORS.background : COLORS.textDim}
+                      />
+                    </View>
 
                     {/* Check indicator — top-right, 22px circle */}
                     <View
@@ -231,61 +262,4 @@ export default function WorkerRolesStep() {
                       >
                         {r.label}
                       </Text>
-                    </View>
-                  </View>
-                </AnimatedPressable>
-              );
-            })}
-          </View>
-        ))}
-      </View>
-
-      {/* Selection count — uppercase, dim, letterSpacing 1 */}
-      <Text
-        style={{
-          color: COLORS.textSecondary,
-          fontSize: 11,
-          fontFamily: 'SpaceGrotesk-SemiBold',
-          textAlign: 'center',
-          letterSpacing: 1,
-          textTransform: 'uppercase',
-          marginBottom: 16,
-          minHeight: 18,
-        }}
-      >
-        {selectedRoles.length > 0
-          ? `${selectedRoles.length} role${selectedRoles.length === 1 ? '' : 's'} selected`
-          : ''}
-      </Text>
-
-      {/* Continue button — disabled until a role is selected, matches other onboarding screens */}
-      <AnimatedPressable onPress={handleNext} disabled={!canContinue}>
-        <View
-          style={{
-            backgroundColor: canContinue ? COLORS.primary : COLORS.surface,
-            borderRadius: 14,
-            paddingVertical: 16,
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'row',
-            gap: 8,
-            ...(canContinue ? primaryGlow : {}),
-          }}
-        >
-          <Text
-            style={{
-              color: canContinue ? COLORS.background : COLORS.textTertiary,
-              fontSize: 17,
-              fontFamily: 'SpaceGrotesk-Bold',
-            }}
-          >
-            {loading ? 'Saving...' : 'Continue'}
-          </Text>
-          {canContinue && !loading && (
-            <MaterialIcons name="arrow-forward" size={18} color={COLORS.background} />
-          )}
-        </View>
-      </AnimatedPressable>
-    </ScrollView>
-  );
-}
+                  
