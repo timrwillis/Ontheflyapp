@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡ On The Fly — AI Dev Team</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #09090e; color: #e4e4f0; font-family: system-ui, -apple-system, sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: #1a1a2e; border-radius: 4px; }
+  
+  /* HEADER */
+  .header { background: #0d0d1a; border-bottom: 1px solid #1a1a2e; padding: 12px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 100; }
+  .logo { width: 34px; height: 34px; background: linear-gradient(135deg, #00FF87, #00CC6A); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; color: #0a0a0f; flex-shrink: 0; }
+  .header-title { font-weight: 800; font-size: 1em; color: #fff; }
+  .header-sub { font-size: 0.68em; color: #444; margin-top: 1px; }
+  .live-badge { font-size: 0.68em; color: #00FF87; background: rgba(0,255,135,0.07); border: 1px solid rgba(0,255,135,0.18); border-radius: 20px; padding: 3px 9px; margin-left: auto; white-space: nowrap; }
+  .back-btn { background: rgba(0,255,135,0.1); border: 1px solid rgba(0,255,135,0.2); color: #00FF87; border-radius: 7px; padding: 5px 11px; cursor: pointer; font-size: 0.8em; font-weight: 600; display: none; }
+
+  /* API KEY SCREEN */
+  .apikey-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .apikey-box { background: #0d0d1a; border: 1px solid #1a1a2e; border-radius: 16px; padding: 32px; max-width: 480px; width: 100%; text-align: center; }
+  .apikey-icon { font-size: 40px; margin-bottom: 16px; }
+  .apikey-title { font-size: 1.2em; font-weight: 800; color: #fff; margin-bottom: 8px; }
+  .apikey-sub { font-size: 0.82em; color: #555; line-height: 1.6; margin-bottom: 20px; }
+  .apikey-input { width: 100%; background: #12121f; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 14px; color: #e4e4f0; font-size: 0.88em; font-family: monospace; outline: none; margin-bottom: 12px; }
+  .apikey-input:focus { border-color: rgba(0,255,135,0.4); }
+  .apikey-btn { width: 100%; background: linear-gradient(135deg, #00FF87, #00CC6A); border: none; border-radius: 10px; padding: 12px; color: #0a0a0f; font-weight: 800; font-size: 0.9em; cursor: pointer; }
+  .apikey-link { font-size: 0.75em; color: #444; margin-top: 12px; }
+  .apikey-link a { color: #00FF87; text-decoration: none; }
+
+  /* HUB */
+  .hub { flex: 1; padding: 16px; max-width: 980px; margin: 0 auto; width: 100%; }
+  
+  /* GOAL BAR */
+  .goal-bar { background: #0d0d1a; border: 1px solid #1a1a2e; border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; display: flex; gap: 10px; align-items: flex-end; }
+  .goal-input { flex: 1; background: transparent; border: none; color: #e4e4f0; font-size: 0.88em; resize: none; outline: none; font-family: inherit; line-height: 1.5; min-height: 44px; }
+  .goal-input::placeholder { color: #2a2a3e; }
+  .run-btn { background: linear-gradient(135deg, #00FF87, #00CC6A); border: none; border-radius: 9px; padding: 10px 18px; color: #0a0a0f; font-weight: 800; font-size: 0.85em; cursor: pointer; white-space: nowrap; }
+  .run-btn:disabled { background: #1a1a2e; color: #333; cursor: not-allowed; }
+
+  /* ROADMAP */
+  .roadmap { background: #0d0d1a; border: 1px solid #1a1a2e; border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; }
+  .roadmap-title { font-size: 0.72em; font-weight: 700; color: #444; margin-bottom: 10px; letter-spacing: 0.05em; }
+  .roadmap-steps { display: flex; gap: 8px; flex-wrap: wrap; }
+  .roadmap-step { display: flex; align-items: center; gap: 6px; border-radius: 20px; padding: 4px 12px; font-size: 0.74em; }
+
+  /* STATS */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .stat { background: #0d0d1a; border-radius: 10px; padding: 10px; text-align: center; }
+  .stat-val { font-size: 1.5em; font-weight: 800; line-height: 1; }
+  .stat-label { font-size: 0.62em; color: #888; margin-top: 2px; }
+
+  /* CATEGORIES */
+  .cats { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .cat-btn { background: #0d0d1a; border: 1px solid #1a1a2e; color: #555; border-radius: 20px; padding: 5px 14px; cursor: pointer; font-size: 0.76em; }
+  .cat-btn.active { background: rgba(0,255,135,0.1); border-color: rgba(0,255,135,0.3); color: #00FF87; font-weight: 700; }
+
+  /* AGENT GRID */
+  .agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .agent-card { background: #0d0d1a; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden; }
+  .agent-card:hover { transform: translateY(-2px); }
+  .agent-icon { font-size: 22px; margin-bottom: 8px; }
+  .agent-name { font-weight: 700; font-size: 0.84em; margin-bottom: 4px; }
+  .agent-role { font-size: 0.72em; color: #555; line-height: 1.5; }
+  .agent-active { margin-top: 8px; font-size: 0.65em; display: flex; align-items: center; gap: 4px; }
+  .agent-dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
+  .cat-tag { font-size: 0.6em; border-radius: 10px; padding: 1px 6px; position: absolute; top: 10px; right: 10px; }
+
+  /* NEXT STEPS */
+  .next-steps { background: linear-gradient(135deg, rgba(0,255,135,0.04), rgba(6,182,212,0.04)); border: 1px solid rgba(0,255,135,0.15); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+  .next-title { font-weight: 700; font-size: 0.8em; color: #00FF87; margin-bottom: 10px; }
+  .next-item { display: flex; gap: 10px; align-items: center; padding: 5px 6px; border-radius: 8px; cursor: pointer; transition: background 0.1s; margin-bottom: 4px; }
+  .next-item:hover { background: rgba(255,255,255,0.03); }
+  .next-num { width: 20px; height: 20px; background: rgba(0,255,135,0.1); border: 1px solid rgba(0,255,135,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.62em; color: #00FF87; font-weight: 700; flex-shrink: 0; }
+  .next-text { font-size: 0.76em; color: #666; }
+
+  /* CHAT */
+  .chat { flex: 1; display: none; flex-direction: column; max-width: 840px; margin: 0 auto; width: 100%; }
+  .chat.active { display: flex; }
+  .chat-header { padding: 12px 18px; border-bottom: 1px solid #1a1a2e; display: flex; align-items: center; gap: 11px; }
+  .chat-agent-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+  .chat-agent-name { font-weight: 700; font-size: 0.92em; }
+  .chat-agent-sub { font-size: 0.7em; color: #444; }
+  .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { display: flex; }
+  .msg.user { justify-content: flex-end; }
+  .bubble { max-width: 87%; border-radius: 17px; padding: 11px 15px; font-size: 0.85em; line-height: 1.65; }
+  .bubble.user { border-radius: 17px 17px 4px 17px; color: #fff; }
+  .bubble.assistant { background: #0d0d1a; border: 1px solid #1a1a2e; border-radius: 17px 17px 17px 4px; color: #c8c8d8; }
+  .typing { display: flex; gap: 5px; align-items: center; padding: 13px 16px; background: #0d0d1a; border: 1px solid #1a1a2e; border-radius: 17px 17px 17px 4px; width: fit-content; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:.3;transform:scale(.8)} 50%{opacity:1;transform:scale(1.1)} }
+  .suggestions { padding: 0 18px 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .sug-btn { border-radius: 20px; padding: 5px 12px; font-size: 0.74em; cursor: pointer; font-weight: 500; border: none; }
+  .chat-input-bar { padding: 12px 16px; border-top: 1px solid #1a1a2e; display: flex; gap: 8px; background: #09090e; }
+  .chat-input { flex: 1; background: #0d0d1a; border: 1px solid #1a1a2e; border-radius: 10px; padding: 10px 14px; color: #e4e4f0; font-size: 0.86em; resize: none; outline: none; font-family: inherit; line-height: 1.5; }
+  .send-btn { border: none; border-radius: 10px; padding: 10px 16px; font-weight: 800; font-size: 0.86em; cursor: pointer; }
+  .send-btn:disabled { background: #1a1a2e; color: #333; cursor: not-allowed; }
+
+  /* AUTO MODE */
+  .auto-bar { background: linear-gradient(135deg, rgba(0,255,135,0.06), rgba(0,0,0,0)); border: 1px solid rgba(0,255,135,0.2); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+  .auto-icon { font-size: 22px; }
+  .auto-text { flex: 1; }
+  .auto-title { font-size: 0.82em; font-weight: 700; color: #00FF87; }
+  .auto-sub { font-size: 0.72em; color: #555; }
+  .auto-btn { background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.3); color: #00FF87; border-radius: 8px; padding: 7px 14px; cursor: pointer; font-size: 0.76em; font-weight: 700; white-space: nowrap; }
+
+  /* RUNNING */
+  .running-panel { background: #0d0d1a; border: 1px solid rgba(0,255,135,0.2); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; display: none; }
+  .running-panel.active { display: block; }
+  .running-title { font-size: 0.78em; font-weight: 700; color: #00FF87; margin-bottom: 10px; }
+  .run-step { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .run-step-dot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65em; flex-shrink: 0; }
+  .run-step-label { font-size: 0.76em; }
+
+  /* FINAL OUTPUT */
+  .final-output { background: linear-gradient(135deg, rgba(0,255,135,0.04), rgba(6,182,212,0.04)); border: 1px solid rgba(0,255,135,0.2); border-radius: 14px; padding: 16px; margin-bottom: 12px; display: none; }
+  .final-output.active { display: block; }
+  .final-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .final-title { font-weight: 700; color: #00FF87; font-size: 0.88em; }
+  .final-body { font-size: 0.84em; color: #c8c8d8; line-height: 1.7; }
+  .final-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .copy-btn { background: rgba(0,255,135,0.1); border: 1px solid rgba(0,255,135,0.3); color: #00FF87; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 0.78em; font-weight: 700; }
+  .reset-btn { background: #1a1a2e; border: 1px solid #2a2a3e; color: #666; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 0.78em; }
+
+  /* PRESETS */
+  .presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; margin-bottom: 14px; }
+  .preset { background: #0d0d1a; border: 1px solid #1a1a2e; border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all 0.15s; }
+  .preset:hover { border-color: rgba(0,255,135,0.3); background: rgba(0,255,135,0.03); }
+  .preset-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .preset-icon { font-size: 18px; }
+  .preset-label { font-weight: 700; font-size: 0.82em; color: #fff; }
+  .preset-desc { font-size: 0.7em; color: #555; }
+
+  code { background: #1a1a2e; padding: 2px 5px; border-radius: 4px; font-size: 0.82em; color: #a78bfa; font-family: monospace; }
+  strong { color: #fff; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">⚡</div>
+  <div style="flex:1">
+    <div class="header-title">On The Fly — AI Dev Team</div>
+    <div class="header-sub" id="headerSub">13 agents • Autonomous mode • Kansas City launch</div>
+  </div>
+  <button class="back-btn" id="backBtn" onclick="showHub()">← Hub</button>
+  <div class="live-badge">● Live</div>
+</div>
+
+<!-- API KEY SCREEN -->
+<div class="apikey-screen" id="apikeyScreen">
+  <div class="apikey-box">
+    <div class="apikey-icon">🔑</div>
+    <div class="apikey-title">Connect Your API Key</div>
+    <div class="apikey-sub">To use your AI agents, you need an Anthropic API key. This is stored only in your browser — never sent anywhere except directly to Anthropic.</div>
+    <input class="apikey-input" id="apikeyInput" type="password" placeholder="sk-ant-..." />
+    <button class="apikey-btn" onclick="saveKey()">Connect & Launch ⚡</button>
+    <div class="apikey-link">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys → Create Key</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none; flex:1; display:none; flex-direction:column;">
+
+  <!-- HUB -->
+  <div class="hub" id="hubView">
+
+    <!-- AUTO MODE BAR -->
+    <div class="auto-bar">
+      <div class="auto-icon">🤖</div>
+      <div class="auto-text">
+        <div class="auto-title">Autonomous Mode — All Agents Work Together</div>
+        <div class="auto-sub">Type any goal below and all 5 agents collaborate automatically to build it</div>
+      </div>
+    </div>
+
+    <!-- GOAL BAR -->
+    <div class="goal-bar">
+      <textarea class="goal-input" id="goalInput" rows="2" placeholder="Describe what you want to build... e.g. 'Add Stripe payments for managers at $149/month'"></textarea>
+      <button class="run-btn" id="runBtn" onclick="runAllAgents()">⚡ Run All Agents</button>
+    </div>
+
+    <!-- RUNNING PANEL -->
+    <div class="running-panel" id="runningPanel">
+      <div class="running-title">⚡ ALL AGENTS RUNNING</div>
+      <div id="runSteps"></div>
+    </div>
+
+    <!-- FINAL OUTPUT -->
+    <div class="final-output" id="finalOutput">
+      <div class="final-header">
+        <span style="font-size:20px">🧠</span>
+        <span class="final-title">UNIFIED ACTION PLAN — Ready to execute</span>
+      </div>
+      <div class="final-body" id="finalBody"></div>
+      <div class="final-actions">
+        <button class="copy-btn" onclick="copyOutput()">📋 Copy Claude Code Command</button>
+        <button class="reset-btn" onclick="resetAuto()">← New Goal</button>
+      </div>
+    </div>
+
+    <!-- PRESETS -->
+    <div style="font-size:0.72em;color:#444;font-weight:700;margin-bottom:8px;letter-spacing:0.05em" id="presetsTitle">QUICK BUILD — TAP TO RUN ALL AGENTS</div>
+    <div class="presets" id="presetsGrid"></div>
+
+    <!-- ROADMAP -->
+    <div class="roadmap">
+      <div class="roadmap-title">LAUNCH ROADMAP</div>
+      <div class="roadmap-steps" id="roadmapSteps"></div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats" id="statsGrid"></div>
+
+    <!-- CATS -->
+    <div class="cats" id="catsBar"></div>
+
+    <!-- AGENT GRID -->
+    <div class="agent-grid" id="agentGrid"></div>
+
+    <!-- NEXT STEPS -->
+    <div class="next-steps">
+      <div class="next-title">🎯 RECOMMENDED NEXT STEPS</div>
+      <div id="nextSteps"></div>
+    </div>
+
+  </div>
+
+  <!-- CHAT VIEW -->
+  <div class="chat" id="chatView">
+    <div class="chat-header" id="chatHeader"></div>
+    <div class="messages" id="messages"></div>
+    <div class="suggestions" id="suggestions"></div>
+    <div class="chat-input-bar">
+      <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask your agent..."></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+const CODEBASE = `On The Fly — Hospitality Staffing Marketplace
+Stack: Expo 54 / React Native 0.81 / TypeScript / expo-router v6 / Fastify 5 / Drizzle ORM / PostgreSQL (Neon) / better-auth
+Backend URL: https://ontheflyapp-production.up.railway.app
+Theme: bg #0A0A0A, primary #00FF87, text #F0F0F0, font SpaceGrotesk
+Two sides: Workers (bartenders, servers, cooks) and Managers (restaurants, bars, catering)
+Goal: City-by-city hospitality staffing marketplace. Launching in Kansas City first.
+Monetization: Manager subscriptions $99-299/month. Workers free.
+Bugs already fixed: 11 auth fallbacks, manager routing, /api/shifts/my, live activity feed.
+Owner: Tim Willis — CEO, uses Claude Code in PowerShell for all coding.`;
+
+const AGENTS = [
+  { id:"reviewer", name:"Code Reviewer", icon:"🔍", color:"#FF6B35", cat:"dev", role:"Audits your codebase, finds bugs, and tells you exactly what to fix next.", prompts:["What should we fix next?","Review demo mode readiness","What's blocking App Store?"],
+    system:`You are an expert Code Reviewer for On the Fly.\n${CODEBASE}\nGive specific file-level feedback with exact file names and line references. Format: **Summary**, **Critical**, **High Priority**, **Quick Wins**.` },
+  { id:"backend", name:"Backend Architect", icon:"🗄️", color:"#4ECDC4", cat:"dev", role:"Builds and fixes your Fastify + Drizzle + Neon backend.", prompts:["Build Stripe subscription endpoint","Add WebSocket real-time shifts","Fix the missing /api/shifts/my"],
+    system:`You are a Backend Architect for On the Fly.\n${CODEBASE}\nWrite production TypeScript for Fastify 5 + Drizzle ORM. Always end with a ready-to-paste Claude Code command.` },
+  { id:"uiux", name:"UI/UX Designer", icon:"🎨", color:"#A78BFA", cat:"dev", role:"Fixes mobile layouts and builds polished iOS/Android screens.", prompts:["Fix iPhone layout issues","Design the demo mode screen","Polish the shift card UI"],
+    system:`You are a Mobile UI/UX Designer for On the Fly.\n${CODEBASE}\nDesign system: bg #0A0A0A, primary #00FF87, SpaceGrotesk font. Write React Native code using these tokens.` },
+  { id:"builder", name:"Feature Builder", icon:"⚙️", color:"#F59E0B", cat:"dev", role:"Builds missing features with complete drop-in code.", prompts:["Build push notifications","Build GPS distance feature","Build worker check-in/out"],
+    system:`You are a senior React Native / Expo developer for On the Fly.\n${CODEBASE}\nWrite complete drop-in code for both frontend and backend. Always end with a Claude Code command.` },
+  { id:"bugfixer", name:"Bug Fixer", icon:"🐛", color:"#EF4444", cat:"dev", role:"Diagnoses and fixes crashes and broken flows in your real code.", prompts:["Fix auth polling setInterval","Fix GPS returning null","Debug push notification failures"],
+    system:`You are a mobile app debugger for On the Fly.\n${CODEBASE}\nFor each bug: ROOT CAUSE with file/line, COMPLETE FIX, TEST case.` },
+  { id:"qa", name:"QA / Tester", icon:"✅", color:"#10B981", cat:"dev", role:"Tests your flows end-to-end and finds edge cases.", prompts:["Write QA plan for demo mode","Test manager signup flow","Find shift claiming edge cases"],
+    system:`You are a QA Engineer for On the Fly.\n${CODEBASE}\nTest real flows with expected vs actual outcomes. Find edge cases that would break for real users.` },
+  { id:"strategist", name:"Product Strategist", icon:"📋", color:"#6366F1", cat:"biz", role:"Plans your MVP, city launch, and growth strategy.", prompts:["90-day KC launch plan","How to solve cold start?","MVP vs v2 features?"],
+    system:`You are a Product Strategist for On the Fly.\n${CODEBASE}\nAdvise on Kansas City launch, cold start problem, metrics, differentiation vs Instawork. Be opinionated.` },
+  { id:"monetization", name:"Monetization", icon:"💰", color:"#F97316", cat:"biz", role:"Designs Stripe pricing and the subscription revenue model.", prompts:["Design manager pricing tiers","Build Stripe integration plan","Revenue projection for KC"],
+    system:`You are a Monetization Expert for On the Fly.\n${CODEBASE}\nDesign manager subscriptions $99-299/month, per-shift fees, Stripe integration. Workers stay free.` },
+  { id:"launch", name:"App Store Agent", icon:"🚀", color:"#EC4899", cat:"biz", role:"Prepares your app for TestFlight, App Store, and Google Play.", prompts:["Write App Store listing","EAS config for TestFlight","What's blocking approval?"],
+    system:`You are an App Store launch expert for On the Fly.\n${CODEBASE}\nGive specific EAS commands, App Store copy with character counts, TestFlight setup steps.` },
+  { id:"demo", name:"Demo Builder", icon:"🎭", color:"#06B6D4", cat:"biz", role:"Builds a realistic Kansas City demo to wow potential clients.", prompts:["Build KC demo dataset","Write demo seed script","Design demo walkthrough"],
+    system:`You are the Demo Builder for On the Fly.\n${CODEBASE}\nCreate realistic Kansas City demo: real KC venues, worker profiles, active shifts. Write Drizzle seed data and DEMO_MODE toggle. Make it impressive enough that managers sign up on the spot.` },
+  { id:"growth", name:"Growth Agent", icon:"📈", color:"#84CC16", cat:"biz", role:"Recruits your first managers and workers in Kansas City.", prompts:["KC restaurant outreach plan","Recruit first 50 workers","Which KC venues to target?"],
+    system:`You are a Growth Strategist for On the Fly launching in Kansas City.\n${CODEBASE}\nSolve cold start: recruit workers AND managers simultaneously. Target Power & Light District, Westport, Plaza. Goal: 5 paying managers + 50 workers in 60 days.` },
+  { id:"sales", name:"Sales Agent", icon:"🤝", color:"#F43F5E", cat:"biz", role:"Writes pitch decks, cold emails, and scripts to sign clients.", prompts:["Write KC bar manager cold email","Build demo pitch script","Write pricing objection handling"],
+    system:`You are a Sales Expert for On the Fly.\n${CODEBASE}\nWrite cold outreach emails, pitch scripts, objection handling. Target KC restaurant/bar managers. Pain point: staffing agencies slow + expensive. On the Fly fills shifts in minutes.` },
+  { id:"automation", name:"Automation Agent", icon:"🤖", color:"#8B5CF6", cat:"dev", role:"Writes Claude Code commands so you never have to code manually.", prompts:["Write command to add Stripe","Automate demo mode build","Write command for push notifications"],
+    system:`You are an Automation Expert who writes Claude Code prompts for Tim.\n${CODEBASE}\nConvert plain English goals into complete Claude Code terminal commands. Make them autonomous — no approval needed. Always end with 'commit and push automatically'. Tim is the CEO, not a coder.` },
+];
+
+const PRESETS = [
+  { icon:"🎭", label:"Build Demo Mode", desc:"KC venues, workers, shifts", goal:"Build complete interactive demo mode with 10 real Kansas City venues, 20 worker profiles, 15 active shifts, and a DEMO_MODE toggle flag that seeds realistic data" },
+  { icon:"💳", label:"Add Stripe Payments", desc:"$149/month manager subscriptions", goal:"Add Stripe subscription payments for managers at $149/month including backend Stripe routes, subscriptions DB table, paywall on create-shift screen, and billing management page" },
+  { icon:"🔔", label:"Push Notifications", desc:"Real alerts for shifts & approvals", goal:"Build complete Expo push notification system — workers get notified of new shifts, managers get notified when workers apply, both get notified on confirmation" },
+  { icon:"🗺️", label:"GPS & Distance", desc:"Real distance to nearby shifts", goal:"Build GPS distance calculation using expo-location on frontend and haversine formula in backend, show real distance on shift cards and nearby shifts map" },
+  { icon:"📱", label:"Polish for App Store", desc:"Fix UI and add empty states", goal:"Polish entire On the Fly app for App Store submission — fix broken layouts, add empty states, fix loading states, fix iPhone notch issues, ensure professional look on iOS and Android" },
+  { icon:"📈", label:"KC Launch Plan", desc:"90-day plan to launch in KC", goal:"Create complete Kansas City launch plan with manager outreach emails, worker recruitment strategy, 90-day week-by-week plan, first 10 venues to target, and Claude Code commands to prepare the app for real users" },
+];
+
+const ROADMAP = [
+  { n:"1", label:"Bug Fixes", status:"done", color:"#10B981" },
+  { n:"2", label:"Demo Mode", status:"next", color:"#F59E0B" },
+  { n:"3", label:"KC Launch", status:"upcoming", color:"#6366F1" },
+  { n:"4", label:"Payments", status:"upcoming", color:"#F97316" },
+  { n:"5", label:"Expand", status:"upcoming", color:"#EC4899" },
+];
+
+const STATS = [
+  { val:"4", label:"Bugs Fixed", sub:"today", color:"#10B981" },
+  { val:"11+", label:"Files Changed", sub:"committed", color:"#4ECDC4" },
+  { val:"13", label:"AI Agents", sub:"ready", color:"#00FF87" },
+  { val:"KC", label:"Target City", sub:"Kansas City", color:"#F59E0B" },
+];
+
+const NEXT = [
+  { text:"Let Claude Code finish automated bug fixes (running now)", agent:null },
+  { text:"Ask Demo Builder to create Kansas City demo data →", agent:"demo" },
+  { text:"Ask Sales Agent to write KC restaurant outreach emails →", agent:"sales" },
+  { text:"Ask Automation Agent to write the Stripe build command →", agent:"automation" },
+  { text:"Ask Growth Agent for the 90-day KC launch plan →", agent:"growth" },
+];
+
+const AUTO_AGENTS = {
+  orchestrator: { name:"Orchestrator", icon:"🧠", color:"#00FF87",
+    system:`You are the Orchestrator for On the Fly. Break down goals and combine specialist outputs into unified action plans with Claude Code commands.\n${CODEBASE}\nAlways end with a section clearly marked "PASTE INTO CLAUDE CODE:" containing the complete terminal command Tim should run.` },
+  code: { name:"Code Agent", icon:"⚙️", color:"#4ECDC4",
+    system:`You are the Code Agent for On the Fly. Write technical implementations.\n${CODEBASE}\nWrite complete frontend + backend code and Claude Code commands.` },
+  design: { name:"Design Agent", icon:"🎨", color:"#A78BFA",
+    system:`You are the Design Agent for On the Fly. Handle UI/UX improvements.\n${CODEBASE}\nWrite React Native code using the design system tokens.` },
+  business: { name:"Business Agent", icon:"📊", color:"#F97316",
+    system:`You are the Business Agent for On the Fly. Handle strategy, sales, growth.\n${CODEBASE}\nFocus on Kansas City launch, manager outreach, monetization.` },
+  demo: { name:"Demo Agent", icon:"🎭", color:"#06B6D4",
+    system:`You are the Demo Agent for On the Fly. Build Kansas City demo mode.\n${CODEBASE}\nCreate realistic KC data that impresses potential manager clients.` },
+};
+
+// ── STATE ──────────────────────────────────────────────────────
+let apiKey = localStorage.getItem('otf_api_key') || '';
+let activeAgent = null;
+let chatHistory = {};
+let currentFilter = 'all';
+let isRunning = false;
+let lastFinalOutput = '';
+
+// ── INIT ───────────────────────────────────────────────────────
+function init() {
+  if (apiKey) {
+    showApp();
+  } else {
+    document.getElementById('apikeyScreen').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+  }
+}
+
+function saveKey() {
+  const key = document.getElementById('apikeyInput').value.trim();
+  if (!key.startsWith('sk-ant-')) {
+    alert('That doesn\'t look like a valid API key. It should start with sk-ant-');
+    return;
+  }
+  apiKey = key;
+  localStorage.setItem('otf_api_key', key);
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('apikeyScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'flex';
+  document.getElementById('mainApp').style.flexDirection = 'column';
+  renderHub();
+  showHub();
+}
+
+// ── RENDER HUB ─────────────────────────────────────────────────
+function renderHub() {
+  // Presets
+  document.getElementById('presetsGrid').innerHTML = PRESETS.map(p => `
+    <div class="preset" onclick="runPreset('${p.goal.replace(/'/g,"\\'")}')">
+      <div class="preset-top"><span class="preset-icon">${p.icon}</span><span class="preset-label">${p.label}</span></div>
+      <div class="preset-desc">${p.desc}</div>
+    </div>`).join('');
+
+  // Roadmap
+  document.getElementById('roadmapSteps').innerHTML = ROADMAP.map(s => `
+    <div class="roadmap-step" style="background:${s.status==='done'?s.color+'15':s.status==='next'?s.color+'10':'#1a1a2e'};border:1px solid ${s.status==='upcoming'?'#2a2a3e':s.color+'30'}">
+      <span style="font-size:0.65em;font-weight:700;color:${s.status==='upcoming'?'#444':s.color}">${s.status==='done'?'✓':s.n}</span>
+      <span style="font-size:0.76em;color:${s.status==='done'?s.color:s.status==='next'?'#ccc':'#444'};font-weight:${s.status==='next'?'700':'400'}">${s.label}</span>
+      ${s.status==='next'?`<span style="font-size:0.6em;color:${s.color};background:${s.color}20;border-radius:10px;padding:1px 6px">NEXT</span>`:''}
+    </div>`).join('');
+
+  // Stats
+  document.getElementById('statsGrid').innerHTML = STATS.map(s => `
+    <div class="stat" style="border:1px solid ${s.color}20">
+      <div class="stat-val" style="color:${s.color}">${s.val}</div>
+      <div class="stat-label">${s.label}</div>
+      <div style="font-size:0.58em;color:#444">${s.sub}</div>
+    </div>`).join('');
+
+  // Cats
+  document.getElementById('catsBar').innerHTML = [
+    {id:'all',label:'⚡ All Agents'},{id:'dev',label:'💻 Dev Team'},{id:'biz',label:'📊 Business'}
+  ].map(c => `<button class="cat-btn ${currentFilter===c.id?'active':''}" onclick="filterAgents('${c.id}')">${c.label}</button>`).join('');
+
+  // Agents
+  renderAgents();
+
+  // Next steps
+  document.getElementById('nextSteps').innerHTML = NEXT.map((n,i) => `
+    <div class="next-item" onclick="${n.agent?`openAgent('${n.agent}')`:''}" style="cursor:${n.agent?'pointer':'default'}">
+      <div class="next-num">${i+1}</div>
+      <div class="next-text" style="color:${n.agent?'#888':'#555'}">${n.text}</div>
+    </div>`).join('');
+}
+
+function renderAgents() {
+  const filtered = AGENTS.filter(a => currentFilter === 'all' || a.cat === currentFilter);
+  document.getElementById('agentGrid').innerHTML = filtered.map(a => `
+    <div class="agent-card" onclick="openAgent('${a.id}')" 
+      style="border:1px solid ${a.color}20"
+      onmouseover="this.style.border='1px solid ${a.color}45';this.style.boxShadow='0 4px 16px ${a.color}12'"
+      onmouseout="this.style.border='1px solid ${a.color}20';this.style.boxShadow='none'">
+      <div style="position:absolute;top:0;right:0;width:50px;height:50px;background:radial-gradient(circle at top right,${a.color}10,transparent);border-radius:0 12px 0 50px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span class="agent-icon">${a.icon}</span>
+        <span class="cat-tag" style="color:${a.cat==='dev'?'#4ECDC4':'#F97316'};background:${a.cat==='dev'?'rgba(78,205,196,0.1)':'rgba(249,115,22,0.1)'};border:1px solid ${a.cat==='dev'?'rgba(78,205,196,0.2)':'rgba(249,115,22,0.2)'}">${a.cat==='dev'?'DEV':'BIZ'}</span>
+      </div>
+      <div class="agent-name" style="color:${a.color}">${a.name}</div>
+      <div class="agent-role">${a.role}</div>
+      ${chatHistory[a.id]?`<div class="agent-active" style="color:${a.color}"><span class="agent-dot" style="background:${a.color}"></span>Active</div>`:''}
+    </div>`).join('');
+}
+
+function filterAgents(cat) {
+  currentFilter = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderAgents();
+}
+
+// ── NAVIGATION ──────────────────────────────────────────────────
+function showHub() {
+  document.getElementById('hubView').style.display = 'block';
+  document.getElementById('chatView').classList.remove('active');
+  document.getElementById('backBtn').style.display = 'none';
+  document.getElementById('headerSub').textContent = '13 agents • Autonomous mode • Kansas City launch';
+  activeAgent = null;
+}
+
+function openAgent(id) {
+  activeAgent = AGENTS.find(a => a.id === id);
+  if (!activeAgent) return;
+
+  document.getElementById('hubView').style.display = 'none';
+  document.getElementById('chatView').classList.add('active');
+  document.getElementById('backBtn').style.display = 'block';
+  document.getElementById('headerSub').textContent = `${activeAgent.icon} ${activeAgent.name} • On The Fly`;
+
+  // Chat header
+  document.getElementById('chatHeader').innerHTML = `
+    <div class="chat-agent-icon" style="background:${activeAgent.color}18;border:1px solid ${activeAgent.color}30">${activeAgent.icon}</div>
+    <div>
+      <div class="chat-agent-name" style="color:${activeAgent.color}">${activeAgent.name}</div>
+      <div class="chat-agent-sub">${activeAgent.cat === 'dev' ? 'Dev Team' : 'Business Team'} • On The Fly</div>
+    </div>`;
+
+  // Style chat input
+  document.getElementById('chatInput').style.borderColor = activeAgent.color + '22';
+  document.getElementById('sendBtn').style.background = `linear-gradient(135deg, ${activeAgent.color}, ${activeAgent.color}bb)`;
+  document.getElementById('sendBtn').style.color = '#fff';
+
+  // Init history
+  if (!chatHistory[id]) {
+    chatHistory[id] = [{ role:'assistant', content:`Hey Tim! I'm your **${activeAgent.name}**.\n\nI've already read your full On the Fly codebase — every file, route, and confirmed bug.\n\n${activeAgent.role}\n\nWhat do you want to tackle?` }];
+  }
+
+  renderMessages();
+  renderSuggestions();
+}
+
+// ── CHAT ────────────────────────────────────────────────────────
+function renderMessages() {
+  if (!activeAgent) return;
+  const msgs = chatHistory[activeAgent.id] || [];
+  document.getElementById('messages').innerHTML = msgs.map(m => `
+    <div class="msg ${m.role}">
+      <div class="bubble ${m.role}" style="${m.role==='user'?`background:linear-gradient(135deg,${activeAgent.color},${activeAgent.color}bb)`:''}">
+        ${m.role==='assistant' ? renderMD(m.content) : m.content}
+      </div>
+    </div>`).join('');
+  document.getElementById('messages').scrollTop = 999999;
+}
+
+function renderSuggestions() {
+  if (!activeAgent) return;
+  const msgs = chatHistory[activeAgent.id] || [];
+  if (msgs.length <= 1) {
+    document.getElementById('suggestions').innerHTML = (activeAgent.prompts||[]).map(p => `
+      <button class="sug-btn" style="background:${activeAgent.color}10;color:${activeAgent.color};border:1px solid ${activeAgent.color}28" onclick="sendMsg('${p.replace(/'/g,"\\'")}')">
+        ${p}
+      </button>`).join('');
+  } else {
+    document.getElementById('suggestions').innerHTML = '';
+  }
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || !activeAgent) return;
+  input.value = '';
+  await sendMsg(text);
+}
+
+async function sendMsg(text) {
+  if (!activeAgent) return;
+  const id = activeAgent.id;
+  if (!chatHistory[id]) chatHistory[id] = [];
+  chatHistory[id].push({ role:'user', content:text });
+  renderMessages();
+  document.getElementById('suggestions').innerHTML = '';
+
+  // Show typing
+  const msgs = document.getElementById('messages');
+  const typing = document.createElement('div');
+  typing.className = 'msg';
+  typing.innerHTML = `<div class="typing">${[0,1,2].map(i=>`<div class="dot" style="background:${activeAgent.color};animation-delay:${i*0.2}s"></div>`).join('')}</div>`;
+  msgs.appendChild(typing);
+  msgs.scrollTop = 999999;
+
+  try {
+    const apiMsgs = chatHistory[id].slice(1).map(m => ({ role:m.role, content:m.content }));
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'x-api-key':apiKey, 'anthropic-version':'2023-06-01' },
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, system:activeAgent.system, messages:apiMsgs.length?apiMsgs:[{role:'user',content:text}] })
+    });
+    const data = await res.json();
+    const reply = data.content?.map(b=>b.text||'').join('\n') || 'Sorry, no response. Check your API key.';
+    typing.remove();
+    chatHistory[id].push({ role:'assistant', content:reply });
+    renderMessages();
+  } catch(e) {
+    typing.remove();
+    chatHistory[id].push({ role:'assistant', content:'⚠️ Connection error. Check your API key and try again.' });
+    renderMessages();
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && document.getElementById('chatView').classList.contains('active')) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// ── AUTO MODE ───────────────────────────────────────────────────
+function runPreset(goal) {
+  document.getElementById('goalInput').value = goal;
+  runAllAgents();
+}
+
+async function runAllAgents() {
+  if (isRunning) return;
+  const goal = document.getElementById('goalInput').value.trim();
+  if (!goal) return;
+
+  isRunning = true;
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('runBtn').textContent = '⚡ Running...';
+  document.getElementById('presetsTitle').style.display = 'none';
+  document.getElementById('presetsGrid').style.display = 'none';
+  document.getElementById('finalOutput').classList.remove('active');
+
+  const steps = [
+    { id:'orchestrator', label:'Orchestrator analyzing goal...', agent:AUTO_AGENTS.orchestrator },
+    { id:'code', label:'Code Agent writing implementation...', agent:AUTO_AGENTS.code },
+    { id:'design', label:'Design Agent reviewing UI...', agent:AUTO_AGENTS.design },
+    { id:'business', label:'Business Agent planning strategy...', agent:AUTO_AGENTS.business },
+    { id:'demo', label:'Demo Agent preparing KC data...', agent:AUTO_AGENTS.demo },
+    { id:'combining', label:'Combining all outputs into action plan...', agent:null },
+  ];
+
+  const panel = document.getElementById('runningPanel');
+  panel.classList.add('active');
+  panel.querySelector('#runSteps').innerHTML = steps.map((s,i) => `
+    <div class="run-step" id="step-${i}">
+      <div class="run-step-dot" style="background:#1a1a2e;border:1px solid #2a2a3e" id="dot-${i}"></div>
+      <span class="run-step-label" style="color:#333" id="label-${i}">${s.label}</span>
+    </div>`).join('');
+
+  const outputs = {};
+
+  const updateStep = (i, status) => {
+    const dot = document.getElementById(`dot-${i}`);
+    const label = document.getElementById(`label-${i}`);
+    if (status === 'running') {
+      dot.style.background = '#00FF87'; dot.style.borderColor = '#00FF87'; dot.textContent = '•';
+      label.style.color = '#00FF87';
+    } else if (status === 'done') {
+      dot.style.background = '#10B981'; dot.style.borderColor = '#10B981'; dot.textContent = '✓';
+      label.style.color = '#888';
+    }
+  };
+
+  const callAPI = async (system, userMsg) => {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'x-api-key':apiKey, 'anthropic-version':'2023-06-01' },
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, system, messages:[{role:'user',content:userMsg}] })
+    });
+    const data = await res.json();
+    return data.content?.map(b=>b.text||'').join('\n') || '';
+  };
+
+  try {
+    // Step 0: Orchestrator
+    updateStep(0, 'running');
+    outputs.orch = await callAPI(AUTO_AGENTS.orchestrator.system, `Goal: ${goal}\n\nBreak this down into a plan.`);
+    updateStep(0, 'done');
+
+    // Step 1: Code
+    updateStep(1, 'running');
+    outputs.code = await callAPI(AUTO_AGENTS.code.system, `Goal: ${goal}\n\nOrchestrator plan:\n${outputs.orch}\n\nWrite the complete technical implementation and Claude Code command.`);
+    updateStep(1, 'done');
+
+    // Step 2: Design
+    updateStep(2, 'running');
+    outputs.design = await callAPI(AUTO_AGENTS.design.system, `Goal: ${goal}\n\nWhat UI changes are needed? Write React Native code.`);
+    updateStep(2, 'done');
+
+    // Step 3: Business
+    updateStep(3, 'running');
+    outputs.biz = await callAPI(AUTO_AGENTS.business.system, `Goal: ${goal}\n\nWhat are the business strategy implications? What should Tim do?`);
+    updateStep(3, 'done');
+
+    // Step 4: Demo
+    updateStep(4, 'running');
+    outputs.demo = await callAPI(AUTO_AGENTS.demo.system, `Goal: ${goal}\n\nHow does this affect demo mode? What KC data is needed?`);
+    updateStep(4, 'done');
+
+    // Step 5: Combine
+    updateStep(5, 'running');
+    const finalPrompt = `Combine these specialist outputs into ONE clear action plan for Tim (non-technical CEO).
+
+GOAL: ${goal}
+
+CODE AGENT: ${outputs.code.slice(0,500)}
+DESIGN AGENT: ${outputs.design.slice(0,300)}
+BUSINESS AGENT: ${outputs.biz.slice(0,400)}
+DEMO AGENT: ${outputs.demo.slice(0,300)}
+
+Write:
+1. What this builds (2-3 sentences)
+2. Business actions Tim should take (numbered)
+3. The complete Claude Code command to paste in PowerShell
+
+Format the command clearly between these lines:
+════════════════════════════════════
+PASTE INTO CLAUDE CODE:
+[the complete command here]
+════════════════════════════════════`;
+
+    const final = await callAPI(AUTO_AGENTS.orchestrator.system, finalPrompt);
+    updateStep(5, 'done');
+    lastFinalOutput = final;
+
+    // Show output
+    document.getElementById('finalBody').innerHTML = renderMD(final);
+    document.getElementById('finalOutput').classList.add('active');
+
+  } catch(e) {
+    document.getElementById('finalBody').innerHTML = '⚠️ Error running agents. Check your API key.';
+    document.getElementById('finalOutput').classList.add('active');
+  }
+
+  isRunning = false;
+  document.getElementById('runBtn').disabled = false;
+  document.getElementById('runBtn').textContent = '⚡ Run All Agents';
+}
+
+function resetAuto() {
+  document.getElementById('goalInput').value = '';
+  document.getElementById('runningPanel').classList.remove('active');
+  document.getElementById('finalOutput').classList.remove('active');
+  document.getElementById('presetsTitle').style.display = 'block';
+  document.getElementById('presetsGrid').style.display = 'grid';
+  lastFinalOutput = '';
+}
+
+function copyOutput() {
+  if (navigator.clipboard && lastFinalOutput) {
+    navigator.clipboard.writeText(lastFinalOutput).then(() => {
+      const btn = event.target;
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = '📋 Copy Claude Code Command', 2000);
+    });
+  }
+}
+
+// ── MARKDOWN ─────────────────────────────────────────────────────
+function renderMD(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^### (.+)$/gm, '<h3 style="color:#F59E0B;margin:12px 0 5px;font-size:0.92em;font-weight:700">$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2 style="color:#00FF87;margin:14px 0 6px;font-size:0.98em;font-weight:700">$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1 style="color:#00FF87;margin:14px 0 8px;font-size:1.1em;font-weight:700">$1</h1>')
+    .replace(/════════════════════════════════════/g, '<div style="border-top:1px solid rgba(0,255,135,0.3);margin:8px 0"></div>')
+    .replace(/PASTE INTO CLAUDE CODE:/g, '<div style="background:rgba(0,255,135,0.1);border:1px solid rgba(0,255,135,0.3);border-radius:8px;padding:8px 12px;color:#00FF87;font-weight:700;font-size:0.85em;margin:4px 0">📋 PASTE INTO CLAUDE CODE (PowerShell):</div>')
+    .replace(/^- (.+)$/gm, '<div style="display:flex;gap:7px;margin:3px 0"><span style="color:#00FF87;flex-shrink:0">▸</span><span>$1</span></div>')
+    .replace(/^(\d+)\. (.+)$/gm, '<div style="display:flex;gap:7px;margin:3px 0"><span style="color:#4ECDC4;min-width:18px;flex-shrink:0;font-weight:700">$1.</span><span>$2</span></div>')
+    .replace(/\n\n/g, '<br/><br/>').replace(/\n/g, '<br/>');
+}
+
+// ── START ─────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

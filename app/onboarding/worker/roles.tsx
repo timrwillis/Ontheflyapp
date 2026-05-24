@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Alert } from 'react-native';
+import { View, Text, ScrollView, Alert, Platform, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { COLORS } from '@/constants/Colors';
 import { authenticatedPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
+// Original role list — keys and emojis preserved exactly
 const ALL_ROLES = [
   { value: 'bartender',   label: 'Bartender',    emoji: '🍸' },
   { value: 'server',      label: 'Server',        emoji: '🍽️' },
@@ -27,18 +29,50 @@ interface SelectedRole {
   isPrimary: boolean;
 }
 
+const PADDING_H = 22;
+const CARD_GAP = 10;
+
+// Subtle glow on selected card — matches the platform glow pattern used across onboarding screens
+const cardSelectedGlow = Platform.select({
+  web: { boxShadow: '0 0 10px rgba(0, 255, 135, 0.25)' },
+  default: {
+    shadowColor: '#00FF87',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+}) as object;
+
+// Full glow for the active Continue button — same as profile.tsx / availability.tsx
+const primaryGlow = Platform.select({
+  web: { boxShadow: '0 0 24px rgba(0, 255, 135, 0.35)' },
+  default: {
+    shadowColor: '#00FF87',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+}) as object;
+
 export default function WorkerRolesStep() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const [selectedRoles, setSelectedRoles] = useState<SelectedRole[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Compute explicit pixel width so the 2-column layout is exact on every screen size.
+  // Using percentages with `gap` in RN causes cards to shrink unpredictably on some
+  // versions, which is what produced the "one letter per line" wrap bug.
+  const cardWidth = (screenWidth - PADDING_H * 2 - CARD_GAP) / 2;
+
+  // --- Logic preserved exactly ---
   const toggleRole = (roleValue: string) => {
     setSelectedRoles((prev) => {
       const exists = prev.find((r) => r.role === roleValue);
-      if (exists) {
-        return prev.filter((r) => r.role !== roleValue);
-      }
+      if (exists) return prev.filter((r) => r.role !== roleValue);
       const isPrimary = prev.length === 0;
       return [...prev, { role: roleValue, yearsExperience: 1, isPrimary }];
     });
@@ -72,20 +106,27 @@ export default function WorkerRolesStep() {
       setLoading(false);
     }
   };
+  // --- End preserved logic ---
 
   const canContinue = selectedRoles.length > 0 && !loading;
 
+  // Pair roles into explicit 2-column rows — the most reliable approach in RN
+  const rows: (typeof ALL_ROLES)[] = [];
+  for (let i = 0; i < ALL_ROLES.length; i += 2) {
+    rows.push(ALL_ROLES.slice(i, i + 2));
+  }
+
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: '#0A0A0A' }}
+      style={{ flex: 1, backgroundColor: COLORS.background }}
       contentContainerStyle={{
         paddingTop: insets.top + 20,
-        paddingHorizontal: 24,
+        paddingHorizontal: PADDING_H,
         paddingBottom: 60,
       }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Progress bar */}
+      {/* Progress bar — step 2 of 4 active */}
       <View style={{ flexDirection: 'row', gap: 6, marginBottom: 28 }}>
         {[0, 1, 2, 3].map((i) => (
           <View
@@ -94,100 +135,122 @@ export default function WorkerRolesStep() {
               flex: 1,
               height: 3,
               borderRadius: 2,
-              backgroundColor: i <= 1 ? '#00FF87' : 'rgba(255,255,255,0.1)',
+              backgroundColor: i <= 1 ? COLORS.primary : 'rgba(255,255,255,0.1)',
             }}
           />
         ))}
       </View>
 
-      <Text
-        style={{
-          color: '#F0F0F0',
-          fontSize: 28,
-          fontFamily: 'SpaceGrotesk-Bold',
-          marginBottom: 8,
-        }}
-      >
-        What do you do?
+      {/* Header — matches step label + h1 pattern from profile.tsx and availability.tsx */}
+      <Text style={{
+        color: COLORS.textSecondary,
+        fontSize: 11,
+        fontFamily: 'SpaceGrotesk-SemiBold',
+        letterSpacing: 1.5,
+        marginBottom: 6,
+      }}>
+        STEP 2 OF 4
       </Text>
-      <Text
-        style={{
-          color: '#8A8A8A',
-          fontSize: 15,
-          fontFamily: 'SpaceGrotesk-Regular',
-          marginBottom: 32,
-        }}
-      >
-        Select all roles you can work
+      <Text style={{
+        color: COLORS.text,
+        fontSize: 26,
+        fontWeight: '800',
+        fontFamily: 'SpaceGrotesk-Bold',
+        letterSpacing: -0.5,
+        marginBottom: 6,
+      }}>
+        Your Roles
+      </Text>
+      <Text style={{
+        color: COLORS.textSecondary,
+        fontSize: 14,
+        fontFamily: 'SpaceGrotesk-Regular',
+        marginBottom: 28,
+        lineHeight: 22,
+      }}>
+        Select every position you're qualified to work. You can update this later.
       </Text>
 
       {/* Role grid */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
-        {ALL_ROLES.map((r) => {
-          const isSelected = Boolean(selectedRoles.find((s) => s.role === r.value));
-          return (
-            <AnimatedPressable
-              key={r.value}
-              onPress={() => toggleRole(r.value)}
-              style={{ width: '48%' }}
-            >
-              <View
-                style={{
-                  backgroundColor: isSelected ? 'rgba(0,255,135,0.06)' : '#141414',
-                  borderRadius: 16,
-                  borderWidth: isSelected ? 2 : 1,
-                  borderColor: isSelected ? '#00FF87' : 'rgba(255,255,255,0.08)',
-                  height: 120,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  position: 'relative',
-                }}
-              >
-                {isSelected && (
+      <View style={{ gap: CARD_GAP, marginBottom: 20 }}>
+        {rows.map((pair, rowIdx) => (
+          <View key={rowIdx} style={{ flexDirection: 'row', gap: CARD_GAP }}>
+            {pair.map((r) => {
+              const isSelected = Boolean(selectedRoles.find((s) => s.role === r.value));
+              return (
+                <AnimatedPressable
+                  key={r.value}
+                  onPress={() => toggleRole(r.value)}
+                  scaleValue={0.985}
+                >
                   <View
                     style={{
-                      position: 'absolute',
-                      top: 10,
-                      right: 10,
-                      width: 20,
-                      height: 20,
-                      borderRadius: 10,
-                      backgroundColor: '#00FF87',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      width: cardWidth,
+                      height: 120,
+                      backgroundColor: isSelected ? 'rgba(0,255,135,0.10)' : COLORS.surface,
+                      borderRadius: 14,
+                      borderWidth: isSelected ? 1.5 : 1,
+                      borderColor: isSelected ? COLORS.primary : COLORS.border,
+                      padding: 14,
+                      ...(isSelected ? cardSelectedGlow : {}),
                     }}
                   >
-                    <MaterialIcons name="check" size={13} color="#000" />
+                    {/* Emoji — top-left, 28px (not oversized) */}
+                    <Text style={{ fontSize: 28, lineHeight: 34 }}>{r.emoji}</Text>
+
+                    {/* Check indicator — top-right, 22px circle */}
+                    <View
+                      style={{
+                        position: 'absolute',
+                        top: 12,
+                        right: 12,
+                        width: 22,
+                        height: 22,
+                        borderRadius: 11,
+                        backgroundColor: isSelected ? COLORS.primary : 'transparent',
+                        borderWidth: isSelected ? 0 : 1.5,
+                        borderColor: 'rgba(255,255,255,0.25)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {isSelected && (
+                        <MaterialIcons name="check" size={12} color={COLORS.background} />
+                      )}
+                    </View>
+
+                    {/* Role label — pinned to card bottom, single horizontal line */}
+                    <View style={{ position: 'absolute', bottom: 14, left: 14, right: 14 }}>
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          color: COLORS.text,
+                          fontSize: 15,
+                          fontFamily: 'SpaceGrotesk-SemiBold',
+                        }}
+                      >
+                        {r.label}
+                      </Text>
+                    </View>
                   </View>
-                )}
-                <Text style={{ fontSize: 32 }}>{r.emoji}</Text>
-                <Text
-                  style={{
-                    color: '#F0F0F0',
-                    fontSize: 14,
-                    fontFamily: 'SpaceGrotesk-SemiBold',
-                    textAlign: 'center',
-                    paddingHorizontal: 8,
-                  }}
-                >
-                  {r.label}
-                </Text>
-              </View>
-            </AnimatedPressable>
-          );
-        })}
+                </AnimatedPressable>
+              );
+            })}
+          </View>
+        ))}
       </View>
 
-      {/* Selected count */}
+      {/* Selection count — uppercase, dim, letterSpacing 1 */}
       <Text
         style={{
-          color: '#00FF87',
-          fontSize: 14,
+          color: COLORS.textSecondary,
+          fontSize: 11,
           fontFamily: 'SpaceGrotesk-SemiBold',
           textAlign: 'center',
+          letterSpacing: 1,
+          textTransform: 'uppercase',
           marginBottom: 16,
-          minHeight: 20,
+          minHeight: 18,
         }}
       >
         {selectedRoles.length > 0
@@ -195,26 +258,32 @@ export default function WorkerRolesStep() {
           : ''}
       </Text>
 
-      {/* Continue button */}
+      {/* Continue button — disabled until a role is selected, matches other onboarding screens */}
       <AnimatedPressable onPress={handleNext} disabled={!canContinue}>
         <View
           style={{
-            backgroundColor: canContinue ? '#00FF87' : 'rgba(255,255,255,0.1)',
+            backgroundColor: canContinue ? COLORS.primary : COLORS.surface,
             borderRadius: 14,
-            height: 56,
+            paddingVertical: 16,
             alignItems: 'center',
             justifyContent: 'center',
+            flexDirection: 'row',
+            gap: 8,
+            ...(canContinue ? primaryGlow : {}),
           }}
         >
           <Text
             style={{
-              color: canContinue ? '#000' : 'rgba(255,255,255,0.3)',
+              color: canContinue ? COLORS.background : COLORS.textTertiary,
               fontSize: 17,
               fontFamily: 'SpaceGrotesk-Bold',
             }}
           >
             {loading ? 'Saving...' : 'Continue'}
           </Text>
+          {canContinue && !loading && (
+            <MaterialIcons name="arrow-forward" size={18} color={COLORS.background} />
+          )}
         </View>
       </AnimatedPressable>
     </ScrollView>

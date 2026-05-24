@@ -1,0 +1,9 @@
+Project: On The Fly — Hospitality Staffing Marketplace
+Owner: Tim Willis, CEO, non-technical
+Stack: Expo 54 / React Native / TypeScript / Fastify 5 / Drizzle ORM / Neon PostgreSQL
+Backend live: https://ontheflyapp-production.up.railway.app
+GitHub: timrwillis/Ontheflyapp — push to prod and main
+Theme: bg #0A0A0A primary #00FF87 SpaceGrotesk font
+Launch city: Kansas City MO
+Current priority: Fix sign in navigation bug, fix 401 onboarding errors, build admin demo switcher
+Rule: Every fix must commit and push to GitHub automatically. Tim does not write code.

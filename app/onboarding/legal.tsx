@@ -305,3 +305,6 @@ export default function LegalScreen() {
           </View>
         </AnimatedPressable>
       </ScrollView>
+    </>
+  );
+}
