@@ -178,11 +178,18 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
         id: `wr_${Date.now()}_${i}`,
         workerId: worker.id,
         role: r.role as any,
-        yearsExperience: r.yearsExperience,
-        isPrimary: r.isPrimary ?? (i === 0),
+        // Accept both camelCase (frontend) and snake_case (legacy/main branch) to prevent silent data loss
+        yearsExperience: r.yearsExperience ?? r.years_experience ?? 1,
+        isPrimary: r.isPrimary ?? r.is_primary ?? (i === 0),
       }));
 
-      await app.db.insert(schema.workerRoles).values(roleInserts);
+      try {
+        await app.db.insert(schema.workerRoles).values(roleInserts);
+      } catch (dbErr: any) {
+        app.logger.error({ workerId: worker.id, roleValues: roles.map((r: any) => r.role), error: dbErr?.message, code: dbErr?.code }, 'DB error inserting worker roles');
+        return reply.status(500).send({ error: dbErr?.message ?? 'DB insert failed', code: dbErr?.code });
+      }
+
       await app.db.update(schema.users).set({ onboardingStep: 3 }).where(eq(schema.users.id, session.user.id));
 
       app.logger.info({ count: roles.length }, 'Worker roles set');
@@ -476,21 +483,4 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
         onboardingCompleted = workerProfile?.onboardingCompleted ?? false;
       } else if (user.role === 'manager') {
         const managerProfile = await app.db.query.managerProfiles.findFirst({
-          where: eq(schema.managerProfiles.userId, session.user.id),
-        });
-        onboardingCompleted = managerProfile?.onboardingCompleted ?? false;
-      }
-
-      app.logger.info(
-        { userId: session.user.id, onboardingStep: onboardingStepLabel, onboardingCompleted },
-        'Onboarding status retrieved'
-      );
-
-      return {
-        onboarding_step: onboardingCompleted ? 'complete' : onboardingStepLabel,
-        onboarding_completed: onboardingCompleted,
-        role: user.role,
-      };
-    }
-  );
-}
+          where: eq(schema.managerProfiles.userId, sessi

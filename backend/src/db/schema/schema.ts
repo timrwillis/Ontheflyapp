@@ -64,13 +64,15 @@ export const workerRoleEnum = pgEnum('worker_role', [
   'bartender',
   'server',
   'cook',
-  'dishwasher',
+  'busser',
+  'barback',
   'event_staff',
   'security',
-  'barback',
   'host',
   'runner',
-  'busser',
+  'line_cook',
+  'dishwasher',
+  'catering',
 ]);
 
 export const documentTypeEnum = pgEnum('document_type', [
@@ -303,5 +305,4 @@ export const notifications = pgTable('notifications', {
   type: notificationTypeEnum('type').notNull(),
   read: boolean('read').default(false).notNull(),
   shiftId: text('shift_id'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+  createdAt: timestamp('created_at', { withTimezone: true })
