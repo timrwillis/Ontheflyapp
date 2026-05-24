@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
 import { authenticatedPost, getBearerToken } from '@/utils/api';
 import { useRole } from '@/contexts/RoleContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -26,20 +25,24 @@ export default function OnboardingRoleSelector() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { setRole } = useRole();
-  const { fetchUser } = useAuth();
   const [loading, setLoading] = useState<'manager' | 'worker' | null>(null);
 
   const handleSelectRole = async (role: 'manager' | 'worker') => {
     setLoading(role);
     try {
       // After sign-up/sign-in, the reactive useSession effect in AuthProvider
-      // writes the bearer token to SecureStore asynchronously. If the user
-      // reaches this screen and taps before that write completes, getBearerToken()
-      // returns null and authenticatedPost throws. Force-sync the token from the
-      // active session here so the write is guaranteed before the API call.
-      const token = await getBearerToken();
+      // writes the bearer token to SecureStore asynchronously. Poll briefly
+      // so the write is guaranteed before the API call. We do NOT call
+      // fetchUser() here — its getSession() round-trip can race and call
+      // clearAuthTokens(), wiping a token that was already correctly set.
+      let token = await getBearerToken();
       if (!token) {
-        await fetchUser();
+        await new Promise<void>((r) => setTimeout(r, 600));
+        token = await getBearerToken();
+      }
+      if (!token) {
+        await new Promise<void>((r) => setTimeout(r, 1000));
+        token = await getBearerToken();
       }
       await authenticatedPost('/api/onboarding/role', { role });
       await setRole(role);

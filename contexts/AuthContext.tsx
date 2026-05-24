@@ -123,13 +123,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         session = await authClient.getSession();
       } catch {
-        // No active session
+        // getSession threw (network error or race) — leave existing token intact
       }
       if (session?.data?.session?.token) {
         await setBearerToken(session.data.session.token);
-      } else {
-        await clearAuthTokens();
       }
+      // Never call clearAuthTokens() here — fetchUser is a read-only token sync.
+      // Token clearing only happens in signOut() and in the useEffect reactive path.
+      // Calling clearAuthTokens() on a null getSession() response races with a
+      // just-completed sign-in and wipes the token before onboarding can use it.
     } catch (error) {
       console.error("Failed to fetch user:", JSON.stringify(error) || (error as Error)?.message || 'unknown error');
     }
