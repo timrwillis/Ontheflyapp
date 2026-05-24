@@ -151,20 +151,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (result.error) {
         throw new Error(result.error.message || 'Sign in failed. Please check your credentials.');
       }
-      // better-auth signIn.email() returns { token, user } at the top level —
-      // NOT nested under session. We must set this in SecureStore immediately
-      // so any authenticated call made right after signInWithEmail resolves
-      // finds the token. Do NOT call fetchUser() here: its getSession() is a
-      // second network round-trip that races with SecureStore writes and may
-      // return null, triggering clearAuthTokens() which wipes the token.
-      const token = (result.data as any)?.token as string | undefined;
-      console.log('[Auth] signIn result keys:', Object.keys((result.data as any) ?? {}));
+      // better-auth can return the token at different paths depending on version
+      // and configuration. Try every known location so we never miss it.
+      const data = (result.data as any) ?? {};
+      const token: string | undefined =
+        data?.token ||
+        data?.session?.token ||
+        data?.user?.token ||
+        data?.session?.id;
+      console.log('[Auth] signIn token found:', token ? 'yes' : 'no', '| result.data keys:', Object.keys(data));
       if (token) {
         await setBearerToken(token);
+        // Small pause to guarantee the SecureStore write is flushed before
+        // the caller navigates and makes the first authenticated API call.
+        await new Promise<void>((res) => setTimeout(res, 300));
+      } else {
+        console.log('[Auth] signIn full result.data:', JSON.stringify(data));
       }
-      // If token is absent from the response body (unusual), the reactive
-      // useSession() effect in AuthProvider will call setBearerToken once
-      // the session propagates — we just can't guarantee it's set synchronously.
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('Kotlin') || msg.includes('convert')) {
@@ -184,15 +187,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (result.error) {
         throw new Error(result.error.message || 'Sign up failed. Please try again.');
       }
-      // Mirror the same pattern as signInWithEmail: extract the token directly from
-      // the response and persist it immediately. Do NOT call fetchUser() here —
-      // fetchUser()'s getSession() round-trip may return null before the session
-      // propagates, causing clearAuthTokens() to wipe the token. That leaves every
-      // subsequent onboarding API call without a Bearer header → 401.
-      const token = (result.data as any)?.token as string | undefined;
-      console.log('[Auth] signUp result keys:', Object.keys((result.data as any) ?? {}));
+      // Mirror the same pattern as signInWithEmail: try every known token location.
+      const data = (result.data as any) ?? {};
+      const token: string | undefined =
+        data?.token ||
+        data?.session?.token ||
+        data?.user?.token ||
+        data?.session?.id;
+      console.log('[Auth] signUp token found:', token ? 'yes' : 'no', '| result.data keys:', Object.keys(data));
       if (token) {
         await setBearerToken(token);
+        // Small pause to guarantee the SecureStore write is flushed before
+        // the caller navigates and makes the first authenticated API call.
+        await new Promise<void>((res) => setTimeout(res, 300));
+      } else {
+        console.log('[Auth] signUp full result.data:', JSON.stringify(data));
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

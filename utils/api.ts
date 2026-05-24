@@ -116,7 +116,13 @@ export const authenticatedApiCall = async <T = unknown>(
   if (!token) {
     try {
       const session = await authClient.getSession();
-      const sessionToken = session?.data?.session?.token as string | undefined;
+      // Try every path better-auth might use across versions/configurations.
+      const d = session?.data as any;
+      const sessionToken: string | undefined =
+        d?.token ||
+        d?.session?.token ||
+        d?.user?.token ||
+        d?.session?.id;
       if (sessionToken) {
         token = sessionToken;
         // Restore to manual cache so subsequent calls take the fast path.
