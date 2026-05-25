@@ -77,16 +77,20 @@ function openOAuthPopup(provider: string): Promise<string> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: sessionData, isPending } = authClient.useSession();
 
-  const user = (sessionData?.user as User | null) ?? null;
+  // localUser is set imperatively on sign-in/sign-up and during cold-start hydration.
+  // useSession() on the native expoClient path does NOT reliably update its reactive
+  // state after sign-in before the route guard fires, so we maintain our own copy.
+  const [localUser, setLocalUser] = useState<User | null>(null);
+
+  // user = local state (fast/synchronous) ?? useSession fallback (for social auth etc.)
+  const user = localUser ?? (sessionData?.user as User | null) ?? null;
   const loading = isPending;
 
-  // isInitializing stays true until we've confirmed the user's auth state.
-  // The route guard must NOT redirect while this is true.
   const [isInitializing, setIsInitializing] = useState(true);
   const initDone = useRef(false);
 
-  // Safety net: unblock the guard after 5 s no matter what (handles network
-  // errors and edge cases where session never arrives).
+  // Safety net: always unblock the guard after 5 s — should rarely fire with the
+  // new getSession() call below, but guarantees we don't block forever.
   useEffect(() => {
     const t = setTimeout(() => {
       if (!initDone.current) {
@@ -98,44 +102,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(t);
   }, []);
 
-  // Determine when auth state has fully settled.
+  // Cold-start auth hydration: runs when useSession() settles (isPending → false).
   useEffect(() => {
     if (isPending || initDone.current) return;
 
     if (sessionData?.user) {
-      // Session confirmed by better-auth — done immediately.
-      console.log('[Auth] Init complete: session confirmed, user:', sessionData.user.id);
+      // useSession() has the session in its local cache — done immediately.
+      const u = sessionData.user as User;
+      console.log('[Auth] Init: session in cache, user:', u.id);
+      setLocalUser(u);
       initDone.current = true;
       setIsInitializing(false);
       return;
     }
 
-    // useSession returned null (no session or transient null flash).
-    // Check our own SecureStore before declaring the user unauthenticated.
-    getBearerToken().then(token => {
+    // useSession() returned null. Check SecureStore, then validate with server.
+    getBearerToken().then(async (token) => {
       if (!token) {
-        // No token anywhere — definitely not authenticated.
-        console.log('[Auth] Init complete: no token found, user is unauthenticated');
+        console.log('[Auth] Init: no token found, user is unauthenticated');
         initDone.current = true;
         setIsInitializing(false);
+        return;
       }
-      // Token exists but useSession is null = likely a null flash.
-      // Stay initializing — the next sessionData update (when better-auth's
-      // internal state propagates) will fire this effect again and hit the
-      // sessionData?.user branch above. The 5 s safety net above guarantees
-      // we don't block forever if the session never arrives.
+
+      // Token exists but useSession() doesn't have it — call getSession() to
+      // validate the token and hydrate the user object in one network round-trip.
+      console.log('[Auth] Init: token found in SecureStore, validating with server...');
+      try {
+        const session = await authClient.getSession();
+        if (initDone.current) return; // Another path (e.g. sign-in) already finished init
+        if (session?.data?.user) {
+          if (session.data.session?.token) {
+            await setBearerToken(session.data.session.token);
+          }
+          const u = session.data.user as User;
+          setLocalUser(u);
+          console.log('[Auth] Init: session validated, user:', u.id);
+        } else {
+          // Token exists but server says invalid — clear it.
+          console.log('[Auth] Init: token present but session invalid, clearing');
+          await clearAuthTokens();
+        }
+      } catch {
+        // Network error — keep token, user can retry. Don't block the guard forever.
+        console.log('[Auth] Init: session check failed (network?), keeping token');
+      } finally {
+        if (!initDone.current) {
+          console.log('[Auth] Init: complete');
+          initDone.current = true;
+          setIsInitializing(false);
+        }
+      }
     });
   }, [isPending, sessionData]);
 
-  // Sync bearer token and register push token whenever the reactive session updates.
-  // Never call clearAuthTokens() here — clearing is signOut()'s sole responsibility.
+  // Keep localUser in sync with useSession() reactive updates (covers social OAuth
+  // and any other path that updates useSession() without going through sign-in).
   useEffect(() => {
+    if (sessionData?.user) {
+      setLocalUser(sessionData.user as User);
+    }
     if (sessionData?.session?.token) {
       setBearerToken(sessionData.session.token).then(() => {
         registerPushToken();
       });
     }
-  }, [sessionData, isPending]);
+  }, [sessionData]);
 
   // Re-check session on deep link (OAuth callbacks)
   useEffect(() => {
@@ -165,18 +197,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = async () => {
     try {
-      let session: Awaited<ReturnType<typeof authClient.getSession>> | null = null;
-      try {
-        session = await authClient.getSession();
-      } catch {
-        // getSession threw (network error or race) — leave existing token intact
+      const session = await authClient.getSession();
+      if (session?.data?.user) {
+        if (session.data.session?.token) {
+          await setBearerToken(session.data.session.token);
+        }
+        const u = session.data.user as User;
+        setLocalUser(u);
+        console.log('[Auth] fetchUser: user synced:', u.id);
       }
-      if (session?.data?.session?.token) {
-        await setBearerToken(session.data.session.token);
-      }
-      // Never call clearAuthTokens() here — fetchUser is a read-only token sync.
     } catch (error) {
-      console.error("Failed to fetch user:", JSON.stringify(error) || (error as Error)?.message || 'unknown error');
+      console.error("Failed to fetch user:", (error as Error)?.message || 'unknown error');
     }
   };
 
@@ -192,16 +223,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data?.session?.token ||
         data?.user?.token ||
         data?.session?.id;
+      const responseUser = data?.user as User | undefined;
       console.log('[Auth] signIn token found:', token ? `yes (${token.slice(0, 12)}…)` : 'no', '| keys:', Object.keys(data));
       if (token) {
         await setBearerToken(token);
         console.log('[Auth] Token persisted to SecureStore');
-        // Wait for the SecureStore write to flush, then sync better-auth's
-        // internal session so useSession() returns a non-null user.
+      }
+      if (responseUser?.id) {
+        setLocalUser(responseUser);
+        // Sign-in response has the user — mark init done so guard unblocks immediately.
+        if (!initDone.current) {
+          initDone.current = true;
+          setIsInitializing(false);
+        }
+        console.log('[Auth] User state set:', responseUser.id);
+      } else {
+        // No user in response body — fall back to a getSession() round-trip.
+        console.log('[Auth] signIn: no user in response, fetching from session...');
         await new Promise<void>((res) => setTimeout(res, 300));
         await fetchUser();
-      } else {
-        console.log('[Auth] signIn full result.data:', JSON.stringify(data));
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -228,17 +268,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data?.session?.token ||
         data?.user?.token ||
         data?.session?.id;
+      const responseUser = data?.user as User | undefined;
       console.log('[Auth] Signup succeeded, token found:', token ? `yes (${token.slice(0, 12)}…)` : 'no', '| keys:', Object.keys(data));
       if (token) {
         await setBearerToken(token);
         console.log('[Auth] Token persisted to SecureStore');
-        // Wait for the SecureStore write to flush, then sync better-auth's
-        // internal session so useSession() returns a non-null user before
-        // the user navigates to the main tabs after onboarding.
+      }
+      if (responseUser?.id) {
+        setLocalUser(responseUser);
+        if (!initDone.current) {
+          initDone.current = true;
+          setIsInitializing(false);
+        }
+        console.log('[Auth] User state set:', responseUser.id);
+      } else {
+        console.log('[Auth] Signup: no user in response, fetching from session...');
         await new Promise<void>((res) => setTimeout(res, 300));
         await fetchUser();
-      } else {
-        console.log('[Auth] Signup full result.data:', JSON.stringify(data));
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -299,6 +345,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // sign out errors are non-fatal
     } finally {
+      setLocalUser(null);
       await clearAuthTokens();
     }
   };
