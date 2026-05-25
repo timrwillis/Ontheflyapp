@@ -3,6 +3,7 @@ import { View, Pressable, Text } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import FloatingTabBar, { TabBarItem } from '@/components/FloatingTabBar';
 import { useRole } from '@/contexts/RoleContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { COLORS } from '@/constants/Colors';
 import { Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -82,13 +83,26 @@ function getContainerWidth(tabCount: number): number {
 
 export default function TabLayout() {
   const { currentRole, isLoading, refreshOnboardingStatus } = useRole();
+  const { user, loading: authLoading, isInitializing } = useAuth();
   const router = useRouter();
   const tabs = getTabsForRole(currentRole);
   const showTabBar = currentRole !== null;
   const containerWidth = getContainerWidth(tabs.length);
 
+  // Auth guard — mirrors _layout.tsx; must wait for isInitializing before
+  // redirecting so the better-auth null flash doesn't bounce the user.
+  useEffect(() => {
+    console.log(`[Guard] isInitializing=${isInitializing}, user=${!!user}, redirecting=${!isInitializing && !authLoading && !user}`);
+    if (isInitializing || authLoading) return;
+    if (!user) {
+      router.replace('/auth-screen');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitializing, authLoading, user]);
+
   useEffect(() => {
     if (isLoading) return;
+    if (!user) return; // Don't check onboarding if not authenticated
     const checkOnboarding = async () => {
       try {
         const status = await refreshOnboardingStatus();
@@ -114,7 +128,7 @@ export default function TabLayout() {
     };
     checkOnboarding();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading]);
+  }, [isLoading, user]);
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>

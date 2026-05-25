@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { Platform } from "react-native";
 import * as Linking from "expo-linking";
-import { authClient, setBearerToken, clearAuthTokens } from "@/lib/auth";
+import { authClient, setBearerToken, clearAuthTokens, getBearerToken } from "@/lib/auth";
 import { apiPost } from "@/utils/api";
 
 interface User {
@@ -14,6 +14,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isInitializing: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<void>;
   signInWithApple: () => Promise<void>;
@@ -74,20 +75,65 @@ function openOAuthPopup(provider: string): Promise<string> {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Use better-auth's reactive session hook instead of polling
   const { data: sessionData, isPending } = authClient.useSession();
 
   const user = (sessionData?.user as User | null) ?? null;
   const loading = isPending;
 
-  // Sync bearer token and register push token whenever session state changes
+  // isInitializing stays true until we've confirmed the user's auth state.
+  // The route guard must NOT redirect while this is true.
+  const [isInitializing, setIsInitializing] = useState(true);
+  const initDone = useRef(false);
+
+  // Safety net: unblock the guard after 5 s no matter what (handles network
+  // errors and edge cases where session never arrives).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!initDone.current) {
+        console.log('[Auth] Init safety-net timeout — unblocking guard');
+        initDone.current = true;
+        setIsInitializing(false);
+      }
+    }, 5000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Determine when auth state has fully settled.
+  useEffect(() => {
+    if (isPending || initDone.current) return;
+
+    if (sessionData?.user) {
+      // Session confirmed by better-auth — done immediately.
+      console.log('[Auth] Init complete: session confirmed, user:', sessionData.user.id);
+      initDone.current = true;
+      setIsInitializing(false);
+      return;
+    }
+
+    // useSession returned null (no session or transient null flash).
+    // Check our own SecureStore before declaring the user unauthenticated.
+    getBearerToken().then(token => {
+      if (!token) {
+        // No token anywhere — definitely not authenticated.
+        console.log('[Auth] Init complete: no token found, user is unauthenticated');
+        initDone.current = true;
+        setIsInitializing(false);
+      }
+      // Token exists but useSession is null = likely a null flash.
+      // Stay initializing — the next sessionData update (when better-auth's
+      // internal state propagates) will fire this effect again and hit the
+      // sessionData?.user branch above. The 5 s safety net above guarantees
+      // we don't block forever if the session never arrives.
+    });
+  }, [isPending, sessionData]);
+
+  // Sync bearer token and register push token whenever the reactive session updates.
+  // Never call clearAuthTokens() here — clearing is signOut()'s sole responsibility.
   useEffect(() => {
     if (sessionData?.session?.token) {
       setBearerToken(sessionData.session.token).then(() => {
         registerPushToken();
       });
-    } else if (!isPending) {
-      clearAuthTokens();
     }
   }, [sessionData, isPending]);
 
@@ -123,13 +169,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         session = await authClient.getSession();
       } catch {
-        // No active session
+        // getSession threw (network error or race) — leave existing token intact
       }
       if (session?.data?.session?.token) {
         await setBearerToken(session.data.session.token);
-      } else {
-        await clearAuthTokens();
       }
+      // Never call clearAuthTokens() here — fetchUser is a read-only token sync.
     } catch (error) {
       console.error("Failed to fetch user:", JSON.stringify(error) || (error as Error)?.message || 'unknown error');
     }
@@ -141,20 +186,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (result.error) {
         throw new Error(result.error.message || 'Sign in failed. Please check your credentials.');
       }
-      // better-auth signIn.email() returns { token, user } at the top level —
-      // NOT nested under session. We must set this in SecureStore immediately
-      // so any authenticated call made right after signInWithEmail resolves
-      // finds the token. Do NOT call fetchUser() here: its getSession() is a
-      // second network round-trip that races with SecureStore writes and may
-      // return null, triggering clearAuthTokens() which wipes the token.
-      const token = (result.data as any)?.token as string | undefined;
-      console.log('[Auth] signIn result keys:', Object.keys((result.data as any) ?? {}));
+      const data = (result.data as any) ?? {};
+      const token: string | undefined =
+        data?.token ||
+        data?.session?.token ||
+        data?.user?.token ||
+        data?.session?.id;
+      console.log('[Auth] signIn token found:', token ? `yes (${token.slice(0, 12)}…)` : 'no', '| keys:', Object.keys(data));
       if (token) {
         await setBearerToken(token);
+        console.log('[Auth] Token persisted to SecureStore');
+        // Wait for the SecureStore write to flush, then sync better-auth's
+        // internal session so useSession() returns a non-null user.
+        await new Promise<void>((res) => setTimeout(res, 300));
+        await fetchUser();
+      } else {
+        console.log('[Auth] signIn full result.data:', JSON.stringify(data));
       }
-      // If token is absent from the response body (unusual), the reactive
-      // useSession() effect in AuthProvider will call setBearerToken once
-      // the session propagates — we just can't guarantee it's set synchronously.
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('Kotlin') || msg.includes('convert')) {
@@ -174,15 +222,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (result.error) {
         throw new Error(result.error.message || 'Sign up failed. Please try again.');
       }
-      // Mirror the same pattern as signInWithEmail: extract the token directly from
-      // the response and persist it immediately. Do NOT call fetchUser() here —
-      // fetchUser()'s getSession() round-trip may return null before the session
-      // propagates, causing clearAuthTokens() to wipe the token. That leaves every
-      // subsequent onboarding API call without a Bearer header → 401.
-      const token = (result.data as any)?.token as string | undefined;
-      console.log('[Auth] signUp result keys:', Object.keys((result.data as any) ?? {}));
+      const data = (result.data as any) ?? {};
+      const token: string | undefined =
+        data?.token ||
+        data?.session?.token ||
+        data?.user?.token ||
+        data?.session?.id;
+      console.log('[Auth] Signup succeeded, token found:', token ? `yes (${token.slice(0, 12)}…)` : 'no', '| keys:', Object.keys(data));
       if (token) {
         await setBearerToken(token);
+        console.log('[Auth] Token persisted to SecureStore');
+        // Wait for the SecureStore write to flush, then sync better-auth's
+        // internal session so useSession() returns a non-null user before
+        // the user navigates to the main tabs after onboarding.
+        await new Promise<void>((res) => setTimeout(res, 300));
+        await fetchUser();
+      } else {
+        console.log('[Auth] Signup full result.data:', JSON.stringify(data));
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -252,6 +308,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
+        isInitializing,
         signInWithEmail,
         signUpWithEmail,
         signInWithApple,
