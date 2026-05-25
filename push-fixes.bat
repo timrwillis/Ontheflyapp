@@ -9,7 +9,15 @@ echo Staging all changes...
 git add .
 echo.
 echo Committing...
-git commit -m "feat(admin): full demo god mode — paywall bypass, role switching, floating pill, go-live fix"
+git commit -m "fix(admin): single pill mount, bypass business profile gate, unified role list
+
+- Removed duplicate AdminPill mount; now only in app/_layout.tsx (AdminSwitcher removed)
+- Admin users bypass business profile completeness check on shift post
+- force-complete-onboarding now seeds demo business profile if missing
+- New /api/admin/seed-demo-business endpoint; callable from Admin Pill long-press menu
+- New constants/Roles.ts as single source of truth for worker AND manager role lists
+- All 12 roles now consistent across worker onboarding and manager shift blast
+- Role keys sent to backend now match Postgres enum (lowercase 'bartender' etc.)"
 echo.
 echo Pushing to prod and main...
 git push origin prod

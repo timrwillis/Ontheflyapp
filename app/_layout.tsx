@@ -23,9 +23,7 @@ import { WidgetProvider } from "@/contexts/WidgetContext";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AdminSwitcher } from "@/components/AdminSwitcher";
 import { AdminPill } from "@/components/AdminPill";
-import { ADMIN_MODE } from "@/constants/AdminMode";
 import { initializeAuth } from "@/lib/auth";
 
 // Suppress Babel inject-source-location dev prop warning on web
@@ -356,7 +354,6 @@ export default function RootLayout() {
                   {!splashDone && (
                     <SplashOverlay onFadeComplete={handleSplashFadeComplete} />
                   )}
-                  {ADMIN_MODE && <AdminSwitcher />}
                   <AdminPill />
                 </GestureHandlerRootView>
               </WidgetProvider>

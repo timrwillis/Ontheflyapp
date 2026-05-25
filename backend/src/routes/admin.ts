@@ -70,6 +70,67 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
     }
   );
 
+  // ── Helper: seed a demo business + manager profile for a user ───────────────
+  async function seedDemoBusiness(userId: string): Promise<{ businessId: string; seeded: boolean }> {
+    // Check if user already has a business
+    let existingBiz = await app.db.query.businesses.findFirst({
+      where: eq(schema.businesses.userId, userId),
+    });
+
+    let businessId: string;
+    let seeded = false;
+
+    if (!existingBiz) {
+      businessId = `biz-demo-${Date.now()}`;
+      await app.db.insert(schema.businesses).values({
+        id: businessId,
+        userId,
+        name: 'Demo Restaurant',
+        type: 'restaurant',
+        city: 'Kansas City',
+        address: '1200 Main St',
+        phone: '816-555-0100',
+        isVerified: true,
+        isSuspended: false,
+        createdAt: new Date(),
+      });
+      app.logger.info({ userId, businessId }, '[Admin] Demo business created');
+      seeded = true;
+    } else {
+      businessId = existingBiz.id;
+      app.logger.info({ userId, businessId }, '[Admin] Demo business already exists — skipping');
+    }
+
+    // Ensure managerProfile exists and is linked to this business
+    const mp = await app.db.query.managerProfiles.findFirst({
+      where: eq(schema.managerProfiles.userId, userId),
+    });
+
+    if (!mp) {
+      const mpId = `mp-demo-${Date.now()}`;
+      await app.db.insert(schema.managerProfiles).values({
+        id: mpId,
+        userId,
+        businessId,
+        isVerified: true,
+        isSuspended: false,
+        onboardingCompleted: true,
+        createdAt: new Date(),
+      });
+      app.logger.info({ userId, mpId }, '[Admin] Demo manager profile created');
+      seeded = true;
+    } else if (!mp.businessId) {
+      await app.db
+        .update(schema.managerProfiles)
+        .set({ businessId, onboardingCompleted: true })
+        .where(eq(schema.managerProfiles.id, mp.id));
+      app.logger.info({ userId, mpId: mp.id, businessId }, '[Admin] Manager profile linked to demo business');
+      seeded = true;
+    }
+
+    return { businessId, seeded };
+  }
+
   // ── POST /api/admin/force-complete-onboarding ─────────────────────────────
   fastify.post(
     '/api/admin/force-complete-onboarding',
@@ -120,6 +181,8 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
             .where(eq(schema.workerProfiles.id, wp.id));
         }
       } else if (user.role === 'manager') {
+        // Also seed demo business so manager can post shifts immediately
+        await seedDemoBusiness(user.id);
         const mp = await app.db.query.managerProfiles.findFirst({
           where: eq(schema.managerProfiles.userId, user.id),
         });
@@ -133,6 +196,45 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
 
       app.logger.info({ userId: user.id, role: user.role }, 'Force-complete onboarding done');
       return { success: true };
+    }
+  );
+
+  // ── POST /api/admin/seed-demo-business ────────────────────────────────────
+  fastify.post(
+    '/api/admin/seed-demo-business',
+    {
+      schema: {
+        description: 'Admin: seed a demo business profile if one does not exist',
+        tags: ['admin'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              businessId: { type: 'string' },
+              seeded: { type: 'boolean' },
+            },
+          },
+          403: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const user = await getSessionUser(request);
+      if (!user) return reply.status(401).send({ error: 'Unauthorized' });
+
+      if (!isAdminUser({ email: user.email, isAdmin: user.isAdmin })) {
+        app.logger.warn({ email: user.email }, 'Non-admin tried seed-demo-business');
+        return reply.status(403).send({ error: 'Forbidden: admin only' });
+      }
+
+      app.logger.info({ userId: user.id }, 'Admin seeding demo business profile');
+      const result = await seedDemoBusiness(user.id);
+      app.logger.info({ userId: user.id, ...result }, 'Demo business seed complete');
+      return { success: true, ...result };
     }
   );
 }

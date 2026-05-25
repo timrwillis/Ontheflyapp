@@ -15,26 +15,29 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
+import { ROLES } from '@/constants/Roles';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiPost, apiGet } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
-import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import Feather from '@expo/vector-icons/Feather';
 
 // ─── Layout constants ────────────────────────────────────────────────────────
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// ─── Data ────────────────────────────────────────────────────────────────────
+// ─── Role icon renderer (matches worker onboarding screen) ───────────────────
 
-const ROLES: { label: string; icon: string; value: string }[] = [
-  { label: 'Bartender',   icon: 'local-bar',     value: 'Bartender' },
-  { label: 'Server',      icon: 'room-service',  value: 'Server' },
-  { label: 'Cook',        icon: 'outdoor-grill', value: 'Cook' },
-  { label: 'Dishwasher',  icon: 'water-drop',    value: 'Dishwasher' },
-  { label: 'Event Staff', icon: 'celebration',   value: 'Event Staff' },
-  { label: 'Security',    icon: 'security',      value: 'Security' },
-];
+function RoleIcon({ lib, icon, color }: { lib: string; icon: string; color: string }) {
+  if (lib === 'ionicons') return <Ionicons name={icon as any} size={24} color={color} />;
+  if (lib === 'feather') return <Feather name={icon as any} size={24} color={color} />;
+  return <MaterialCommunityIcons name={icon as any} size={24} color={color} />;
+}
+
+// ─── Data ────────────────────────────────────────────────────────────────────
 
 const URGENCY_OPTIONS: { label: string; icon: string; sublabel: string; value: string }[] = [
   { label: 'ASAP',          icon: 'warning',     sublabel: 'Right now',      value: 'emergency' },
@@ -303,7 +306,7 @@ export default function CreateShiftScreen() {
 
     setLoading(true);
     const payload = {
-      role: selectedRole,
+      role: selectedRole, // matches Postgres worker_role enum key (e.g. 'bartender')
       urgency: selectedUrgency,
       hourly_pay: Number(hourlyPay),
       start_time: startTime,
@@ -405,12 +408,12 @@ export default function CreateShiftScreen() {
           <View style={styles.section}>
             <SectionLabel text="STEP 1 — ROLE NEEDED" />
             <View style={styles.roleGrid}>
-              {ROLES.map((r) => {
-                const isActive = selectedRole === r.value;
+              {(ROLES as readonly any[]).map((r) => {
+                const isActive = selectedRole === r.key;
                 return (
                   <TouchableOpacity
-                    key={r.value}
-                    onPress={() => setSelectedRole(r.value)}
+                    key={r.key}
+                    onPress={() => setSelectedRole(r.key)}
                     activeOpacity={0.8}
                     style={[
                       styles.roleCard,
@@ -418,9 +421,9 @@ export default function CreateShiftScreen() {
                     ]}
                   >
                     <View style={styles.roleCardIconWrapper}>
-                      <MaterialIcons
-                        name={r.icon as any}
-                        size={28}
+                      <RoleIcon
+                        lib={r.lib}
+                        icon={r.icon}
                         color={isActive ? '#000' : COLORS.primary}
                       />
                     </View>

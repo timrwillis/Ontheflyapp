@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,10 @@ export function AdminPill() {
   const { isAdmin, user, signOut } = useAuth();
   const { currentRole, realRole, adminOverrideRole, isOverriding, setAdminOverrideRole } = useRole();
   const [modalVisible, setModalVisible] = useState(false);
+
+  useEffect(() => {
+    console.log('[AdminPill] Mounted at app/_layout.tsx');
+  }, []);
 
   // Only render for admin users
   if (!isAdmin) return null;
@@ -58,6 +62,16 @@ export function AdminPill() {
       Alert.alert('Done', 'Onboarding marked complete. Restart the app to see the effect.');
     } catch (err) {
       Alert.alert('Error', 'Could not force-complete onboarding: ' + String(err));
+    }
+  };
+
+  const handleSeedDemoBusiness = async () => {
+    setModalVisible(false);
+    try {
+      await apiPost('/api/admin/seed-demo-business', {});
+      Alert.alert('Done', 'Demo business profile seeded. You can now post shifts as manager.');
+    } catch (err) {
+      Alert.alert('Error', 'Could not seed demo business: ' + String(err));
     }
   };
 
@@ -154,6 +168,11 @@ export function AdminPill() {
             <Pressable style={styles.action} onPress={handleForceCompleteOnboarding}>
               <Text style={styles.actionIcon}>✅</Text>
               <Text style={styles.actionText}>Force-complete onboarding</Text>
+            </Pressable>
+
+            <Pressable style={styles.action} onPress={handleSeedDemoBusiness}>
+              <Text style={styles.actionIcon}>🏢</Text>
+              <Text style={styles.actionText}>Seed demo business profile</Text>
             </Pressable>
 
             <Pressable style={styles.action} onPress={handleShowInfo}>

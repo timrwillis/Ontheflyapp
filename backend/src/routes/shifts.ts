@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { eq, inArray } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
 import type { App } from '../index.js';
+import { isAdminUser } from '../lib/admin.js';
 import { sendExpoPushNotification } from '../utils/pushNotification.js';
 
 interface ShiftInput {
@@ -246,20 +247,50 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       const userId = session.user.id;
       app.logger.info({ role: body.role, userId }, 'Creating shift');
 
+      // Resolve admin status
+      const dbUser = await app.db.query.users.findFirst({
+        where: eq(schema.users.id, userId),
+      });
+      const adminUser = isAdminUser({ email: dbUser?.email, isAdmin: dbUser?.isAdmin });
+
       // Look up manager profile and business ID
       const managerProfile = await app.db.query.managerProfiles.findFirst({
         where: eq(schema.managerProfiles.userId, userId),
       });
 
+      let businessIdToUse: string | null = null;
+
       if (!managerProfile || !managerProfile.businessId) {
-        app.logger.warn({ userId }, 'Manager profile not found or business_id is missing');
-        return reply.status(400).send({ error: 'Please complete your business profile before posting shifts.' });
+        if (adminUser) {
+          // Admin bypass: try to find any business for this user
+          const anyBusiness = await app.db.query.businesses.findFirst({
+            where: eq(schema.businesses.userId, userId),
+          });
+          if (!anyBusiness) {
+            app.logger.warn({ userId }, '[Admin] No demo business found — seed one first');
+            return reply.status(400).send({
+              error: 'Admin: no business profile found. Long-press the Admin Pill → Seed demo business profile.',
+            });
+          }
+          app.logger.info({ userId, businessId: anyBusiness.id }, '[Admin] Business profile gate bypassed for shift post');
+          console.log(`[Admin] Business profile gate bypassed for shift post: ${userId}`);
+          businessIdToUse = anyBusiness.id;
+        } else {
+          app.logger.warn({ userId }, 'Manager profile not found or business_id is missing');
+          return reply.status(400).send({ error: 'Please complete your business profile before posting shifts.' });
+        }
+      } else {
+        if (adminUser) {
+          app.logger.info({ userId }, '[Admin] Business profile gate bypassed for shift post');
+          console.log(`[Admin] Business profile gate bypassed for shift post: ${userId}`);
+        }
+        businessIdToUse = managerProfile.businessId;
       }
 
       const newId = `s-${Date.now()}`;
       const shiftData = {
         id: newId,
-        businessId: managerProfile.businessId,
+        businessId: businessIdToUse,
         roleNeeded: body.role,
         workersNeeded: body.workers_needed || 1,
         workersConfirmed: 0,

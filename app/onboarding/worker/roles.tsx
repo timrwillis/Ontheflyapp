@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Alert, Platform, useWindowDimensions } from 're
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
+import { ROLES as ALL_ROLES } from '@/constants/Roles';
 import { authenticatedPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -10,21 +11,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Feather from '@expo/vector-icons/Feather';
 
-// Role list — keys preserved exactly, emojis replaced with line-icon descriptors
-const ALL_ROLES = [
-  { value: 'bartender',   label: 'Bartender',    lib: 'mci',      icon: 'glass-cocktail'       },
-  { value: 'server',      label: 'Server',        lib: 'mci',      icon: 'silverware-fork-knife' },
-  { value: 'cook',        label: 'Cook',          lib: 'mci',      icon: 'chef-hat'             },
-  { value: 'busser',      label: 'Busser',        lib: 'mci',      icon: 'bowl-mix-outline'     },
-  { value: 'barback',     label: 'Barback',       lib: 'mci',      icon: 'bottle-wine'          },
-  { value: 'event_staff', label: 'Event Staff',   lib: 'ionicons', icon: 'people-outline'       },
-  { value: 'security',    label: 'Security',      lib: 'ionicons', icon: 'shield-outline'       },
-  { value: 'host',        label: 'Host/Hostess',  lib: 'feather',  icon: 'home'                 },
-  { value: 'runner',      label: 'Runner',        lib: 'mci',      icon: 'run-fast'             },
-  { value: 'line_cook',   label: 'Line Cook',     lib: 'mci',      icon: 'pot-steam-outline'    },
-  { value: 'dishwasher',  label: 'Dishwasher',    lib: 'mci',      icon: 'dishwasher'           },
-  { value: 'catering',    label: 'Catering',      lib: 'mci',      icon: 'silverware-variant'   },
-] as const;
+console.log(`[Roles] Loaded from constants/Roles.ts: ${ALL_ROLES.length} roles`);
 
 interface SelectedRole {
   role: string;
@@ -126,8 +113,8 @@ export default function WorkerRolesStep() {
 
   // Pair roles into explicit 2-column rows — the most reliable approach in RN
   const rows: (typeof ALL_ROLES[number])[][] = [];
-  for (let i = 0; i < ALL_ROLES.length; i += 2) {
-    rows.push(ALL_ROLES.slice(i, i + 2) as any);
+  for (let i = 0; i < (ALL_ROLES as readonly any[]).length; i += 2) {
+    rows.push((ALL_ROLES as readonly any[]).slice(i, i + 2));
   }
 
   return (
@@ -190,11 +177,11 @@ export default function WorkerRolesStep() {
         {rows.map((pair, rowIdx) => (
           <View key={rowIdx} style={{ flexDirection: 'row', gap: CARD_GAP }}>
             {pair.map((r) => {
-              const isSelected = Boolean(selectedRoles.find((s) => s.role === r.value));
+              const isSelected = Boolean(selectedRoles.find((s) => s.role === r.key));
               return (
                 <AnimatedPressable
-                  key={r.value}
-                  onPress={() => toggleRole(r.value)}
+                  key={r.key}
+                  onPress={() => toggleRole(r.key)}
                   scaleValue={0.985}
                 >
                   <View
