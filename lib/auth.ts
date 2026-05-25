@@ -104,6 +104,31 @@ export async function getBearerToken(): Promise<string | null> {
   }
 }
 
+// Eagerly warm the in-memory cache on app start so the first getBearerToken()
+// call takes the fast path. Call this from the root layout's first useEffect.
+export async function initializeAuth(): Promise<string | null> {
+  if (_inMemoryToken) {
+    console.log('[Auth] Hydrating token from SecureStore: found (already in memory)');
+    return _inMemoryToken;
+  }
+  try {
+    if (Platform.OS === 'web') {
+      const token = localStorage.getItem(BEARER_TOKEN_KEY);
+      if (token) _inMemoryToken = token;
+      console.log(`[Auth] Hydrating token from SecureStore: ${token ? 'found' : 'not found'}`);
+      return token;
+    } else {
+      const token = await SecureStore.getItemAsync(BEARER_TOKEN_KEY);
+      if (token) _inMemoryToken = token;
+      console.log(`[Auth] Hydrating token from SecureStore: ${token ? 'found' : 'not found'}`);
+      return token;
+    }
+  } catch {
+    console.log('[Auth] Hydrating token from SecureStore: not found (read error)');
+    return null;
+  }
+}
+
 export async function clearAuthTokens() {
   console.log('[Auth] clearAuthTokens called');
   _inMemoryToken = null;

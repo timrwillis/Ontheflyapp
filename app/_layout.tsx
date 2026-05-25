@@ -25,6 +25,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AdminSwitcher } from "@/components/AdminSwitcher";
 import { ADMIN_MODE } from "@/constants/AdminMode";
+import { initializeAuth } from "@/lib/auth";
 
 // Suppress Babel inject-source-location dev prop warning on web
 if (Platform.OS === 'web' && typeof console !== 'undefined') {
@@ -133,6 +134,12 @@ export default function RootLayout() {
     "SpaceGrotesk-Bold": SpaceGrotesk_700Bold,
     "SpaceGrotesk-SemiBold": SpaceGrotesk_600SemiBold,
   });
+
+  // Warm the in-memory token cache from SecureStore as early as possible so
+  // the first authenticated API call takes the fast path.
+  useEffect(() => {
+    initializeAuth();
+  }, []);
 
   const [splashDone, setSplashDone] = useState(false);
   const [betaChecked, setBetaChecked] = useState(false);

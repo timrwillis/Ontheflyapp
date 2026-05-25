@@ -44,20 +44,24 @@ function getContainerWidth(tabCount: number): number {
 
 export default function TabLayout() {
   const { currentRole, isLoading, refreshOnboardingStatus, onboardingStatus } = useRole();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isInitializing } = useAuth();
   const router = useRouter();
   const tabs = getTabsForRole(currentRole);
   const showTabBar = currentRole !== null;
   const containerWidth = getContainerWidth(tabs.length);
 
-  // Auth guard — redirect to sign-in if no authenticated user
+  // Auth guard — redirect to sign-in if no authenticated user.
+  // MUST wait for isInitializing to be false before redirecting, otherwise the
+  // guard fires during better-auth's null flash (isPending: false, data: null)
+  // that occurs briefly after signup/signin before the session propagates.
   useEffect(() => {
-    if (authLoading) return;
+    console.log(`[Guard] isInitializing=${isInitializing}, user=${!!user}, redirecting=${!isInitializing && !authLoading && !user}`);
+    if (isInitializing || authLoading) return;
     if (!user) {
       router.replace('/auth-screen');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user]);
+  }, [isInitializing, authLoading, user]);
 
   // Onboarding redirect logic (existing — do not remove)
   useEffect(() => {
