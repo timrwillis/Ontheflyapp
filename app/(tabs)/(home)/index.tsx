@@ -1047,7 +1047,7 @@ const WORKER_TICKER_ITEMS = [
 
 function WorkerDashboard() {
   const { currentUser, workerProfile, refreshWorkerProfile, demoDataActive } = useRole();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -1134,7 +1134,13 @@ function WorkerDashboard() {
   const onRefresh = () => { setRefreshing(true); loadShifts(); };
 
   const handleToggleAvailability = async () => {
-    if (!workerProfile?.id) return;
+    const canToggle = isAdmin || Boolean(workerProfile?.id);
+    console.log('[GoLive] Button enabled state: ' + canToggle + ', reason: ' + (isAdmin ? 'admin bypass' : workerProfile?.id ? 'has profile' : 'no profile'));
+    if (!canToggle) return;
+    if (!workerProfile?.id && isAdmin) {
+      console.log('[GoLive] Admin toggling availability without profile — skipping API call');
+      return;
+    }
     setAvailabilityLoading(true);
     try {
       await authenticatedPatch(`/api/worker-profiles/${workerProfile.id}/availability`, {

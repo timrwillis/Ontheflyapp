@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 import * as Linking from "expo-linking";
 import { authClient, setBearerToken, clearAuthTokens, getBearerToken } from "@/lib/auth";
 import { apiPost } from "@/utils/api";
+import { isAdminUser } from "@/constants/AdminMode";
 
 interface User {
   id: string;
@@ -15,6 +16,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   isInitializing: boolean;
+  isAdmin: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, name?: string) => Promise<void>;
   signInWithApple: () => Promise<void>;
@@ -78,19 +80,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: sessionData, isPending } = authClient.useSession();
 
   // localUser is set imperatively on sign-in/sign-up and during cold-start hydration.
-  // useSession() on the native expoClient path does NOT reliably update its reactive
-  // state after sign-in before the route guard fires, so we maintain our own copy.
   const [localUser, setLocalUser] = useState<User | null>(null);
 
   // user = local state (fast/synchronous) ?? useSession fallback (for social auth etc.)
   const user = localUser ?? (sessionData?.user as User | null) ?? null;
   const loading = isPending;
 
+  // isAdmin — computed whenever user changes
+  const isAdmin = isAdminUser(user ?? undefined);
+
   const [isInitializing, setIsInitializing] = useState(true);
   const initDone = useRef(false);
 
-  // Safety net: always unblock the guard after 5 s — should rarely fire with the
-  // new getSession() call below, but guarantees we don't block forever.
+  // Safety net: always unblock the guard after 5 s
   useEffect(() => {
     const t = setTimeout(() => {
       if (!initDone.current) {
@@ -107,7 +109,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isPending || initDone.current) return;
 
     if (sessionData?.user) {
-      // useSession() has the session in its local cache — done immediately.
       const u = sessionData.user as User;
       console.log('[Auth] Init: session in cache, user:', u.id);
       setLocalUser(u);
@@ -116,7 +117,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // useSession() returned null. Check SecureStore, then validate with server.
     getBearerToken().then(async (token) => {
       if (!token) {
         console.log('[Auth] Init: no token found, user is unauthenticated');
@@ -125,12 +125,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Token exists but useSession() doesn't have it — call getSession() to
-      // validate the token and hydrate the user object in one network round-trip.
       console.log('[Auth] Init: token found in SecureStore, validating with server...');
       try {
         const session = await authClient.getSession();
-        if (initDone.current) return; // Another path (e.g. sign-in) already finished init
+        if (initDone.current) return;
         if (session?.data?.user) {
           if (session.data.session?.token) {
             await setBearerToken(session.data.session.token);
@@ -139,12 +137,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLocalUser(u);
           console.log('[Auth] Init: session validated, user:', u.id);
         } else {
-          // Token exists but server says invalid — clear it.
           console.log('[Auth] Init: token present but session invalid, clearing');
           await clearAuthTokens();
         }
       } catch {
-        // Network error — keep token, user can retry. Don't block the guard forever.
         console.log('[Auth] Init: session check failed (network?), keeping token');
       } finally {
         if (!initDone.current) {
@@ -156,8 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, [isPending, sessionData]);
 
-  // Keep localUser in sync with useSession() reactive updates (covers social OAuth
-  // and any other path that updates useSession() without going through sign-in).
+  // Keep localUser in sync with useSession() reactive updates
   useEffect(() => {
     if (sessionData?.user) {
       setLocalUser(sessionData.user as User);
@@ -231,14 +226,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       if (responseUser?.id) {
         setLocalUser(responseUser);
-        // Sign-in response has the user — mark init done so guard unblocks immediately.
         if (!initDone.current) {
           initDone.current = true;
           setIsInitializing(false);
         }
         console.log('[Auth] User state set:', responseUser.id);
       } else {
-        // No user in response body — fall back to a getSession() round-trip.
         console.log('[Auth] signIn: no user in response, fetching from session...');
         await new Promise<void>((res) => setTimeout(res, 300));
         await fetchUser();
@@ -280,9 +273,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           initDone.current = true;
           setIsInitializing(false);
         }
-        console.log('[Auth] User state set:', responseUser.id);
+        console.log('[Auth] User state set after signup:', responseUser.id);
       } else {
-        console.log('[Auth] Signup: no user in response, fetching from session...');
+        console.log('[Auth] signUp: no user in response, fetching from session...');
         await new Promise<void>((res) => setTimeout(res, 300));
         await fetchUser();
       }
@@ -295,47 +288,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signInWithSocial = async (provider: "apple" | "google") => {
-    if (Platform.OS === "web") {
-      const token = await openOAuthPopup(provider);
-      await setBearerToken(token);
-      await fetchUser();
-    } else {
-      const { error } = await authClient.signIn.social({
-        provider,
-        callbackURL: "/auth-callback",
-      });
-      if (error) {
-        throw new Error(error.message || "Social sign in failed");
+  const signInWithApple = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        const token = await openOAuthPopup('apple');
+        await setBearerToken(token);
+        await fetchUser();
+      } else {
+        await authClient.signIn.social({ provider: 'apple' as any });
+        await fetchUser();
       }
-      await fetchUser();
+    } catch (err) {
+      throw err;
     }
   };
 
-  const signInWithGoogle = () => signInWithSocial("google");
-
-  const signInWithApple = async () => {
-    if (Platform.OS === "ios") {
-      const AppleAuthentication = require("expo-apple-authentication");
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-      if (!credential.identityToken) {
-        throw new Error("No identity token received from Apple");
+  const signInWithGoogle = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        const token = await openOAuthPopup('google');
+        await setBearerToken(token);
+        await fetchUser();
+      } else {
+        await authClient.signIn.social({ provider: 'google' });
+        await fetchUser();
       }
-      const { error } = await authClient.signIn.social({
-        provider: "apple",
-        idToken: { token: credential.identityToken },
-      });
-      if (error) {
-        throw new Error(error.message || "Apple sign in failed");
-      }
-      await fetchUser();
-    } else {
-      await signInWithSocial("apple");
+    } catch (err) {
+      throw err;
     }
   };
 
@@ -343,11 +322,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await authClient.signOut();
     } catch {
-      // sign out errors are non-fatal
-    } finally {
-      setLocalUser(null);
-      await clearAuthTokens();
+      // ignore sign-out errors
     }
+    await clearAuthTokens();
+    setLocalUser(null);
+    // Clear admin role override from SecureStore on sign-out
+    try {
+      const SecureStore = require('expo-secure-store');
+      await SecureStore.deleteItemAsync('admin_override_role');
+    } catch {
+      // best-effort
+    }
+    initDone.current = false;
   };
 
   return (
@@ -356,6 +342,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         isInitializing,
+        isAdmin,
         signInWithEmail,
         signUpWithEmail,
         signInWithApple,
@@ -370,9 +357,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 }

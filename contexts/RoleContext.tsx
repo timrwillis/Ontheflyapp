@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { apiGet } from '@/utils/api';
 import { authClient } from '@/lib/auth';
 
@@ -74,6 +75,7 @@ export interface OnboardingStatus {
 
 interface RoleContextType {
   currentRole: Role;
+  realRole: Role;
   currentUser: User | null;
   workerProfile: WorkerProfile | null;
   isLoading: boolean;
@@ -81,9 +83,11 @@ interface RoleContextType {
   notificationPreferences: NotificationPreferences;
   // Admin demo mode
   adminOverrideRole: Role | null;
+  isOverriding: boolean;
   demoDataActive: boolean;
   setRole: (role: Role) => Promise<void>;
   setAdminRole: (role: Role | null) => Promise<void>;
+  setAdminOverrideRole: (role: 'worker' | 'manager' | null) => Promise<void>;
   setDemoDataActive: (active: boolean) => Promise<void>;
   refreshWorkerProfile: () => Promise<void>;
   refreshOnboardingStatus: () => Promise<OnboardingStatus | null>;
@@ -92,15 +96,18 @@ interface RoleContextType {
 
 const RoleContext = createContext<RoleContextType>({
   currentRole: null,
+  realRole: null,
   currentUser: null,
   workerProfile: null,
   isLoading: true,
   onboardingStatus: null,
   notificationPreferences: {},
   adminOverrideRole: null,
+  isOverriding: false,
   demoDataActive: false,
   setRole: async () => {},
   setAdminRole: async () => {},
+  setAdminOverrideRole: async () => {},
   setDemoDataActive: async () => {},
   refreshWorkerProfile: async () => {},
   refreshOnboardingStatus: async () => null,
@@ -110,6 +117,7 @@ const RoleContext = createContext<RoleContextType>({
 const ROLE_STORAGE_KEY = '@onthefly_role';
 const ADMIN_ROLE_KEY = '@onthefly_admin_role';
 const DEMO_ACTIVE_KEY = '@onthefly_demo_active';
+const SECURE_ADMIN_OVERRIDE_KEY = 'admin_override_role';
 
 function normalizeWorkerProfile(raw: Record<string, unknown>): WorkerProfile {
   return {
@@ -161,6 +169,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 
   // Effective role: admin override wins, falls back to real role
   const currentRole: Role = adminOverrideRole ?? realRole;
+  const isOverriding = adminOverrideRole !== null;
 
   const fetchMe = useCallback(async () => {
     try {
@@ -238,12 +247,21 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 
   const setAdminRole = useCallback(async (role: Role | null) => {
     setAdminOverrideRoleState(role);
+    console.log('[Admin] Role override set:', role ?? 'null');
     if (role) {
       await AsyncStorage.setItem(ADMIN_ROLE_KEY, role);
+      // Also persist to SecureStore for cross-session persistence
+      try { await SecureStore.setItemAsync(SECURE_ADMIN_OVERRIDE_KEY, role); } catch {}
     } else {
       await AsyncStorage.removeItem(ADMIN_ROLE_KEY);
+      try { await SecureStore.deleteItemAsync(SECURE_ADMIN_OVERRIDE_KEY); } catch {}
     }
   }, []);
+
+  // New API: setAdminOverrideRole mirrors setAdminRole but with explicit typing
+  const setAdminOverrideRole = useCallback(async (role: 'worker' | 'manager' | null) => {
+    await setAdminRole(role);
+  }, [setAdminRole]);
 
   const setDemoDataActive = useCallback(async (active: boolean) => {
     setDemoDataActiveState(active);
@@ -272,10 +290,17 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
           setRealRole(stored as Role);
         }
 
-        // Load admin override
-        const adminRole = await AsyncStorage.getItem(ADMIN_ROLE_KEY);
+        // Load admin override — check SecureStore first (more persistent), fall back to AsyncStorage
+        let adminRole: string | null = null;
+        try {
+          adminRole = await SecureStore.getItemAsync(SECURE_ADMIN_OVERRIDE_KEY);
+        } catch {}
+        if (!adminRole) {
+          adminRole = await AsyncStorage.getItem(ADMIN_ROLE_KEY);
+        }
         if (adminRole && (adminRole === 'manager' || adminRole === 'worker')) {
           setAdminOverrideRoleState(adminRole as Role);
+          console.log('[Admin] Role override restored from storage:', adminRole);
         }
 
         // Load demo data toggle
@@ -297,15 +322,18 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   return (
     <RoleContext.Provider value={{
       currentRole,
+      realRole,
       currentUser,
       workerProfile,
       isLoading,
       onboardingStatus,
       notificationPreferences,
       adminOverrideRole,
+      isOverriding,
       demoDataActive,
       setRole,
       setAdminRole,
+      setAdminOverrideRole,
       setDemoDataActive,
       refreshWorkerProfile,
       refreshOnboardingStatus,

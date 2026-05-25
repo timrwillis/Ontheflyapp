@@ -16,6 +16,7 @@ import {
 import { Stack, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { useRole } from '@/contexts/RoleContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiPost, apiGet } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -183,6 +184,7 @@ function PaywallScreen({ onSubscribe }: { onSubscribe: () => void }) {
 export default function CreateShiftScreen() {
   const router = useRouter();
   const { currentUser } = useRole();
+  const { isAdmin } = useAuth();
 
   // Required fields
   const [selectedRole, setSelectedRole] = useState<string>('');
@@ -236,6 +238,7 @@ export default function CreateShiftScreen() {
       try {
         const me = await apiGet<{ subscription_status?: string }>('/api/me');
         const active = me?.subscription_status === 'active';
+        if (isAdmin) console.log('[Admin] Paywall bypassed for create-shift');
         setHasSubscription(active);
       } catch {
         // Fail open — don't block managers from posting shifts due to a network error
@@ -345,7 +348,7 @@ export default function CreateShiftScreen() {
   }
 
   // Show paywall if no active subscription
-  if (!hasSubscription) {
+  if (!isAdmin && !hasSubscription) {
     return (
       <PaywallScreen
         onSubscribe={() => {

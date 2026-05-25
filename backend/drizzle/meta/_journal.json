@@ -92,6 +92,13 @@
       "when": 1748088000000,
       "tag": "20260524120000_add_line_cook_catering_to_worker_role_enum",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1748174400000,
+      "tag": "20260525120000_add_is_admin_to_users",
+      "breakpoints": true
     }
   ]
 }

@@ -139,6 +139,7 @@ export const users = pgTable('users', {
   agreedToTerms: boolean('agreed_to_terms').default(false).notNull(),
   agreedAt: timestamp('agreed_at', { withTimezone: true }),
   subscriptionStatus: text('subscription_status').default('inactive'),
+  isAdmin: boolean('is_admin').default(false).notNull(),
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
@@ -305,5 +306,4 @@ export const notifications = pgTable('notifications', {
   type: notificationTypeEnum('type').notNull(),
   read: boolean('read').default(false).notNull(),
   shiftId: text('shift_id'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+  createdAt: timestamp('created_at', { withTimezone: true })

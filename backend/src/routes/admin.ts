@@ -1,8 +1,25 @@
 import type { FastifyInstance } from 'fastify';
+import { eq } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
 import type { App } from '../index.js';
+import { isAdminUser } from '../lib/admin.js';
 
 export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
+  // ── Helper: resolve authed user from request ─────────────────────────────
+  async function getSessionUser(request: any) {
+    const headers = new Headers();
+    Object.entries(request.headers as Record<string, unknown>).forEach(([key, value]) => {
+      if (value) headers.append(key, Array.isArray(value) ? value[0] : String(value));
+    });
+    const session = await app.auth.api.getSession({ headers });
+    if (!session?.user?.id) return null;
+    const user = await app.db.query.users.findFirst({
+      where: eq(schema.users.email, session.user.email),
+    });
+    return user ?? null;
+  }
+
+  // ── GET /api/admin/stats ──────────────────────────────────────────────────
   fastify.get(
     '/api/admin/stats',
     {
@@ -50,6 +67,72 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
 
       app.logger.info(stats, 'Admin stats retrieved');
       return stats;
+    }
+  );
+
+  // ── POST /api/admin/force-complete-onboarding ─────────────────────────────
+  fastify.post(
+    '/api/admin/force-complete-onboarding',
+    {
+      schema: {
+        description: 'Admin: force-complete onboarding for the current user',
+        tags: ['admin'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+            },
+          },
+          403: {
+            type: 'object',
+            properties: { error: { type: 'string' } },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const user = await getSessionUser(request);
+      if (!user) return reply.status(401).send({ error: 'Unauthorized' });
+
+      if (!isAdminUser({ email: user.email, isAdmin: user.isAdmin })) {
+        app.logger.warn({ email: user.email }, 'Non-admin tried force-complete-onboarding');
+        return reply.status(403).send({ error: 'Forbidden: admin only' });
+      }
+
+      app.logger.info({ userId: user.id }, 'Admin force-completing onboarding');
+
+      // Mark user as fully onboarded
+      await app.db
+        .update(schema.users)
+        .set({ onboardingStep: 4, profileCompleted: true })
+        .where(eq(schema.users.id, user.id));
+
+      // Mark worker/manager profile onboarding complete based on role
+      if (user.role === 'worker') {
+        const wp = await app.db.query.workerProfiles.findFirst({
+          where: eq(schema.workerProfiles.userId, user.id),
+        });
+        if (wp) {
+          await app.db
+            .update(schema.workerProfiles)
+            .set({ onboardingCompleted: true })
+            .where(eq(schema.workerProfiles.id, wp.id));
+        }
+      } else if (user.role === 'manager') {
+        const mp = await app.db.query.managerProfiles.findFirst({
+          where: eq(schema.managerProfiles.userId, user.id),
+        });
+        if (mp) {
+          await app.db
+            .update(schema.managerProfiles)
+            .set({ onboardingCompleted: true })
+            .where(eq(schema.managerProfiles.id, mp.id));
+        }
+      }
+
+      app.logger.info({ userId: user.id, role: user.role }, 'Force-complete onboarding done');
+      return { success: true };
     }
   );
 }

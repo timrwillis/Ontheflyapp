@@ -24,6 +24,7 @@ import { RoleProvider } from "@/contexts/RoleContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AdminSwitcher } from "@/components/AdminSwitcher";
+import { AdminPill } from "@/components/AdminPill";
 import { ADMIN_MODE } from "@/constants/AdminMode";
 import { initializeAuth } from "@/lib/auth";
 
@@ -356,6 +357,7 @@ export default function RootLayout() {
                     <SplashOverlay onFadeComplete={handleSplashFadeComplete} />
                   )}
                   {ADMIN_MODE && <AdminSwitcher />}
+                  <AdminPill />
                 </GestureHandlerRootView>
               </WidgetProvider>
             </RoleProvider>
