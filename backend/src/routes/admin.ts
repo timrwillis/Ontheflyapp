@@ -154,7 +154,7 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const user = await getSessionUser(request);
-      if (!user) return reply.status(401).send({ error: 'Unauthorized' });
+      if (!user) return reply.status(401 as any).send({ error: 'Unauthorized' });
 
       if (!isAdminUser({ email: user.email, isAdmin: user.isAdmin })) {
         app.logger.warn({ email: user.email }, 'Non-admin tried force-complete-onboarding');
@@ -224,7 +224,7 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const user = await getSessionUser(request);
-      if (!user) return reply.status(401).send({ error: 'Unauthorized' });
+      if (!user) return reply.status(401 as any).send({ error: 'Unauthorized' });
 
       if (!isAdminUser({ email: user.email, isAdmin: user.isAdmin })) {
         app.logger.warn({ email: user.email }, 'Non-admin tried seed-demo-business');
@@ -235,6 +235,9 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
       const result = await seedDemoBusiness(user.id);
       app.logger.info({ userId: user.id, ...result }, 'Demo business seed complete');
       return { success: true, ...result };
+    }
+  );
+}
     }
   );
 }

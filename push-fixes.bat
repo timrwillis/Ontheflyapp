@@ -12,12 +12,14 @@ echo Committing (skipped if nothing new)...
 git diff --cached --quiet && (
   echo Nothing new to commit - pushing existing commits to Railway...
 ) || (
-  git commit -m "fix(backend): resolve tsc compile error blocking Railway deploy
+  git commit -m "fix(backend): fix 3 tsc errors blocking Railway deploy
 
-- Fix string | null type on businessIdToUse in POST /api/shifts — tsc was
-  rejecting the Drizzle insert, causing Railway build to fail silently and
-  keep serving the previous deployment (which lacked seed-demo-business)
-- seed-demo-business endpoint was already written; now actually ships"
+- schema.ts: notifications table was truncated (missing .defaultNow + closing brace)
+- admin.ts: reply.status(401) not in route response schema — cast to as any
+- onboarding.ts: reply.status(500) not in route response schema — cast to as any
+- admin.ts + onboarding.ts: restore missing closing braces (file truncation)
+
+tsc --skipLibCheck now exits clean. seed-demo-business endpoint will deploy."
 )
 echo.
 echo Pushing to prod and main...

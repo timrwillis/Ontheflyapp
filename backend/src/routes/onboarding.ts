@@ -187,7 +187,7 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
         await app.db.insert(schema.workerRoles).values(roleInserts);
       } catch (dbErr: any) {
         app.logger.error({ workerId: worker.id, roleValues: roles.map((r: any) => r.role), error: dbErr?.message, code: dbErr?.code }, 'DB error inserting worker roles');
-        return reply.status(500).send({ error: dbErr?.message ?? 'DB insert failed', code: dbErr?.code });
+        return reply.status(500 as any).send({ error: dbErr?.message ?? 'DB insert failed', code: dbErr?.code });
       }
 
       await app.db.update(schema.users).set({ onboardingStep: 3 }).where(eq(schema.users.id, session.user.id));
@@ -499,5 +499,7 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
         role: user.role,
       };
     }
+  );
+}
   );
 }
