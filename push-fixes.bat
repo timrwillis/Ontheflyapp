@@ -8,20 +8,20 @@ echo.
 echo Staging all changes...
 git add .
 echo.
-echo Committing...
-git commit -m "fix(admin): single pill mount, bypass business profile gate, unified role list
+echo Committing (skipped if nothing new)...
+git diff --cached --quiet && (
+  echo Nothing new to commit - pushing existing commits to Railway...
+) || (
+  git commit -m "fix(admin): add missing seed-demo-business endpoint
 
-- Removed duplicate AdminPill mount; now only in app/_layout.tsx (AdminSwitcher removed)
-- Admin users bypass business profile completeness check on shift post
-- force-complete-onboarding now seeds demo business profile if missing
-- New /api/admin/seed-demo-business endpoint; callable from Admin Pill long-press menu
-- New constants/Roles.ts as single source of truth for worker AND manager role lists
-- All 12 roles now consistent across worker onboarding and manager shift blast
-- Role keys sent to backend now match Postgres enum (lowercase 'bartender' etc.)"
+- POST /api/admin/seed-demo-business creates/updates a demo business profile
+- Admin-gated via isAdminUser check
+- Resolves: 404 when tapping Seed demo business profile in admin pill menu"
+)
 echo.
 echo Pushing to prod and main...
 git push origin prod
 git push origin main
 echo.
-echo Done!
+echo Done! Railway will redeploy in ~60 seconds.
 pause
