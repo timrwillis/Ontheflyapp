@@ -287,10 +287,13 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         businessIdToUse = managerProfile.businessId;
       }
 
+      // Narrow type: businessIdToUse is always set by this point (early returns cover null cases)
+      const resolvedBusinessId: string = businessIdToUse as string;
+
       const newId = `s-${Date.now()}`;
       const shiftData = {
         id: newId,
-        businessId: businessIdToUse,
+        businessId: resolvedBusinessId,
         roleNeeded: body.role,
         workersNeeded: body.workers_needed || 1,
         workersConfirmed: 0,
@@ -866,3 +869,13 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
     }
   );
 }
+      );
+
+      app.logger.info({ id, count: applications.length }, 'Shift applications retrieved');
+      return { applications: applicationsWithWorkers };
+    }
+  );
+}
+
+}
+

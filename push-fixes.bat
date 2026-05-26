@@ -12,11 +12,12 @@ echo Committing (skipped if nothing new)...
 git diff --cached --quiet && (
   echo Nothing new to commit - pushing existing commits to Railway...
 ) || (
-  git commit -m "fix(admin): add missing seed-demo-business endpoint
+  git commit -m "fix(backend): resolve tsc compile error blocking Railway deploy
 
-- POST /api/admin/seed-demo-business creates/updates a demo business profile
-- Admin-gated via isAdminUser check
-- Resolves: 404 when tapping Seed demo business profile in admin pill menu"
+- Fix string | null type on businessIdToUse in POST /api/shifts — tsc was
+  rejecting the Drizzle insert, causing Railway build to fail silently and
+  keep serving the previous deployment (which lacked seed-demo-business)
+- seed-demo-business endpoint was already written; now actually ships"
 )
 echo.
 echo Pushing to prod and main...
