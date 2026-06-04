@@ -821,12 +821,20 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
             profile = updated;
             app.logger.info({ profileId: profile.id }, 'Worker profile updated');
           }
+
+          // Mirror name/phone changes to the users table so GET /api/me stays consistent
+          const userUpdates: any = {};
+          if (body.name !== undefined) userUpdates.name = body.name;
+          if (body.phone !== undefined) userUpdates.phone = body.phone;
+          if (Object.keys(userUpdates).length > 0) {
+            await app.db.update(schema.users).set(userUpdates).where(eq(schema.users.id, userId));
+          }
         }
 
         // Handle roles array if provided
         if (body.roles !== undefined && body.roles !== null) {
           // Validate all role values
-          const validRoles = ['bartender', 'server', 'cook', 'dishwasher', 'event_staff', 'security', 'barback', 'host', 'runner', 'busser'];
+          const validRoles = ['bartender', 'server', 'cook', 'dishwasher', 'event_staff', 'security', 'barback', 'host', 'runner', 'busser', 'line_cook', 'catering'];
           for (const roleObj of body.roles) {
             if (!validRoles.includes(roleObj.role)) {
               app.logger.warn({ role: roleObj.role }, 'Invalid role value');

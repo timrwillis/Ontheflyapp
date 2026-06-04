@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TextInput, Switch, Alert, Platform } from 'reac
 import { Stack, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { useRole } from '@/contexts/RoleContext';
-import { apiGet, apiPut } from '@/utils/api';
+import { apiGet, apiPatch } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -118,23 +118,23 @@ export default function EditProfileScreen() {
     if (!name.trim()) { Alert.alert('Required', 'Please enter your name.'); return; }
     setLoading(true);
     try {
-      // Update base user
-      const userPayload: Record<string, unknown> = { name: name.trim(), phone: phone.trim() || undefined };
-      await apiPut('/api/me', userPayload);
-
-      // Update role-specific profile
       if (currentRole === 'worker') {
-        const workerPayload = {
+        // Single call — PATCH /api/worker-profiles/me accepts name, phone, city, bio, etc.
+        await apiPatch('/api/worker-profiles/me', {
+          name: name.trim(),
+          phone: phone.trim() || undefined,
           city: city.trim() || undefined,
           bio: bio.trim() || undefined,
           has_transportation: hasTransportation,
           preferred_radius_miles: Number(radius) || 10,
-        };
-        await apiPut('/api/me/worker-profile', workerPayload);
+        });
         await refreshWorkerProfile();
-      } else if (currentRole === 'manager') {
-        const managerPayload = { phone: phone.trim() || undefined };
-        await apiPut('/api/me/manager-profile', managerPayload);
+      } else {
+        // Manager or other: update base user via PATCH /api/me
+        await apiPatch('/api/me', {
+          name: name.trim(),
+          phone: phone.trim() || undefined,
+        });
       }
 
       Alert.alert('Saved!', 'Your profile has been updated.', [

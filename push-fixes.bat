@@ -12,14 +12,22 @@ echo Committing (skipped if nothing new)...
 git diff --cached --quiet && (
   echo Nothing new to commit - pushing existing commits to Railway...
 ) || (
-  git commit -m "fix(backend): fix 3 tsc errors blocking Railway deploy
+  git commit -m "fix(backend+frontend): profile editing + shift post + tsc cleanup
 
-- schema.ts: notifications table was truncated (missing .defaultNow + closing brace)
-- admin.ts: reply.status(401) not in route response schema — cast to as any
-- onboarding.ts: reply.status(500) not in route response schema — cast to as any
-- admin.ts + onboarding.ts: restore missing closing braces (file truncation)
+backend/src/routes/shifts.ts
+- Remove duplicate closing block that caused tsc parse error on Railway
 
-tsc --skipLibCheck now exits clean. seed-demo-business endpoint will deploy."
+backend/src/routes/users.ts
+- PATCH /api/me now accepts name + phone (profile editing fix)
+
+backend/src/routes/workers.ts
+- PATCH /api/worker-profiles/me: mirror name/phone to users table
+- Add line_cook + catering to validRoles allowlist
+
+app/edit-profile.tsx
+- Switch from apiPut (404) to apiPatch on correct routes:
+  workers -> PATCH /api/worker-profiles/me
+  managers -> PATCH /api/me"
 )
 echo.
 echo Pushing to prod and main...

@@ -463,6 +463,8 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
         body: {
           type: 'object',
           properties: {
+            name: { type: 'string' },
+            phone: { type: 'string' },
             agreed_to_terms: { type: 'boolean' },
             agreed_at: { type: 'string', format: 'date-time' },
             subscription_status: { type: 'string' },
@@ -499,7 +501,9 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { agreed_to_terms, agreed_at, subscription_status } = request.body as {
+      const { name, phone, agreed_to_terms, agreed_at, subscription_status } = request.body as {
+        name?: string;
+        phone?: string;
         agreed_to_terms?: boolean;
         agreed_at?: string;
         subscription_status?: string;
@@ -534,6 +538,8 @@ export function registerUserRoutes(app: App, fastify: FastifyInstance) {
 
       // Build updates object with only provided fields
       const updates: any = {};
+      if (name !== undefined) updates.name = name;
+      if (phone !== undefined) updates.phone = phone;
       if (agreed_to_terms !== undefined) {
         updates.agreedToTerms = agreed_to_terms;
       }
