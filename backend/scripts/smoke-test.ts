@@ -43,10 +43,8 @@ async function req(
     ? [200, 201]
     : Array.isArray(opts.expectedStatus) ? opts.expectedStatus : [opts.expectedStatus];
 
-  const reqHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  };
+  const reqHeaders: Record<string, string> = { 'Accept': 'application/json' };
+  if (opts.body != null) reqHeaders['Content-Type'] = 'application/json';
   if (opts.token) reqHeaders['Authorization'] = `Bearer ${opts.token}`;
 
   const start = Date.now();
