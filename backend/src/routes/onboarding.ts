@@ -501,5 +501,3 @@ export function registerOnboardingRoutes(app: App, fastify: FastifyInstance) {
     }
   );
 }
-  );
-}

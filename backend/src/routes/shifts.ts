@@ -869,13 +869,4 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
     }
   );
 }
-      );
-
-      app.logger.info({ id, count: applications.length }, 'Shift applications retrieved');
-      return { applications: applicationsWithWorkers };
-    }
-  );
-}
-
-}
 
