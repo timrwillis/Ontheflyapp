@@ -11,7 +11,8 @@
     "migrate": "drizzle-kit migrate",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "smoke": "tsx scripts/smoke-test.ts"
   },
   "dependencies": {
     "@fastify/aws-lambda": "6.1.1",

@@ -1,10 +1,13 @@
 import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
+import * as authSchema from '../db/schema/auth-schema.js';
 import type { App } from '../index.js';
 import { isAdminUser } from '../lib/admin.js';
 
 export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
+  const errorSchema = { type: 'object', properties: { error: { type: 'string' } } };
+
   // ── Helper: resolve authed user from request ─────────────────────────────
   async function getSessionUser(request: any) {
     const headers = new Headers();
@@ -72,7 +75,6 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
 
   // ── Helper: seed a demo business + manager profile for a user ───────────────
   async function seedDemoBusiness(userId: string): Promise<{ businessId: string; seeded: boolean }> {
-    // Check if user already has a business
     let existingBiz = await app.db.query.businesses.findFirst({
       where: eq(schema.businesses.userId, userId),
     });
@@ -101,7 +103,6 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
       app.logger.info({ userId, businessId }, '[Admin] Demo business already exists — skipping');
     }
 
-    // Ensure managerProfile exists and is linked to this business
     const mp = await app.db.query.managerProfiles.findFirst({
       where: eq(schema.managerProfiles.userId, userId),
     });
@@ -141,14 +142,9 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
         response: {
           200: {
             type: 'object',
-            properties: {
-              success: { type: 'boolean' },
-            },
+            properties: { success: { type: 'boolean' } },
           },
-          403: {
-            type: 'object',
-            properties: { error: { type: 'string' } },
-          },
+          403: errorSchema,
         },
       },
     },
@@ -163,13 +159,11 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
 
       app.logger.info({ userId: user.id }, 'Admin force-completing onboarding');
 
-      // Mark user as fully onboarded
       await app.db
         .update(schema.users)
         .set({ onboardingStep: 4, profileCompleted: true })
         .where(eq(schema.users.id, user.id));
 
-      // Mark worker/manager profile onboarding complete based on role
       if (user.role === 'worker') {
         const wp = await app.db.query.workerProfiles.findFirst({
           where: eq(schema.workerProfiles.userId, user.id),
@@ -181,7 +175,6 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
             .where(eq(schema.workerProfiles.id, wp.id));
         }
       } else if (user.role === 'manager') {
-        // Also seed demo business so manager can post shifts immediately
         await seedDemoBusiness(user.id);
         const mp = await app.db.query.managerProfiles.findFirst({
           where: eq(schema.managerProfiles.userId, user.id),
@@ -215,10 +208,7 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
               seeded: { type: 'boolean' },
             },
           },
-          403: {
-            type: 'object',
-            properties: { error: { type: 'string' } },
-          },
+          403: errorSchema,
         },
       },
     },
@@ -237,7 +227,66 @@ export function registerAdminRoutes(app: App, fastify: FastifyInstance) {
       return { success: true, ...result };
     }
   );
-}
+
+  // ── DELETE /api/admin/delete-user-by-email ────────────────────────────────
+  // Cleanup tool for smoke tests — deletes a user and all cascaded rows.
+  fastify.delete(
+    '/api/admin/delete-user-by-email',
+    {
+      schema: {
+        description: 'Admin: delete a user and all associated data by email (smoke test cleanup)',
+        tags: ['admin'],
+        body: {
+          type: 'object',
+          required: ['email'],
+          properties: { email: { type: 'string' } },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: { success: { type: 'boolean' }, email: { type: 'string' } },
+          },
+          403: errorSchema,
+          404: errorSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const admin = await getSessionUser(request);
+      if (!admin) return reply.status(401 as any).send({ error: 'Unauthorized' });
+
+      if (!isAdminUser({ email: admin.email, isAdmin: admin.isAdmin })) {
+        app.logger.warn({ email: admin.email }, 'Non-admin tried delete-user-by-email');
+        return reply.status(403).send({ error: 'Forbidden: admin only' });
+      }
+
+      const { email } = request.body as { email: string };
+      app.logger.info({ email }, '[Admin] Deleting user by email');
+
+      // Delete from app users table — cascades to worker/manager profiles, businesses, etc.
+      const appUser = await app.db.query.users.findFirst({
+        where: eq(schema.users.email, email),
+      });
+      if (appUser) {
+        await app.db.delete(schema.users).where(eq(schema.users.id, appUser.id));
+        app.logger.info({ email, userId: appUser.id }, '[Admin] App user deleted');
+      }
+
+      // Delete from better-auth user table — cascades to sessions and accounts.
+      // Drizzle merges appSchema + authSchema, so auth `user` table is at db.query.user
+      const authUser = await app.db.query.user.findFirst({
+        where: eq(authSchema.user.email, email),
+      });
+      if (authUser) {
+        await app.db.delete(authSchema.user).where(eq(authSchema.user.id, authUser.id));
+        app.logger.info({ email, authId: authUser.id }, '[Admin] Auth user deleted');
+      }
+
+      if (!appUser && !authUser) {
+        return reply.status(404).send({ error: `User not found: ${email}` });
+      }
+
+      return { success: true, email };
     }
   );
 }
