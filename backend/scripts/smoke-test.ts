@@ -379,6 +379,311 @@ async function main() {
   }
 
   // ════════════════════════════════════════════════════════════════════════════
+  // SCENARIO E: Rush shift end-to-end (requires SMOKE_ADMIN_PASSWORD)
+  // ════════════════════════════════════════════════════════════════════════════
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('  SCENARIO E  Rush shift end-to-end');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  const workerAEmail = `rush-workerA-${ts}@smoketest.local`;
+  const workerCEmail = `rush-workerC-${ts}@smoketest.local`;
+  let workerAToken = '';
+  let workerCToken = '';
+  let rushShiftId = '';
+
+  if (!adminPassword) {
+    console.log('  ⏭  Scenario E skipped — set SMOKE_ADMIN_PASSWORD to run');
+  } else {
+    // ── Manager B = admin account ──────────────────────────────────────────
+    let managerBToken = adminToken;
+    if (!managerBToken) {
+      const r = await req('E.0 Admin sign-in (Manager B)', 'E', 'POST', '/api/auth/sign-in/email', {
+        body: { email: 'timrwillis@gmail.com', password: adminPassword },
+      });
+      managerBToken = extractToken(r.data);
+    }
+
+    if (!managerBToken) {
+      console.log('  ⏭  E skipped — admin sign-in failed');
+    } else {
+      await req('E.1 Manager B: force-complete onboarding', 'E', 'POST', '/api/admin/force-complete-onboarding', {
+        token: managerBToken,
+        expectedStatus: 200,
+      });
+      await req('E.2 Manager B: seed demo business', 'E', 'POST', '/api/admin/seed-demo-business', {
+        token: managerBToken,
+        expectedStatus: 200,
+      });
+
+      // ── Worker A: signup → onboarding → set template + available-now ───────
+      const eA1 = await req('E.3 Worker A signup', 'E', 'POST', '/api/auth/sign-up/email', {
+        body: { email: workerAEmail, password: 'TestPass123!', name: 'Rush Alice' },
+        expectedStatus: [200, 201],
+      });
+      if (eA1.ok) {
+        workerAToken = extractToken(eA1.data);
+        if (!workerAToken) {
+          const r2 = await req('E.3b Worker A sign-in', 'E', 'POST', '/api/auth/sign-in/email', {
+            body: { email: workerAEmail, password: 'TestPass123!' },
+          });
+          workerAToken = extractToken(r2.data);
+        }
+      }
+
+      if (workerAToken) {
+        await req('E.4 Worker A: set role', 'E', 'POST', '/api/onboarding/role', {
+          body: { role: 'worker' }, token: workerAToken,
+        });
+        await req('E.5 Worker A: worker profile', 'E', 'POST', '/api/onboarding/worker', {
+          body: { name: 'Rush Alice', phone: '816-555-0901', city: 'Kansas City', bio: 'Rush test', hasTransportation: true, preferredRadiusMiles: 15 },
+          token: workerAToken,
+        });
+        await req('E.6 Worker A: set roles (bartender)', 'E', 'POST', '/api/onboarding/worker/roles', {
+          body: { roles: [{ role: 'bartender', years_experience: 3, is_primary: true }] },
+          token: workerAToken,
+        });
+        await req('E.7 Worker A: complete onboarding', 'E', 'POST', '/api/onboarding/complete', {
+          token: workerAToken,
+        });
+
+        const allDayTemplate = {
+          mon: [{ start: '00:00', end: '23:59' }],
+          tue: [{ start: '00:00', end: '23:59' }],
+          wed: [{ start: '00:00', end: '23:59' }],
+          thu: [{ start: '00:00', end: '23:59' }],
+          fri: [{ start: '00:00', end: '23:59' }],
+          sat: [{ start: '00:00', end: '23:59' }],
+          sun: [{ start: '00:00', end: '23:59' }],
+        };
+        await req('E.8 Worker A: set availability template', 'E', 'PATCH', '/api/worker/availability-template', {
+          body: { template: allDayTemplate }, token: workerAToken, expectedStatus: 200,
+        });
+
+        const fourHoursFromNow = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
+        await req('E.9 Worker A: set available-now (4h)', 'E', 'PATCH', '/api/worker/available-now', {
+          body: { until: fourHoursFromNow }, token: workerAToken, expectedStatus: 200,
+        });
+      }
+
+      // ── Worker C: signup → onboarding → set available-now ──────────────────
+      const eC1 = await req('E.10 Worker C signup', 'E', 'POST', '/api/auth/sign-up/email', {
+        body: { email: workerCEmail, password: 'TestPass123!', name: 'Rush Carlos' },
+        expectedStatus: [200, 201],
+      });
+      if (eC1.ok) {
+        workerCToken = extractToken(eC1.data);
+        if (!workerCToken) {
+          const r2 = await req('E.10b Worker C sign-in', 'E', 'POST', '/api/auth/sign-in/email', {
+            body: { email: workerCEmail, password: 'TestPass123!' },
+          });
+          workerCToken = extractToken(r2.data);
+        }
+      }
+
+      if (workerCToken) {
+        await req('E.11 Worker C: set role', 'E', 'POST', '/api/onboarding/role', {
+          body: { role: 'worker' }, token: workerCToken,
+        });
+        await req('E.12 Worker C: worker profile', 'E', 'POST', '/api/onboarding/worker', {
+          body: { name: 'Rush Carlos', phone: '816-555-0902', city: 'Kansas City', bio: 'Rush test C', hasTransportation: true, preferredRadiusMiles: 15 },
+          token: workerCToken,
+        });
+        await req('E.13 Worker C: set roles (bartender)', 'E', 'POST', '/api/onboarding/worker/roles', {
+          body: { roles: [{ role: 'bartender', years_experience: 2, is_primary: true }] },
+          token: workerCToken,
+        });
+        await req('E.14 Worker C: complete onboarding', 'E', 'POST', '/api/onboarding/complete', {
+          token: workerCToken,
+        });
+        const fourHoursFromNow2 = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
+        await req('E.15 Worker C: set available-now (4h)', 'E', 'PATCH', '/api/worker/available-now', {
+          body: { until: fourHoursFromNow2 }, token: workerCToken, expectedStatus: 200,
+        });
+      }
+
+      // ── Manager B: post rush shift (starts in 2 hours) ─────────────────────
+      const twoHoursLater = new Date(Date.now() + 2 * 60 * 60 * 1000);
+      const rushDate = twoHoursLater.toISOString().slice(0, 10);
+      const rushHH = String(twoHoursLater.getUTCHours()).padStart(2, '0');
+      const rushMM = String(twoHoursLater.getUTCMinutes()).padStart(2, '0');
+      const rushStartTime = `${rushHH}:${rushMM}`;
+
+      const eB = await req('E.16 Manager B: post rush shift (2h from now)', 'E', 'POST', '/api/shifts', {
+        body: {
+          role: 'bartender',
+          workers_needed: 1,
+          date: rushDate,
+          start_time: rushStartTime,
+          end_time: '23:59',
+          hourly_pay: '30.00',
+          location: 'Rush Test Bar, Kansas City',
+          urgency: 'tonight',
+          is_rush: true,
+          notes: 'Smoke test rush shift — safe to delete',
+        },
+        token: managerBToken,
+        expectedStatus: 201,
+      });
+
+      if (eB.ok) {
+        const ebData = eB.data as Record<string, unknown>;
+        rushShiftId = ((ebData.shift as Record<string, unknown>)?.id ?? ebData.id) as string ?? '';
+        const pingedCount = ebData.pinged_worker_count as number ?? 0;
+        console.log(`     ℹ️  Rush shift ${rushShiftId} created, pinged_worker_count=${pingedCount}`);
+      }
+
+      // ── Worker A: see shift in rush feed → claim ───────────────────────────
+      if (workerAToken && rushShiftId) {
+        const eFeed = await req('E.17 Worker A: GET /api/shifts/rush-feed', 'E', 'GET', '/api/shifts/rush-feed', {
+          token: workerAToken,
+          expectedStatus: 200,
+        });
+        if (eFeed.ok) {
+          const feedShifts = ((eFeed.data as Record<string, unknown>)?.shifts as unknown[]) ?? [];
+          const found = (feedShifts as Array<Record<string, unknown>>).find(s => s.id === rushShiftId);
+          console.log(`     ℹ️  Rush shift in feed: ${found ? 'yes ✓' : 'NOT FOUND ⚠️'} (${feedShifts.length} total)`);
+        }
+
+        await req('E.18 Worker A: claim rush shift → 200', 'E', 'POST', `/api/shifts/${rushShiftId}/claim`, {
+          token: workerAToken,
+          expectedStatus: 200,
+        });
+
+        await req('E.19 Worker A: claim again → 409 (already claimed)', 'E', 'POST', `/api/shifts/${rushShiftId}/claim`, {
+          token: workerAToken,
+          expectedStatus: 409,
+        });
+      } else {
+        console.log('  ⏭  E.17-19 skipped — missing worker A token or rush shift ID');
+      }
+
+      // ── Worker C: claim same shift → 409 ──────────────────────────────────
+      if (workerCToken && rushShiftId) {
+        await req('E.20 Worker C: claim same shift → 409 (race loss)', 'E', 'POST', `/api/shifts/${rushShiftId}/claim`, {
+          token: workerCToken,
+          expectedStatus: 409,
+        });
+      } else {
+        console.log('  ⏭  E.20 skipped — missing worker C token or rush shift ID');
+      }
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // SCENARIO F: Availability filtering — worker with no availability sees 0 shifts
+  // ════════════════════════════════════════════════════════════════════════════
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('  SCENARIO F  Availability filtering');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  const workerDEmail = `rush-workerD-${ts}@smoketest.local`;
+  let workerDToken = '';
+
+  if (!adminPassword) {
+    console.log('  ⏭  Scenario F skipped — set SMOKE_ADMIN_PASSWORD to run');
+  } else {
+    const fD1 = await req('F.1 Worker D signup', 'F', 'POST', '/api/auth/sign-up/email', {
+      body: { email: workerDEmail, password: 'TestPass123!', name: 'No Avail Dave' },
+      expectedStatus: [200, 201],
+    });
+    if (fD1.ok) {
+      workerDToken = extractToken(fD1.data);
+      if (!workerDToken) {
+        const r2 = await req('F.1b Worker D sign-in', 'F', 'POST', '/api/auth/sign-in/email', {
+          body: { email: workerDEmail, password: 'TestPass123!' },
+        });
+        workerDToken = extractToken(r2.data);
+      }
+    }
+
+    if (workerDToken) {
+      await req('F.2 Worker D: set role', 'F', 'POST', '/api/onboarding/role', {
+        body: { role: 'worker' }, token: workerDToken,
+      });
+      await req('F.3 Worker D: worker profile', 'F', 'POST', '/api/onboarding/worker', {
+        body: { name: 'No Avail Dave', phone: '816-555-0904', city: 'Kansas City', bio: 'No availability', hasTransportation: true, preferredRadiusMiles: 15 },
+        token: workerDToken,
+      });
+      await req('F.4 Worker D: set roles (bartender — same as rush shift)', 'F', 'POST', '/api/onboarding/worker/roles', {
+        body: { roles: [{ role: 'bartender', years_experience: 1, is_primary: true }] },
+        token: workerDToken,
+      });
+      await req('F.5 Worker D: complete onboarding', 'F', 'POST', '/api/onboarding/complete', {
+        token: workerDToken,
+      });
+      // Worker D intentionally does NOT set availability_template or available-now
+
+      // Post a fresh rush shift for this scenario (Scenario E shift is already claimed)
+      let adminBToken = adminToken;
+      if (!adminBToken) {
+        const r = await req('F.6a Admin re-auth', 'F', 'POST', '/api/auth/sign-in/email', {
+          body: { email: 'timrwillis@gmail.com', password: adminPassword! },
+        });
+        adminBToken = extractToken(r.data);
+      }
+
+      let fRushShiftId = '';
+      if (adminBToken) {
+        const fRushLater = new Date(Date.now() + 3 * 60 * 60 * 1000);
+        const fRushDate = fRushLater.toISOString().slice(0, 10);
+        const fRushHH = String(fRushLater.getUTCHours()).padStart(2, '0');
+        const fRushMM = String(fRushLater.getUTCMinutes()).padStart(2, '0');
+
+        const fShift = await req('F.6 Admin: post fresh rush shift', 'F', 'POST', '/api/shifts', {
+          body: {
+            role: 'bartender',
+            workers_needed: 1,
+            date: fRushDate,
+            start_time: `${fRushHH}:${fRushMM}`,
+            end_time: '23:59',
+            hourly_pay: '28.00',
+            location: 'Filter Test Bar, Kansas City',
+            urgency: 'tonight',
+            is_rush: true,
+            notes: 'Smoke test F — safe to delete',
+          },
+          token: adminBToken,
+          expectedStatus: 201,
+        });
+        if (fShift.ok) {
+          const fd = fShift.data as Record<string, unknown>;
+          fRushShiftId = ((fd.shift as Record<string, unknown>)?.id ?? fd.id) as string ?? '';
+        }
+      }
+
+      const fFeed = await req('F.7 Worker D: GET /api/shifts/rush-feed → expect 0 shifts', 'F', 'GET', '/api/shifts/rush-feed', {
+        token: workerDToken,
+        expectedStatus: 200,
+      });
+      if (fFeed.ok) {
+        const feedShifts = ((fFeed.data as Record<string, unknown>)?.shifts as unknown[]) ?? [];
+        const sawRushShift = (feedShifts as Array<Record<string, unknown>>).some(s => s.id === fRushShiftId);
+        console.log(`     ℹ️  Worker D sees ${feedShifts.length} rush shift(s) — rush shift visible: ${sawRushShift ? 'YES ⚠️' : 'no ✓'}`);
+        // Assert: Worker D should NOT see any rush shifts (no availability)
+        if (feedShifts.length === 0) {
+          console.log('  ✅ F.7 correctly returns 0 shifts for worker with no availability');
+        } else if (!sawRushShift) {
+          console.log('  ✅ F.7 rush shift correctly hidden (filtered by availability)');
+        } else {
+          console.log('  ❌ F.7 FAILED — Worker D should not see rush shifts without availability');
+          const badResult: StepResult = {
+            scenario: 'F',
+            step: 'F.7 availability filter assertion',
+            passed: false,
+            status: 200,
+            ms: fFeed.ms,
+            error: `Worker D (no availability) saw ${feedShifts.length} shift(s) including the target rush shift`,
+          };
+          results.push(badResult);
+          failures.push(badResult);
+        }
+      }
+    } else {
+      console.log('  ⏭  F.2-7 skipped — Worker D signup/sign-in failed');
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
   // CLEANUP: delete smoke test users via admin endpoint
   // ════════════════════════════════════════════════════════════════════════════
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -394,7 +699,15 @@ async function main() {
     cleanupToken = extractToken(r.data);
   }
 
-  for (const [label, email] of [['worker', workerEmail], ['manager', managerEmail]] as const) {
+  const cleanupUsers = [
+    ['worker A', workerEmail],
+    ['manager', managerEmail],
+    ['rush workerA', workerAEmail],
+    ['rush workerC', workerCEmail],
+    ['rush workerD', workerDEmail],
+  ] as const;
+
+  for (const [label, email] of cleanupUsers) {
     if (cleanupToken) {
       await req(`Cleanup: delete ${label} (${email})`, 'cleanup', 'DELETE', '/api/admin/delete-user-by-email', {
         body: { email },
@@ -417,7 +730,7 @@ async function main() {
   let totalPassed = 0;
   let totalFailed = 0;
 
-  for (const scenario of ['A', 'B', 'C', 'D'] as const) {
+  for (const scenario of ['A', 'B', 'C', 'D', 'E', 'F'] as const) {
     const group = results.filter(r => r.scenario === scenario);
     if (group.length === 0) continue;
     const passed = group.filter(r => r.passed).length;

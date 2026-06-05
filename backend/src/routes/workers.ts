@@ -596,6 +596,152 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
     }
   );
 
+  // ── PATCH /api/worker/availability-template ───────────────────────────────
+  fastify.patch(
+    '/api/worker/availability-template',
+    {
+      schema: {
+        description: 'Set the weekly availability template for the current worker',
+        tags: ['workers'],
+        body: {
+          type: 'object',
+          required: ['template'],
+          properties: {
+            template: { type: 'object', additionalProperties: true },
+          },
+        },
+        response: {
+          200: { type: 'object', properties: { ok: { type: 'boolean' }, template: { type: 'object', additionalProperties: true } } },
+          400: { type: 'object', properties: { error: { type: 'string' } } },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+          404: { type: 'object', properties: { error: { type: 'string' } } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) headers.append(key, Array.isArray(value) ? value[0] : value);
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) return reply.status(401).send({ error: 'Unauthorized' });
+
+      const { template } = request.body as { template: Record<string, unknown> };
+
+      // Validate template shape
+      const VALID_DAYS = new Set(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
+      const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+      for (const [day, windows] of Object.entries(template)) {
+        if (!VALID_DAYS.has(day)) {
+          return reply.status(400).send({ error: `Invalid day key: ${day}. Use mon/tue/wed/thu/fri/sat/sun` });
+        }
+        if (!Array.isArray(windows)) {
+          return reply.status(400).send({ error: `Windows for ${day} must be an array` });
+        }
+        for (const w of windows as Array<{ start?: unknown; end?: unknown }>) {
+          if (!TIME_RE.test(String(w.start))) {
+            return reply.status(400).send({ error: `Invalid time format for ${day}.start: "${w.start}". Use HH:MM` });
+          }
+          if (!TIME_RE.test(String(w.end))) {
+            return reply.status(400).send({ error: `Invalid time format for ${day}.end: "${w.end}". Use HH:MM` });
+          }
+          if (w.start === w.end) {
+            return reply.status(400).send({ error: `${day}: start and end cannot be equal (zero-duration window)` });
+          }
+        }
+      }
+
+      try {
+        const profile = await app.db.query.workerProfiles.findFirst({
+          where: eq(schema.workerProfiles.userId, session.user.id),
+        });
+        if (!profile) return reply.status(404).send({ error: 'Worker profile not found' });
+
+        await app.db
+          .update(schema.workerProfiles)
+          .set({ availabilityTemplate: template })
+          .where(eq(schema.workerProfiles.id, profile.id));
+
+        app.logger.info({ workerId: profile.id }, '[Availability] Template updated');
+        return { ok: true, template };
+      } catch (err) {
+        app.logger.error({ err, userId: session.user.id }, '[Availability] Failed to update template');
+        return reply.status(500 as any).send({ error: 'Failed to update availability template' });
+      }
+    },
+  );
+
+  // ── PATCH /api/worker/available-now ──────────────────────────────────────
+  fastify.patch(
+    '/api/worker/available-now',
+    {
+      schema: {
+        description: 'Set or clear the "available now" window for the current worker',
+        tags: ['workers'],
+        body: {
+          type: 'object',
+          properties: {
+            until: { type: ['string', 'null'] },
+          },
+        },
+        response: {
+          200: { type: 'object', properties: { ok: { type: 'boolean' }, available_now_until: { type: ['string', 'null'] } } },
+          400: { type: 'object', properties: { error: { type: 'string' } } },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+          404: { type: 'object', properties: { error: { type: 'string' } } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) headers.append(key, Array.isArray(value) ? value[0] : value);
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) return reply.status(401).send({ error: 'Unauthorized' });
+
+      const { until } = request.body as { until?: string | null };
+
+      let untilDate: Date | null = null;
+      if (until != null) {
+        untilDate = new Date(until);
+        if (isNaN(untilDate.getTime())) {
+          return reply.status(400).send({ error: 'until must be a valid ISO8601 timestamp or null' });
+        }
+        const now = new Date();
+        if (untilDate <= now) {
+          return reply.status(400).send({ error: 'until must be in the future' });
+        }
+        const maxUntil = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        if (untilDate > maxUntil) {
+          return reply.status(400).send({ error: 'until cannot be more than 24 hours from now' });
+        }
+      }
+
+      try {
+        const profile = await app.db.query.workerProfiles.findFirst({
+          where: eq(schema.workerProfiles.userId, session.user.id),
+        });
+        if (!profile) return reply.status(404).send({ error: 'Worker profile not found' });
+
+        await app.db
+          .update(schema.workerProfiles)
+          .set({ availableNowUntil: untilDate })
+          .where(eq(schema.workerProfiles.id, profile.id));
+
+        app.logger.info({ workerId: profile.id, until: untilDate?.toISOString() ?? null }, '[Availability] Worker available until updated');
+        console.log(`[Availability] Worker ${profile.id} available until ${untilDate?.toISOString() ?? 'cleared'}`);
+        return { ok: true, available_now_until: untilDate?.toISOString() ?? null };
+      } catch (err) {
+        app.logger.error({ err, userId: session.user.id }, '[Availability] Failed to update available-now');
+        return reply.status(500 as any).send({ error: 'Failed to update availability' });
+      }
+    },
+  );
+
   fastify.post(
     '/api/worker-invites',
     {

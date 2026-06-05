@@ -1,9 +1,10 @@
 import type { FastifyInstance } from 'fastify';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, isNull, and } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
 import type { App } from '../index.js';
 import { isAdminUser } from '../lib/admin.js';
 import { sendExpoPushNotification } from '../utils/pushNotification.js';
+import { fanOutRushShift, workerIsEligibleForShift } from '../services/rushFanOut.js';
 
 interface ShiftInput {
   role: string;
@@ -18,6 +19,7 @@ interface ShiftInput {
   certifications_required?: string[];
   notes?: string;
   urgency: string;
+  is_rush?: boolean;
 }
 
 export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
@@ -187,30 +189,13 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
             certifications_required: { type: 'array', items: { type: 'string' } },
             notes: { type: 'string' },
             urgency: { type: 'string', enum: ['emergency', 'tonight', 'high', 'tomorrow', 'this_week', 'medium', 'low'] },
+            is_rush: { type: 'boolean' },
           },
         },
         response: {
           201: {
             type: 'object',
-            properties: {
-              id: { type: 'string' },
-              businessId: { type: 'string' },
-              roleNeeded: { type: 'string' },
-              workersNeeded: { type: 'integer' },
-              workersConfirmed: { type: 'integer' },
-              date: { type: 'string' },
-              startTime: { type: 'string' },
-              endTime: { type: 'string' },
-              hourlyPay: { type: 'string' },
-              location: { type: 'string' },
-              dressCode: { type: 'string' },
-              experienceRequired: { type: 'string' },
-              certificationsRequired: { type: 'array', items: { type: 'string' } },
-              notes: { type: 'string' },
-              urgency: { type: 'string' },
-              status: { type: 'string' },
-              createdAt: { type: 'string', format: 'date-time' },
-            },
+            additionalProperties: true,
           },
           400: {
             type: 'object',
@@ -290,6 +275,14 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       // Narrow type: businessIdToUse is always set by this point (early returns cover null cases)
       const resolvedBusinessId: string = businessIdToUse as string;
 
+      // Auto-detect rush if not explicitly provided: start within 4 hours
+      let isRush = body.is_rush;
+      if (isRush === undefined) {
+        const shiftStart = new Date(`${body.date}T${body.start_time}:00`);
+        const hoursUntil = (shiftStart.getTime() - Date.now()) / (1000 * 60 * 60);
+        isRush = hoursUntil <= 4;
+      }
+
       const newId = `s-${Date.now()}`;
       const shiftData = {
         id: newId,
@@ -308,13 +301,29 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         notes: body.notes,
         urgency: body.urgency as any,
         status: 'open' as const,
+        isRush,
+        noShow: false,
+        claimedAt: null,
+        claimedByWorkerId: null,
         createdAt: new Date(),
       };
 
-      await app.db.insert(schema.shifts).values(shiftData);
+      try {
+        await app.db.insert(schema.shifts).values(shiftData);
+      } catch (err) {
+        app.logger.error({ err, shiftData }, 'Failed to insert shift');
+        return reply.status(500 as any).send({ error: 'Failed to create shift' });
+      }
 
-      app.logger.info({ shiftId: shiftData.id, businessId: managerProfile.businessId }, 'Shift created successfully');
-      return reply.status(201).send(shiftData);
+      app.logger.info({ shiftId: shiftData.id, businessId: resolvedBusinessId, isRush }, 'Shift created successfully');
+
+      let pinnedWorkerCount = 0;
+      if (isRush) {
+        // Fire fan-out without blocking response; returns eligible worker count from DB
+        pinnedWorkerCount = await fanOutRushShift(app, shiftData.id);
+      }
+
+      return reply.status(201).send({ shift: shiftData, pinged_worker_count: pinnedWorkerCount });
     }
   );
 
@@ -412,6 +421,110 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       app.logger.info({ count: result.length, businessId: managerProfile.businessId }, 'My shifts retrieved');
       return result;
     }
+  );
+
+  // ── GET /api/shifts/rush-feed ─────────────────────────────────────────────
+  // Must be registered before /:id so Fastify doesn't swallow "rush-feed" as a param
+  fastify.get(
+    '/api/shifts/rush-feed',
+    {
+      schema: {
+        description: 'Get unclaimed rush shifts matching the current worker\'s role and availability',
+        tags: ['shifts'],
+        response: {
+          200: { type: 'object', properties: { shifts: { type: 'array', items: { type: 'object', additionalProperties: true } } } },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+          404: { type: 'object', properties: { error: { type: 'string' } } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) headers.append(key, Array.isArray(value) ? value[0] : value);
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const userId = session.user.id;
+
+      try {
+        const workerProfile = await app.db.query.workerProfiles.findFirst({
+          where: eq(schema.workerProfiles.userId, userId),
+        });
+
+        if (!workerProfile) {
+          return reply.status(404).send({ error: 'Worker profile not found' });
+        }
+
+        const workerRoles = await app.db.query.workerRoles.findMany({
+          where: eq(schema.workerRoles.workerId, workerProfile.id),
+        });
+
+        if (workerRoles.length === 0) {
+          return { shifts: [] };
+        }
+
+        const workerRoleSet = new Set(workerRoles.map(r => r.role));
+        const now = new Date();
+
+        // Fetch all unclaimed rush shifts; filter in app code for time + availability
+        const rushShifts = await app.db
+          .select()
+          .from(schema.shifts)
+          .where(and(
+            eq(schema.shifts.isRush, true),
+            isNull(schema.shifts.claimedAt),
+            eq(schema.shifts.status, 'open'),
+          ));
+
+        const matched = await Promise.all(
+          rushShifts
+            .filter(shift => {
+              if (!workerRoleSet.has(shift.roleNeeded as any)) return false;
+              const shiftStart = new Date(`${shift.date}T${shift.startTime}:00`);
+              if (shiftStart <= now) return false;
+              const { eligible } = workerIsEligibleForShift(workerProfile, shiftStart, shift.startTime, now);
+              return eligible;
+            })
+            .sort((a, b) => {
+              const ta = new Date(`${a.date}T${a.startTime}:00`).getTime();
+              const tb = new Date(`${b.date}T${b.startTime}:00`).getTime();
+              return ta - tb;
+            })
+            .map(async shift => {
+              const biz = await app.db.query.businesses.findFirst({
+                where: eq(schema.businesses.id, shift.businessId),
+              });
+              return {
+                id: shift.id,
+                role: shift.roleNeeded,
+                role_needed: shift.roleNeeded,
+                business_name: biz?.name ?? '',
+                business: biz ? { name: biz.name, type: biz.type, city: biz.city, address: biz.address } : null,
+                date: shift.date,
+                start_time: shift.startTime,
+                end_time: shift.endTime,
+                hourly_pay: shift.hourlyPay,
+                location: shift.location,
+                urgency: shift.urgency,
+                status: shift.status,
+                is_rush: shift.isRush,
+                claimed_at: shift.claimedAt,
+              };
+            }),
+        );
+
+        app.logger.info({ userId, count: matched.length }, '[RushFeed] shifts returned');
+        return { shifts: matched };
+      } catch (err) {
+        app.logger.error({ err, userId }, '[RushFeed] Failed to fetch rush feed');
+        return reply.status(500 as any).send({ error: 'Failed to fetch rush feed' });
+      }
+    },
   );
 
   fastify.get(
@@ -706,6 +819,180 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       app.logger.info({ applicationId: applicationData.id }, 'Application created');
       return reply.status(201).send(applicationData);
     }
+  );
+
+  // ── POST /api/shifts/:id/claim ────────────────────────────────────────────
+  fastify.post(
+    '/api/shifts/:id/claim',
+    {
+      schema: {
+        description: 'Atomically claim a rush shift (first-tap-wins)',
+        tags: ['shifts'],
+        params: { type: 'object', required: ['id'], properties: { id: { type: 'string' } } },
+        response: {
+          200: { type: 'object', additionalProperties: true },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+          403: { type: 'object', properties: { error: { type: 'string' } } },
+          404: { type: 'object', properties: { error: { type: 'string' } } },
+          409: { type: 'object', properties: { error: { type: 'string' } } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id: shiftId } = request.params as { id: string };
+
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) headers.append(key, Array.isArray(value) ? value[0] : value);
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) return reply.status(401).send({ error: 'Unauthorized' });
+
+      const userId = session.user.id;
+
+      try {
+        const workerProfile = await app.db.query.workerProfiles.findFirst({
+          where: eq(schema.workerProfiles.userId, userId),
+        });
+        if (!workerProfile) {
+          return reply.status(404).send({ error: 'Worker profile not found' });
+        }
+
+        const shift = await app.db.query.shifts.findFirst({
+          where: eq(schema.shifts.id, shiftId),
+        });
+        if (!shift) return reply.status(404).send({ error: 'Shift not found' });
+        if (!shift.isRush) return reply.status(400 as any).send({ error: 'This shift is not a rush shift' });
+
+        // Verify role match
+        const workerRoles = await app.db.query.workerRoles.findMany({
+          where: eq(schema.workerRoles.workerId, workerProfile.id),
+        });
+        const hasRole = workerRoles.some(r => r.role === shift.roleNeeded);
+        if (!hasRole) {
+          return reply.status(403).send({ error: `You do not have the required role: ${shift.roleNeeded}` });
+        }
+
+        // Verify availability
+        const shiftStart = new Date(`${shift.date}T${shift.startTime}:00`);
+        const { eligible } = workerIsEligibleForShift(workerProfile, shiftStart, shift.startTime, new Date());
+        if (!eligible) {
+          return reply.status(403).send({ error: 'You are not available for this shift window' });
+        }
+
+        // Atomic claim — race-condition safe
+        const [claimed] = await app.db
+          .update(schema.shifts)
+          .set({ claimedAt: new Date(), claimedByWorkerId: workerProfile.id })
+          .where(and(
+            eq(schema.shifts.id, shiftId),
+            isNull(schema.shifts.claimedAt),
+            eq(schema.shifts.isRush, true),
+          ))
+          .returning();
+
+        if (!claimed) {
+          app.logger.info({ workerId: workerProfile.id, shiftId }, '[Claim] Race-loss for worker');
+          console.log(`[Claim] Race-loss for worker ${workerProfile.id} on shift ${shiftId}`);
+          return reply.status(409).send({ error: 'Already claimed by another worker' });
+        }
+
+        app.logger.info({ workerId: workerProfile.id, shiftId }, '[Claim] Worker claimed shift');
+        console.log(`[Claim] Worker ${workerProfile.id} claimed shift ${shiftId}`);
+
+        // Notify the posting manager (fire and forget)
+        const business = await app.db.query.businesses.findFirst({
+          where: eq(schema.businesses.id, claimed.businessId),
+        });
+        if (business) {
+          const managerUser = await app.db.query.users.findFirst({
+            where: eq(schema.users.id, business.userId),
+          });
+          const managerTokens = await app.db.query.pushTokens.findMany({
+            where: eq(schema.pushTokens.userId, business.userId),
+          });
+          // Also check legacy notificationPreferences.push_token
+          const legacyToken = (managerUser?.notificationPreferences as Record<string, unknown> | null)?.push_token as string | undefined;
+
+          const notifTitle = 'Rush shift claimed!';
+          const notifBody = `${workerProfile.name} claimed your ${claimed.roleNeeded} shift.`;
+          const notifData = { type: 'shift_claimed', shift_id: shiftId };
+
+          for (const t of managerTokens) {
+            sendExpoPushNotification(t.expoPushToken, notifTitle, notifBody, notifData);
+          }
+          if (legacyToken && !managerTokens.some(t => t.expoPushToken === legacyToken)) {
+            sendExpoPushNotification(legacyToken, notifTitle, notifBody, notifData);
+          }
+        }
+
+        return reply.status(200).send({
+          shift: claimed,
+          venue_info: business ? { name: business.name, address: business.address, city: business.city } : null,
+        });
+      } catch (err) {
+        app.logger.error({ err, shiftId, userId }, '[Claim] Unexpected error');
+        return reply.status(500 as any).send({ error: 'Failed to claim shift' });
+      }
+    },
+  );
+
+  // ── PATCH /api/shifts/:id/no-show ─────────────────────────────────────────
+  fastify.patch(
+    '/api/shifts/:id/no-show',
+    {
+      schema: {
+        description: 'Manager: mark a shift as no-show (data collection only in v0.5)',
+        tags: ['shifts'],
+        params: { type: 'object', required: ['id'], properties: { id: { type: 'string' } } },
+        response: {
+          200: { type: 'object', properties: { ok: { type: 'boolean' } } },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+          403: { type: 'object', properties: { error: { type: 'string' } } },
+          404: { type: 'object', properties: { error: { type: 'string' } } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id: shiftId } = request.params as { id: string };
+
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) headers.append(key, Array.isArray(value) ? value[0] : value);
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) return reply.status(401).send({ error: 'Unauthorized' });
+
+      const userId = session.user.id;
+
+      try {
+        const shift = await app.db.query.shifts.findFirst({
+          where: eq(schema.shifts.id, shiftId),
+        });
+        if (!shift) return reply.status(404).send({ error: 'Shift not found' });
+
+        const business = await app.db.query.businesses.findFirst({
+          where: eq(schema.businesses.id, shift.businessId),
+        });
+        if (!business || business.userId !== userId) {
+          return reply.status(403).send({ error: 'Forbidden: you do not own this shift' });
+        }
+
+        await app.db
+          .update(schema.shifts)
+          .set({ noShow: true })
+          .where(eq(schema.shifts.id, shiftId));
+
+        app.logger.info({ shiftId, managerId: userId }, '[NoShow] Shift marked no_show by manager');
+        console.log(`[NoShow] Shift ${shiftId} marked no_show by manager ${userId}`);
+        return { ok: true };
+      } catch (err) {
+        app.logger.error({ err, shiftId, userId }, '[NoShow] Unexpected error');
+        return reply.status(500 as any).send({ error: 'Failed to mark no-show' });
+      }
+    },
   );
 
   fastify.get(

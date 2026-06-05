@@ -192,6 +192,8 @@ export const workerProfiles = pgTable('worker_profiles', {
   distanceMiles: numeric('distance_miles', { precision: 4, scale: 1 }),
   avgRating: numeric('avg_rating', { precision: 3, scale: 2 }),
   onboardingCompleted: boolean('onboarding_completed').default(false).notNull(),
+  availabilityTemplate: jsonb('availability_template').default({}).notNull(),
+  availableNowUntil: timestamp('available_now_until', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -233,6 +235,10 @@ export const shifts = pgTable('shifts', {
   notes: text('notes'),
   urgency: shiftUrgencyEnum('urgency').notNull(),
   status: shiftStatusEnum('status').default('open').notNull(),
+  isRush: boolean('is_rush').default(false).notNull(),
+  noShow: boolean('no_show').default(false).notNull(),
+  claimedAt: timestamp('claimed_at', { withTimezone: true }),
+  claimedByWorkerId: text('claimed_by_worker_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -296,6 +302,14 @@ export const certifications = pgTable('certifications', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   description: text('description').notNull(),
+});
+
+export const pushTokens = pgTable('push_tokens', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  expoPushToken: text('expo_push_token').notNull(),
+  platform: text('platform').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const notifications = pgTable('notifications', {

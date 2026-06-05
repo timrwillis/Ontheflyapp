@@ -18,6 +18,7 @@ export function registerNotificationRoutes(app: App, fastify: FastifyInstance) {
           required: ['token'],
           properties: {
             token: { type: 'string' },
+            platform: { type: 'string', enum: ['ios', 'android'] },
           },
         },
         response: {
@@ -37,19 +38,39 @@ export function registerNotificationRoutes(app: App, fastify: FastifyInstance) {
         return reply.status(401).send({ error: 'Unauthorized' });
       }
 
-      const { token } = request.body as { token: string };
-      app.logger.info({ userId: session.user.id }, 'Registering push token');
+      const { token, platform } = request.body as { token: string; platform?: string };
+      const resolvedPlatform = platform === 'android' ? 'android' : 'ios';
+      app.logger.info({ userId: session.user.id, platform: resolvedPlatform }, 'Registering push token');
 
-      const user = await app.db.query.users.findFirst({
-        where: eq(schema.users.id, session.user.id),
-      });
+      try {
+        const user = await app.db.query.users.findFirst({
+          where: eq(schema.users.id, session.user.id),
+        });
 
-      if (user) {
-        const prefs = (user.notificationPreferences as Record<string, unknown>) ?? {};
+        if (user) {
+          // Keep legacy field for backward compat with existing push reads
+          const prefs = (user.notificationPreferences as Record<string, unknown>) ?? {};
+          await app.db
+            .update(schema.users)
+            .set({ notificationPreferences: { ...prefs, push_token: token } })
+            .where(eq(schema.users.id, session.user.id));
+        }
+
+        // Upsert into dedicated push_tokens table for fan-out queries
+        const tokenId = `pt-${session.user.id}-${Date.now()}`;
         await app.db
-          .update(schema.users)
-          .set({ notificationPreferences: { ...prefs, push_token: token } })
-          .where(eq(schema.users.id, session.user.id));
+          .insert(schema.pushTokens)
+          .values({
+            id: tokenId,
+            userId: session.user.id,
+            expoPushToken: token,
+            platform: resolvedPlatform,
+            createdAt: new Date(),
+          })
+          .onConflictDoNothing();
+      } catch (err) {
+        app.logger.error({ err, userId: session.user.id }, 'Failed to register push token');
+        return reply.status(500 as any).send({ error: 'Failed to register push token' });
       }
 
       return { success: true };
