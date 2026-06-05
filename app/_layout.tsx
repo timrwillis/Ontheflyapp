@@ -25,6 +25,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AdminPill } from "@/components/AdminPill";
 import { initializeAuth } from "@/lib/auth";
+import * as Notifications from "expo-notifications";
 
 // Suppress Babel inject-source-location dev prop warning on web
 if (Platform.OS === 'web' && typeof console !== 'undefined') {
@@ -138,6 +139,22 @@ export default function RootLayout() {
   // the first authenticated API call takes the fast path.
   useEffect(() => {
     initializeAuth();
+  }, []);
+
+  // Push notification tap handler — route rush_shift type directly to claim flow
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as Record<string, unknown> | null;
+      if (!data) return;
+      const type = data.type as string | undefined;
+      const shiftId = data.shift_id as string | undefined;
+      if (type === 'rush_shift' && shiftId) {
+        // Navigate worker to the Find Shifts tab — the RushFeedSection will show
+        // the live feed. Deep-linking directly to a claim screen is future work.
+        router.push('/(tabs)/(home)');
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   const [splashDone, setSplashDone] = useState(false);

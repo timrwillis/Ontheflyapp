@@ -19,8 +19,11 @@ import { ShiftCard, Shift } from '@/components/ShiftCard';
 import { AvailabilityToggle } from '@/components/AvailabilityToggle';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { ShiftCardSkeleton, SkeletonLine } from '@/components/SkeletonLoader';
+import { RushFeedSection } from '@/components/RushFeedSection';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEMO_SHIFTS, DEMO_WORKERS } from '@/constants/DemoData';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Modal, TouchableWithoutFeedback } from 'react-native';
 
 // ─── Shared glass style ───────────────────────────────────────────────────────
 
@@ -1045,6 +1048,162 @@ const WORKER_TICKER_ITEMS = [
   '🔥 High demand tonight — 6 open shifts',
 ];
 
+// ─── Available Now helpers ────────────────────────────────────────────────────
+
+function formatUntilTime(isoStr: string): string {
+  try {
+    const d = new Date(isoStr);
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  } catch { return isoStr; }
+}
+
+function midnightTonight(): Date {
+  const d = new Date();
+  d.setHours(23, 59, 0, 0);
+  return d;
+}
+
+function hoursFromNow(h: number): Date {
+  return new Date(Date.now() + h * 60 * 60 * 1000);
+}
+
+// ─── Available Now Card ───────────────────────────────────────────────────────
+
+interface AvailableNowCardProps {
+  availableUntil: string | null; // ISO string or null
+  onGoLive: () => void;
+  onExtend: () => void;
+  onGoOffline: () => void;
+  loading: boolean;
+}
+
+function AvailableNowCard({ availableUntil, onGoLive, onExtend, onGoOffline, loading }: AvailableNowCardProps) {
+  const isOn = !!availableUntil && new Date(availableUntil) > new Date();
+  const untilText = isOn ? formatUntilTime(availableUntil!) : null;
+
+  if (!isOn) {
+    return (
+      <View style={{
+        backgroundColor: COLORS.surface,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        marginBottom: 20,
+      }}>
+        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
+          <MaterialIcons name="bolt" size={22} color={COLORS.textSecondary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
+            Not available for rush shifts
+          </Text>
+        </View>
+        <AnimatedPressable onPress={onGoLive} disabled={loading}>
+          <View style={{
+            backgroundColor: COLORS.primary,
+            borderRadius: 10,
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            opacity: loading ? 0.6 : 1,
+            ...Platform.select({ web: { boxShadow: '0 0 12px rgba(0,255,135,0.4)' }, default: { shadowColor: '#00FF87', shadowOpacity: 0.4, shadowRadius: 10, elevation: 6 } }),
+          }}>
+            <Text style={{ color: '#000', fontSize: 13, fontFamily: 'SpaceGrotesk-Bold' }}>Go Live</Text>
+          </View>
+        </AnimatedPressable>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{
+      backgroundColor: 'rgba(0,255,135,0.06)',
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: 'rgba(0,255,135,0.3)',
+      padding: 16,
+      marginBottom: 20,
+      ...Platform.select({ web: { boxShadow: '0 0 20px rgba(0,255,135,0.12)' }, default: { shadowColor: '#00FF87', shadowOpacity: 0.15, shadowRadius: 16, elevation: 4 } }),
+    }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary }} />
+        <Text style={{ color: COLORS.primary, fontSize: 15, fontFamily: 'SpaceGrotesk-Bold', flex: 1 }}>
+          🟢 Available until {untilText}
+        </Text>
+        {loading && <ActivityIndicator color={COLORS.primary} size="small" />}
+      </View>
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <AnimatedPressable onPress={onExtend} style={{ flex: 1 }} disabled={loading}>
+          <View style={{ backgroundColor: COLORS.primaryMuted, borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,255,135,0.3)' }}>
+            <Text style={{ color: COLORS.primary, fontSize: 13, fontFamily: 'SpaceGrotesk-SemiBold' }}>Extend</Text>
+          </View>
+        </AnimatedPressable>
+        <AnimatedPressable onPress={onGoOffline} style={{ flex: 1 }} disabled={loading}>
+          <View style={{ backgroundColor: COLORS.surfaceSecondary, borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border }}>
+            <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-SemiBold' }}>Go Offline</Text>
+          </View>
+        </AnimatedPressable>
+      </View>
+    </View>
+  );
+}
+
+// ─── Go Live Modal ────────────────────────────────────────────────────────────
+
+interface GoLiveModalProps {
+  visible: boolean;
+  onSelect: (until: Date) => void;
+  onCustom: () => void;
+  onCancel: () => void;
+}
+
+function GoLiveModal({ visible, onSelect, onCustom, onCancel }: GoLiveModalProps) {
+  const options = [
+    { label: '+2 hours', until: hoursFromNow(2) },
+    { label: '+4 hours', until: hoursFromNow(4) },
+    { label: 'Until midnight', until: midnightTonight() },
+  ];
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
+      <TouchableWithoutFeedback onPress={onCancel}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
+          <TouchableWithoutFeedback onPress={() => {}}>
+            <View style={{ backgroundColor: COLORS.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 16, paddingBottom: 40, paddingHorizontal: 20 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginBottom: 20 }} />
+              <Text style={{ color: COLORS.primary, fontSize: 20, fontFamily: 'SpaceGrotesk-Bold', marginBottom: 4 }}>Go Live</Text>
+              <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular', marginBottom: 20 }}>
+                How long are you available for rush shifts?
+              </Text>
+              {options.map((opt) => (
+                <AnimatedPressable key={opt.label} onPress={() => onSelect(opt.until)}>
+                  <View style={{ backgroundColor: COLORS.surfaceSecondary, borderRadius: 12, paddingVertical: 16, paddingHorizontal: 16, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: COLORS.border }}>
+                    <Text style={{ color: COLORS.text, fontSize: 16, fontFamily: 'SpaceGrotesk-SemiBold' }}>{opt.label}</Text>
+                    <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
+                      Until {formatUntilTime(opt.until.toISOString())}
+                    </Text>
+                  </View>
+                </AnimatedPressable>
+              ))}
+              <AnimatedPressable onPress={onCustom}>
+                <View style={{ backgroundColor: COLORS.primaryMuted, borderRadius: 12, paddingVertical: 16, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,255,135,0.3)' }}>
+                  <Text style={{ color: COLORS.primary, fontSize: 15, fontFamily: 'SpaceGrotesk-SemiBold' }}>Custom time...</Text>
+                </View>
+              </AnimatedPressable>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  );
+}
+
+// ─── Worker Dashboard ─────────────────────────────────────────────────────────
+
+import { ActivityIndicator } from 'react-native';
+
 function WorkerDashboard() {
   const { currentUser, workerProfile, refreshWorkerProfile, demoDataActive } = useRole();
   const { user, isAdmin } = useAuth();
@@ -1056,6 +1215,13 @@ function WorkerDashboard() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [applyingId, setApplyingId] = useState<string | null>(null);
+
+  // Available-now state
+  const [availableUntil, setAvailableUntil] = useState<string | null>(null);
+  const [goLiveModalVisible, setGoLiveModalVisible] = useState(false);
+  const [customPickerVisible, setCustomPickerVisible] = useState(false);
+  const [customPickerDate, setCustomPickerDate] = useState<Date>(hoursFromNow(2));
+  const [hasTemplate, setHasTemplate] = useState(false);
 
   const tickerScrollRef = useRef<ScrollView>(null);
   const tickerOffset = useRef(0);
@@ -1085,6 +1251,47 @@ function WorkerDashboard() {
   const scoreColor = score >= 95 ? COLORS.primary : score >= 85 ? COLORS.accent : COLORS.danger;
   const earningsEst = completedShifts * 6 * 28;
   const earningsDisplay = '$' + earningsEst.toLocaleString();
+
+  // Load available-now state + template flag
+  useEffect(() => {
+    const loadAvailability = async () => {
+      try {
+        const data = await authenticatedGet<{ available_now_until?: string | null; availability_template?: Record<string, unknown> }>('/api/worker/availability-template');
+        setAvailableUntil(data?.available_now_until ?? null);
+        const tmpl = data?.availability_template ?? {};
+        const hasTmpl = Object.values(tmpl).some((w: any) => Array.isArray(w) && w.length > 0);
+        setHasTemplate(hasTmpl);
+      } catch { /* ignore */ }
+    };
+    loadAvailability();
+  }, []);
+
+  // Auto-refresh available-now every 60s to catch expiry
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const data = await authenticatedGet<{ available_now_until?: string | null }>('/api/worker/availability-template');
+        const until = data?.available_now_until ?? null;
+        setAvailableUntil(until);
+        if (until && new Date(until) <= new Date()) setAvailableUntil(null);
+      } catch { /* ignore */ }
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const setAvailableNow = async (untilDate: Date | null) => {
+    setAvailabilityLoading(true);
+    try {
+      const until = untilDate ? untilDate.toISOString() : null;
+      await authenticatedPatch('/api/worker/available-now', { available_until: until });
+      setAvailableUntil(until);
+      console.log(until ? `[Availability] Go-live: until ${until}` : '[Availability] Go-offline: cleared');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Could not update availability. Please try again.');
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
 
   // Live dot pulse
   useEffect(() => {
@@ -1133,17 +1340,27 @@ function WorkerDashboard() {
 
   const onRefresh = () => { setRefreshing(true); loadShifts(); };
 
+  const handleGoLive = () => setGoLiveModalVisible(true);
+  const handleGoLiveSelect = (until: Date) => {
+    setGoLiveModalVisible(false);
+    setAvailableNow(until);
+  };
+  const handleGoLiveCustom = () => {
+    setGoLiveModalVisible(false);
+    setCustomPickerDate(hoursFromNow(2));
+    setCustomPickerVisible(true);
+  };
+  const handleGoOffline = () => setAvailableNow(null);
+  const handleExtend = () => setGoLiveModalVisible(true);
+
+  // Legacy toggle (kept for AvailabilityToggle component backward compat)
   const handleToggleAvailability = async () => {
     const canToggle = isAdmin || Boolean(workerProfile?.id);
-    console.log('[GoLive] Button enabled state: ' + canToggle + ', reason: ' + (isAdmin ? 'admin bypass' : workerProfile?.id ? 'has profile' : 'no profile'));
     if (!canToggle) return;
-    if (!workerProfile?.id && isAdmin) {
-      console.log('[GoLive] Admin toggling availability without profile — skipping API call');
-      return;
-    }
+    if (!workerProfile?.id && isAdmin) return;
     setAvailabilityLoading(true);
     try {
-      await authenticatedPatch(`/api/worker-profiles/${workerProfile.id}/availability`, {
+      await authenticatedPatch(`/api/worker-profiles/${workerProfile!.id}/availability`, {
         is_available: !isAvailable,
       });
       await refreshWorkerProfile();
@@ -1307,14 +1524,21 @@ function WorkerDashboard() {
           </View>
         )}
 
-        {/* Availability toggle */}
-        <View style={{ marginBottom: 20 }}>
-          <AvailabilityToggle
-            isAvailable={isAvailable}
-            onToggle={handleToggleAvailability}
-            loading={availabilityLoading}
-          />
-        </View>
+        {/* Available Now card */}
+        <AvailableNowCard
+          availableUntil={availableUntil}
+          onGoLive={handleGoLive}
+          onExtend={handleExtend}
+          onGoOffline={handleGoOffline}
+          loading={availabilityLoading}
+        />
+
+        {/* Rush Feed — above regular shifts */}
+        <RushFeedSection
+          isAvailableNow={!!availableUntil && new Date(availableUntil) > new Date()}
+          hasTemplate={hasTemplate}
+          onGoToTemplate={() => router.push('/availability-template')}
+        />
 
         {/* Filter chips */}
         <ScrollView
@@ -1620,6 +1844,302 @@ function AdminDashboard() {
             key={tool.label}
             onPress={() => {}}
           >
+            <View style={{ ...glass, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialIcons name={tool.iconName} size={20} color={tool.color} />
+              </View>
+              <Text style={{ color: COLORS.text, fontSize: 15, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
+                {tool.label}
+              </Text>
+              <MaterialIcons name="chevron-right" size={20} color={COLORS.textSecondary} />
+            </View>
+          </AnimatedPressable>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
+// ─── Root export ──────────────────────────────────────────────────────────────
+
+export default function HomeScreen() {
+  const { currentRole, isLoading } = useRole();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 32 }}>⚡</Text>
+      </View>
+    );
+  }
+
+  if (!currentRole) return <LandingScreen />;
+  if (currentRole === 'manager') return <ManagerDashboard />;
+  if (currentRole === 'worker') return <WorkerDashboard />;
+  if (currentRole === 'admin') return <AdminDashboard />;
+  return <LandingScreen />;
+}
+
+            <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 6 }}>
+              No open shifts nearby
+            </Text>
+            <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center', fontFamily: 'SpaceGrotesk-Regular' }}>
+              Check back soon or tap Go Live to get notified for rush shifts.
+            </Text>
+          </View>
+        ) : (
+          <>
+            {/* Emergency section */}
+            {emergencySection.length > 0 && (
+              <>
+                <SectionHeader
+                  title="🚨 RUSH COVERAGE"
+                  count={emergencySection.length}
+                  sectionColor={COLORS.danger}
+                  sectionBg="rgba(255,68,68,0.12)"
+                />
+                {emergencySection.map((shift, i) => (
+                  <ShiftCard
+                    key={shift.id}
+                    shift={shift}
+                    index={i}
+                    showAcceptButton
+                    onAccept={() => handleAcceptShift(shift.id)}
+                    acceptLoading={applyingId === shift.id}
+                    onPress={() => router.push(`/shift/${shift.id}`)}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Boosted pay section */}
+            {boostedSection.length > 0 && (
+              <>
+                <SectionHeader
+                  title="⚡ BOOSTED PAY"
+                  count={boostedSection.length}
+                  sectionColor="#FFD700"
+                  sectionBg="rgba(255,215,0,0.10)"
+                />
+                {boostedSection.map((shift, i) => (
+                  <ShiftCard
+                    key={shift.id}
+                    shift={shift}
+                    index={emergencySection.length + i}
+                    showAcceptButton
+                    onAccept={() => handleAcceptShift(shift.id)}
+                    acceptLoading={applyingId === shift.id}
+                    onPress={() => router.push(`/shift/${shift.id}`)}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Upcoming section */}
+            {upcomingSection.length > 0 && (
+              <>
+                <SectionHeader
+                  title="UPCOMING SHIFTS"
+                  count={upcomingSection.length}
+                  sectionColor={COLORS.primary}
+                  sectionBg={COLORS.primaryMuted}
+                />
+                {upcomingSection.map((shift, i) => (
+                  <ShiftCard
+                    key={shift.id}
+                    shift={shift}
+                    index={emergencySection.length + boostedSection.length + i}
+                    showAcceptButton
+                    onAccept={() => handleAcceptShift(shift.id)}
+                    acceptLoading={applyingId === shift.id}
+                    onPress={() => router.push(`/shift/${shift.id}`)}
+                  />
+                ))}
+              </>
+            )}
+          </>
+        )}
+      </ScrollView>
+
+      {/* Go Live modal */}
+      <GoLiveModal
+        visible={goLiveModalVisible}
+        onSelect={handleGoLiveSelect}
+        onCustom={handleGoLiveCustom}
+        onCancel={() => setGoLiveModalVisible(false)}
+      />
+
+      {/* Custom time picker (iOS modal / Android inline) */}
+      {customPickerVisible && (
+        Platform.OS === 'android' ? (
+          <DateTimePicker
+            value={customPickerDate}
+            mode="time"
+            display="default"
+            onChange={(_e: any, d?: Date) => {
+              setCustomPickerVisible(false);
+              if (d) setAvailableNow(d);
+            }}
+          />
+        ) : (
+          <Modal visible={customPickerVisible} transparent animationType="fade" onRequestClose={() => setCustomPickerVisible(false)}>
+            <TouchableWithoutFeedback onPress={() => setCustomPickerVisible(false)}>
+              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' }}>
+                <TouchableWithoutFeedback onPress={() => {}}>
+                  <View style={{ backgroundColor: COLORS.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 16, paddingBottom: 40, paddingHorizontal: 24 }}>
+                    <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'center', marginBottom: 20 }} />
+                    <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-SemiBold', textAlign: 'center', marginBottom: 16 }}>
+                      Available until...
+                    </Text>
+                    <DateTimePicker
+                      value={customPickerDate}
+                      mode="time"
+                      display="spinner"
+                      textColor={COLORS.text}
+                      themeVariant="dark"
+                      onChange={(_e: any, d?: Date) => { if (d) setCustomPickerDate(d); }}
+                      style={{ alignSelf: 'center' }}
+                    />
+                    <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
+                      <AnimatedPressable onPress={() => setCustomPickerVisible(false)} style={{ flex: 1 }}>
+                        <View style={{ backgroundColor: COLORS.surfaceSecondary, borderRadius: 12, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border }}>
+                          <Text style={{ color: COLORS.text, fontSize: 15, fontFamily: 'SpaceGrotesk-SemiBold' }}>Cancel</Text>
+                        </View>
+                      </AnimatedPressable>
+                      <AnimatedPressable onPress={() => { setCustomPickerVisible(false); setAvailableNow(customPickerDate); }} style={{ flex: 1 }}>
+                        <View style={{ backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}>
+                          <Text style={{ color: '#000', fontSize: 15, fontFamily: 'SpaceGrotesk-Bold' }}>Go Live</Text>
+                        </View>
+                      </AnimatedPressable>
+                    </View>
+                  </View>
+                </TouchableWithoutFeedback>
+              </View>
+            </TouchableWithoutFeedback>
+          </Modal>
+        )
+      )}
+    </View>
+  );
+}
+
+// ─── Admin Dashboard ──────────────────────────────────────────────────────────
+
+function AdminDashboard() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const [stats, setStats] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await apiGet<Record<string, number>>('/api/admin/stats');
+        setStats(data ?? {});
+      } catch {
+        // silently fail
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const statItems = [
+    { label: 'Total Users', value: stats.total_users ?? 0, color: COLORS.primary },
+    { label: 'Total Workers', value: stats.total_workers ?? 0, color: '#60A5FA' },
+    { label: 'Businesses', value: stats.total_businesses ?? 0, color: COLORS.accent },
+    { label: 'Total Shifts', value: stats.total_shifts ?? 0, color: '#A78BFA' },
+    { label: 'Open Shifts', value: stats.open_shifts ?? 0, color: COLORS.primary },
+    { label: 'Filled Shifts', value: stats.filled_shifts ?? 0, color: COLORS.primaryDim },
+  ];
+
+  const platformHealth = [
+    { label: 'Active', value: stats.open_shifts ?? 0, dotColor: COLORS.primary },
+    { label: 'Pending', value: stats.pending_shifts ?? 0, dotColor: COLORS.accent },
+    { label: 'Issues', value: 0, dotColor: COLORS.danger },
+  ];
+
+  const adminTools = [
+    { label: 'Worker Verification Queue', iconName: 'verified-user' as const, color: COLORS.primary },
+    { label: 'Dispute Management', iconName: 'gavel' as const, color: COLORS.accent },
+    { label: 'No-Show Tracking', iconName: 'warning' as const, color: COLORS.danger },
+  ];
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: COLORS.background }}
+      contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 180 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={{ marginBottom: 24 }}>
+        <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 2, marginBottom: 6 }}>
+          ⚡ ADMIN
+        </Text>
+        <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
+          Admin Dashboard
+        </Text>
+      </View>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 }}>
+        {statItems.map((item) => (
+          <View key={item.label} style={{ width: '47%', ...glass }}>
+            <Text style={{ color: item.color, fontSize: 34, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1 }}>
+              {loading ? '—' : item.value}
+            </Text>
+            <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginTop: 4 }}>
+              {item.label}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 12 }}>
+        Platform Health
+      </Text>
+      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 28 }}>
+        {platformHealth.map((item) => (
+          <View key={item.label} style={{ flex: 1, ...glass, alignItems: 'center', paddingVertical: 14 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.dotColor, marginBottom: 8 }} />
+            <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
+              {loading ? '—' : item.value}
+            </Text>
+            <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular', marginTop: 3 }}>
+              {item.label}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 12 }}>
+        Quick Actions
+      </Text>
+      <View style={{ gap: 10, marginBottom: 28 }}>
+        {[
+          { label: 'View All Workers', iconName: 'people' as const, color: COLORS.primary, route: '/(tabs)/workers' },
+          { label: 'View All Businesses', iconName: 'business' as const, color: COLORS.accent, route: '/(tabs)/businesses' },
+          { label: 'View All Shifts', iconName: 'trending-up' as const, color: '#60A5FA', route: '/(tabs)/shifts' },
+        ].map((action) => (
+          <AnimatedPressable key={action.label} onPress={() => router.push(action.route as never)}>
+            <View style={{ ...glass, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
+                <MaterialIcons name={action.iconName} size={20} color={action.color} />
+              </View>
+              <Text style={{ color: COLORS.text, fontSize: 15, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
+                {action.label}
+              </Text>
+              <MaterialIcons name="chevron-right" size={20} color={COLORS.textSecondary} />
+            </View>
+          </AnimatedPressable>
+        ))}
+      </View>
+
+      <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 12 }}>
+        Admin Tools
+      </Text>
+      <View style={{ gap: 10 }}>
+        {adminTools.map((tool) => (
+          <AnimatedPressable key={tool.label} onPress={() => {}}>
             <View style={{ ...glass, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
                 <MaterialIcons name={tool.iconName} size={20} color={tool.color} />

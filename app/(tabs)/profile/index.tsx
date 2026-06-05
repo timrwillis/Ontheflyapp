@@ -413,10 +413,20 @@ function WorkerProfileView() {
 
       {/* Edit profile */}
       <AnimatedPressable onPress={() => router.push('/edit-profile')}>
-        <View style={{ ...glass, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
+        <View style={{ ...glass, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 10 }}>
           <MaterialIcons name="edit" size={18} color={COLORS.primary} />
           <Text style={{ color: COLORS.primary, fontSize: 15, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
             Edit Profile
+          </Text>
+        </View>
+      </AnimatedPressable>
+
+      {/* Availability schedule */}
+      <AnimatedPressable onPress={() => router.push('/availability-template')}>
+        <View style={{ ...glass, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
+          <MaterialIcons name="schedule" size={18} color={COLORS.accent} />
+          <Text style={{ color: COLORS.accent, fontSize: 15, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
+            Availability Schedule
           </Text>
         </View>
       </AnimatedPressable>

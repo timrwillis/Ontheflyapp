@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { useRole } from '@/contexts/RoleContext';
-import { apiGet, apiPatch } from '@/utils/api';
+import { apiGet, apiPatch, authenticatedPatch } from '@/utils/api';
 import { ShiftCard, Shift } from '@/components/ShiftCard';
 import { ReliabilityScore } from '@/components/ReliabilityScore';
 import { ShiftCardSkeleton, WorkerCardSkeleton } from '@/components/SkeletonLoader';
@@ -15,6 +15,20 @@ import { DEMO_MODE, DEMO_SHIFTS } from '@/constants/DemoData';
 
 const MANAGER_TABS = ['Open', 'Pending', 'Filled', 'Completed'];
 const WORKER_TABS = ['Upcoming', 'Completed'];
+
+// Eligibility: shift ended in last 7 days, has a claimed worker, no_show not yet set
+function isNoShowEligible(shift: any): boolean {
+  if (!shift.claimed_by_worker_id && !shift.claimedByWorkerId) return false;
+  if (shift.no_show === true) return false;
+  const endStr = shift.end_time ?? shift.endTime;
+  if (!endStr) return false;
+  try {
+    const end = new Date(endStr);
+    const now = new Date();
+    const diff = now.getTime() - end.getTime();
+    return diff > 0 && diff < 7 * 24 * 60 * 60 * 1000;
+  } catch { return false; }
+}
 
 interface Application {
   id: string;
@@ -79,6 +93,8 @@ export default function ShiftsScreen() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [appsLoading, setAppsLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [noShowLoading, setNoShowLoading] = useState<string | null>(null);
+  const [noShowDone, setNoShowDone] = useState<Set<string>>(new Set());
 
   const loadShifts = useCallback(async () => {
     if (DEMO_MODE) {
@@ -157,6 +173,33 @@ export default function ShiftsScreen() {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleNoShow = (shift: any) => {
+    const workerName = shift.claimed_worker?.name ?? shift.worker?.name ?? 'this worker';
+    Alert.alert(
+      'Mark No-Show?',
+      `Mark ${workerName} as no-show? This is for data collection only — no automatic penalty applies in this version.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark No-Show',
+          style: 'destructive',
+          onPress: async () => {
+            setNoShowLoading(shift.id);
+            try {
+              await authenticatedPatch(`/api/shifts/${shift.id}/no-show`, {});
+              setNoShowDone((prev) => new Set([...prev, shift.id]));
+              Alert.alert('Marked', 'Shift marked as no-show.');
+            } catch (err: any) {
+              Alert.alert('Error', err?.message ?? 'Could not mark no-show. Please try again.');
+            } finally {
+              setNoShowLoading(null);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const openSheetForShift = (shift: Shift) => {
@@ -281,14 +324,46 @@ export default function ShiftsScreen() {
             )}
           </View>
         ) : (
-          filteredShifts.map((shift, i) => (
-            <ShiftCard
-              key={shift.id}
-              shift={shift}
-              index={i}
-              onPress={() => router.push(`/shift/${shift.id}`)}
-            />
-          ))
+          filteredShifts.map((shift, i) => {
+            const eligible = currentRole === 'manager' && selectedTab === 'Completed' && isNoShowEligible(shift) && !noShowDone.has(shift.id);
+            return (
+              <View key={shift.id}>
+                <ShiftCard
+                  shift={shift}
+                  index={i}
+                  onPress={currentRole === 'manager' ? () => openSheetForShift(shift) : () => router.push(`/shift/${shift.id}`)}
+                />
+                {eligible && (
+                  <AnimatedPressable
+                    onPress={() => handleNoShow(shift)}
+                    disabled={noShowLoading === shift.id}
+                    style={{ marginTop: -6, marginBottom: 16 }}
+                  >
+                    <View style={{
+                      backgroundColor: COLORS.dangerMuted,
+                      borderRadius: 10,
+                      paddingVertical: 11,
+                      alignItems: 'center',
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      gap: 8,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,68,68,0.25)',
+                      borderTopLeftRadius: 0,
+                      borderTopRightRadius: 0,
+                    }}>
+                      {noShowLoading === shift.id
+                        ? <ActivityIndicator color={COLORS.danger} size="small" />
+                        : <MaterialIcons name="warning" size={15} color={COLORS.danger} />}
+                      <Text style={{ color: COLORS.danger, fontSize: 13, fontFamily: 'SpaceGrotesk-SemiBold' }}>
+                        {noShowLoading === shift.id ? 'Marking...' : 'Mark no-show'}
+                      </Text>
+                    </View>
+                  </AnimatedPressable>
+                )}
+              </View>
+            );
+          })
         )}
       </ScrollView>
     </>
