@@ -1880,12 +1880,14 @@ export default function HomeScreen() {
   return <LandingScreen />;
 }
 
-            <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 6 }}>
-              No open shifts nearby
-            </Text>
-            <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center', fontFamily: 'SpaceGrotesk-Regular' }}>
-              Check back soon or tap Go Live to get notified for rush shifts.
-            </Text>
+            <View>
+              <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 6 }}>
+                No open shifts nearby
+              </Text>
+              <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center', fontFamily: 'SpaceGrotesk-Regular' }}>
+                Check back soon or tap Go Live to get notified for rush shifts.
+              </Text>
+            </View>
           </View>
         ) : (
           <>
