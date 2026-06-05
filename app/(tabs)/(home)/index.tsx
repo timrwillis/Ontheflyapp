@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+﻿import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Platform,
   Animated,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -25,7 +26,7 @@ import { DEMO_SHIFTS, DEMO_WORKERS } from '@/constants/DemoData';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Modal, TouchableWithoutFeedback } from 'react-native';
 
-// ─── Shared glass style ───────────────────────────────────────────────────────
+// â”€â”€â”€ Shared glass style â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const glass = {
   backgroundColor: 'rgba(255,255,255,0.04)' as const,
@@ -45,15 +46,15 @@ const emergencyGlow = Platform.select({
   default: { shadowColor: '#FF4444', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 8 },
 }) as object;
 
-// ─── Landing Screen ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Landing Screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const FALLBACK_ACTIVITY_FEED = [
-  '⚡ Bartender accepted at Prime Social KC',
-  '✅ Server filled shift at Midtown Tavern',
-  '🎯 VIP event staffed in 4 minutes',
-  '⚡ Line Cook confirmed at Neon Alley',
-  '✅ Barback filled at The Copper Mug',
-  '⚡ Host confirmed at Rooftop Lounge',
+  'âš¡ Bartender accepted at Prime Social KC',
+  'âœ… Server filled shift at Midtown Tavern',
+  'ðŸŽ¯ VIP event staffed in 4 minutes',
+  'âš¡ Line Cook confirmed at Neon Alley',
+  'âœ… Barback filled at The Copper Mug',
+  'âš¡ Host confirmed at Rooftop Lounge',
 ];
 
 const FALLBACK_LIVE_FEED_ITEMS = [
@@ -81,11 +82,11 @@ interface FullMarketplaceStats {
   workers_available?: number;
   restaurants_hiring?: number;
   shifts_filled_week?: number;
-  // Backend returns objects { text, time } — same shape as MarketplaceStats
+  // Backend returns objects { text, time } â€” same shape as MarketplaceStats
   recent_activity?: { text: string; time: string }[];
 }
 
-// Shared marketplace stats — fetched once, used by all dashboards
+// Shared marketplace stats â€” fetched once, used by all dashboards
 let _cachedStats: FullMarketplaceStats = {
   workers_available: 31,
   restaurants_hiring: 14,
@@ -164,7 +165,7 @@ function LandingScreen() {
   const shiftsFilled = stats.shifts_filled_this_week ?? 127;
 
   const activityFeed = stats.recent_activity?.length
-    ? stats.recent_activity.map((item, i) => (i % 2 === 0 ? '✅ ' : '⚡ ') + item.text)
+    ? stats.recent_activity.map((item, i) => (i % 2 === 0 ? 'âœ… ' : 'âš¡ ') + item.text)
     : FALLBACK_ACTIVITY_FEED;
 
   const liveFeedItems = stats.recent_activity?.length
@@ -190,7 +191,7 @@ function LandingScreen() {
       {/* Hero */}
       <View style={{ paddingTop: 64, paddingHorizontal: 24, alignItems: 'center', paddingBottom: 28 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <Text style={{ fontSize: 28 }}>⚡</Text>
+          <Text style={{ fontSize: 28 }}>âš¡</Text>
           <Text style={{ color: COLORS.primary, fontSize: 34, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1.5 }}>
             On The Fly
           </Text>
@@ -270,7 +271,7 @@ function LandingScreen() {
               ...primaryGlow,
             }}>
               <Text style={{ color: '#000', fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                I'm a Manager — Blast a Shift
+                I'm a Manager â€” Blast a Shift
               </Text>
             </View>
           </AnimatedPressable>
@@ -280,12 +281,12 @@ function LandingScreen() {
           <AnimatedPressable onPress={() => handleRoleSelect('worker')}>
             <View style={{ ...glass, paddingVertical: 18, alignItems: 'center' }}>
               <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                I'm a Worker — Find Work Tonight
+                I'm a Worker â€” Find Work Tonight
               </Text>
             </View>
           </AnimatedPressable>
           <Text style={{ color: COLORS.primary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center', marginTop: -6 }}>
-            Shifts available now →
+            Shifts available now â†’
           </Text>
           <AnimatedPressable onPress={() => handleRoleSelect('admin')}>
             <View style={{ paddingVertical: 12, alignItems: 'center' }}>
@@ -328,7 +329,7 @@ function LandingScreen() {
   );
 }
 
-// ─── Worker Mini Card ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Worker Mini Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface WorkerMini {
   id: string;
@@ -338,20 +339,20 @@ interface WorkerMini {
 }
 
 const SCARCITY_INSIGHTS = [
-  { icon: '🟢', text: '12 workers online now' },
-  { icon: '🔴', text: 'Only 4 bartenders available' },
-  { icon: '⚡', text: 'High demand tonight' },
-  { icon: '🏃', text: '3 responded in 5 min' },
-  { icon: '📈', text: 'Weekend rush active' },
-  { icon: '🎯', text: '94% fill rate this week' },
+  { icon: 'ðŸŸ¢', text: '12 workers online now' },
+  { icon: 'ðŸ”´', text: 'Only 4 bartenders available' },
+  { icon: 'âš¡', text: 'High demand tonight' },
+  { icon: 'ðŸƒ', text: '3 responded in 5 min' },
+  { icon: 'ðŸ“ˆ', text: 'Weekend rush active' },
+  { icon: 'ðŸŽ¯', text: '94% fill rate this week' },
 ];
 
 const FALLBACK_ACTIVITY_ITEMS = [
-  { icon: '✅', text: 'Bartender confirmed at Prime Social KC', time: '2m ago', color: COLORS.primary },
-  { icon: '⚡', text: 'Server accepted shift at Midtown Tavern', time: '8m ago', color: COLORS.accent },
-  { icon: '🎯', text: 'VIP event fully staffed in 4 minutes', time: '23m ago', color: '#60A5FA' },
-  { icon: '✅', text: 'Line Cook filled at Neon Alley', time: '41m ago', color: COLORS.primary },
-  { icon: '⚡', text: 'Rush coverage filled at Velvet Room', time: '1h ago', color: COLORS.accent },
+  { icon: 'âœ…', text: 'Bartender confirmed at Prime Social KC', time: '2m ago', color: COLORS.primary },
+  { icon: 'âš¡', text: 'Server accepted shift at Midtown Tavern', time: '8m ago', color: COLORS.accent },
+  { icon: 'ðŸŽ¯', text: 'VIP event fully staffed in 4 minutes', time: '23m ago', color: '#60A5FA' },
+  { icon: 'âœ…', text: 'Line Cook filled at Neon Alley', time: '41m ago', color: COLORS.primary },
+  { icon: 'âš¡', text: 'Rush coverage filled at Velvet Room', time: '1h ago', color: COLORS.accent },
 ];
 
 function WorkerMiniCard({ worker }: { worker: WorkerMini }) {
@@ -428,7 +429,7 @@ function WorkerMiniCard({ worker }: { worker: WorkerMini }) {
         {primaryRole}
       </Text>
       <Text style={{ color: COLORS.text, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center' }}>
-        {'⭐ ' + ratingDisplay}
+        {'â­ ' + ratingDisplay}
       </Text>
       <Text style={{ color: reliabilityColor, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center' }}>
         {reliabilityDisplay}
@@ -440,7 +441,7 @@ function WorkerMiniCard({ worker }: { worker: WorkerMini }) {
   );
 }
 
-// ─── Section Header ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Section Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function SectionHeader({
   title,
@@ -470,7 +471,7 @@ function SectionHeader({
   );
 }
 
-// ─── Manager Dashboard ────────────────────────────────────────────────────────
+// â”€â”€â”€ Manager Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ManagerDashboard() {
   const { currentUser, demoDataActive } = useRole();
@@ -540,7 +541,7 @@ function ManagerDashboard() {
       setStats({ open, filled, confirmed });
       setNearbyWorkers(Array.isArray(workersData) ? workersData : []);
       if (marketplaceData?.recent_activity?.length) {
-        const ITEM_ICONS = ['✅', '⚡', '🎯', '✅', '⚡'];
+        const ITEM_ICONS = ['âœ…', 'âš¡', 'ðŸŽ¯', 'âœ…', 'âš¡'];
         const ITEM_COLORS = [COLORS.primary, COLORS.accent, '#60A5FA', COLORS.primary, COLORS.accent];
         setActivityItems(
           marketplaceData.recent_activity.slice(0, 5).map((item, i) => ({
@@ -597,12 +598,12 @@ function ManagerDashboard() {
     ? marketStats.recent_activity.slice(0, 6).map((item) => {
         // recent_activity items are objects { text, time } from the backend
         const rawText = item.text ?? '';
-        const icon = rawText.startsWith('✅') ? '✅'
-          : rawText.startsWith('⚡') ? '⚡'
-          : rawText.startsWith('🎯') ? '🎯'
-          : rawText.startsWith('🔥') ? '🔥'
-          : '📍';
-        const cleanText = rawText.replace(/^[✅⚡🎯🔥📍]\s*/u, '');
+        const icon = rawText.startsWith('âœ…') ? 'âœ…'
+          : rawText.startsWith('âš¡') ? 'âš¡'
+          : rawText.startsWith('ðŸŽ¯') ? 'ðŸŽ¯'
+          : rawText.startsWith('ðŸ”¥') ? 'ðŸ”¥'
+          : 'ðŸ“';
+        const cleanText = rawText.replace(/^[âœ…âš¡ðŸŽ¯ðŸ”¥ðŸ“]\s*/u, '');
         return { icon, text: cleanText };
       })
     : SCARCITY_INSIGHTS;
@@ -624,7 +625,7 @@ function ManagerDashboard() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
           <View>
             <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 1.5, marginBottom: 4 }}>
-              ⚡ ON THE FLY
+              âš¡ ON THE FLY
             </Text>
             <Text style={{ color: COLORS.textSecondary, fontSize: 13, fontFamily: 'SpaceGrotesk-Regular' }}>
               {`${greeting},`}
@@ -633,7 +634,7 @@ function ManagerDashboard() {
               <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
                 {firstName}
               </Text>
-              <Text style={{ fontSize: 22 }}>👋</Text>
+              <Text style={{ fontSize: 22 }}>ðŸ‘‹</Text>
             </View>
           </View>
           <AnimatedPressable onPress={() => router.push('/notifications')}>
@@ -660,7 +661,7 @@ function ManagerDashboard() {
           }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
               <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,68,68,0.15)', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontSize: 18 }}>🚨</Text>
+                <Text style={{ fontSize: 18 }}>ðŸš¨</Text>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: COLORS.danger, fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
@@ -674,7 +675,7 @@ function ManagerDashboard() {
             <AnimatedPressable onPress={() => router.push('/create-shift')}>
               <View style={{ backgroundColor: COLORS.danger, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
                 <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-                  Fill Now →
+                  Fill Now â†’
                 </Text>
               </View>
             </AnimatedPressable>
@@ -751,7 +752,7 @@ function ManagerDashboard() {
               alignItems: 'center',
               gap: 6,
             }}>
-              <Text style={{ fontSize: 14 }}>🚨</Text>
+              <Text style={{ fontSize: 14 }}>ðŸš¨</Text>
               <Text style={{ color: COLORS.danger, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
                 Emergency Shift
               </Text>
@@ -759,7 +760,7 @@ function ManagerDashboard() {
           </AnimatedPressable>
           <AnimatedPressable onPress={() => {}}>
             <View style={{ ...glass, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={{ fontSize: 14 }}>↩</Text>
+              <Text style={{ fontSize: 14 }}>â†©</Text>
               <Text style={{ color: COLORS.text, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
                 Repost Last
               </Text>
@@ -767,7 +768,7 @@ function ManagerDashboard() {
           </AnimatedPressable>
           <AnimatedPressable onPress={() => router.push('/(tabs)/workers')}>
             <View style={{ ...glass, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={{ fontSize: 14 }}>👥</Text>
+              <Text style={{ fontSize: 14 }}>ðŸ‘¥</Text>
               <Text style={{ color: COLORS.text, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
                 View Workers
               </Text>
@@ -775,7 +776,7 @@ function ManagerDashboard() {
           </AnimatedPressable>
           <AnimatedPressable onPress={() => {}}>
             <View style={{ ...glass, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={{ fontSize: 14 }}>✉</Text>
+              <Text style={{ fontSize: 14 }}>âœ‰</Text>
               <Text style={{ color: COLORS.text, fontSize: 13, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold' }}>
                 Invite Staff
               </Text>
@@ -783,7 +784,7 @@ function ManagerDashboard() {
           </AnimatedPressable>
         </ScrollView>
 
-        {/* Available Now — upgraded header */}
+        {/* Available Now â€” upgraded header */}
         <View style={{ marginBottom: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
             {/* LIVE indicator */}
@@ -814,7 +815,7 @@ function ManagerDashboard() {
             </Text>
             <AnimatedPressable onPress={() => router.push('/nearby-workers')}>
               <Text style={{ color: COLORS.primary, fontSize: 12, fontFamily: 'SpaceGrotesk-SemiBold' }}>
-                Browse All →
+                Browse All â†’
               </Text>
             </AnimatedPressable>
           </View>
@@ -932,7 +933,7 @@ function ManagerDashboard() {
             const workersConfirmed = seedChar % (workersNeeded + 1);
             const fillPercent = workersNeeded > 0 ? workersConfirmed / workersNeeded : 0;
             const shiftRole = (shift as any).role ?? 'Staff';
-            const fillLabel = shiftRole + ' · Tonight · ' + workersConfirmed + '/' + workersNeeded + ' filled';
+            const fillLabel = shiftRole + ' Â· Tonight Â· ' + workersConfirmed + '/' + workersNeeded + ' filled';
             return (
               <View key={shift.id}>
                 <View style={{
@@ -1035,20 +1036,20 @@ function ManagerDashboard() {
   );
 }
 
-// ─── Worker Dashboard ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Worker Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const FILTER_OPTIONS = ['All', 'Tonight', 'Tomorrow', 'This Week'];
 
 const WORKER_TICKER_ITEMS = [
-  '⚡ 3 workers accepted shifts in the last hour',
+  'âš¡ 3 workers accepted shifts in the last hour',
   '1 shift just filled',
   '2 new shifts posted',
-  '⚡ Bartender confirmed at Prime Social',
-  '✅ Server filled shift at Midtown Tavern',
-  '🔥 High demand tonight — 6 open shifts',
+  'âš¡ Bartender confirmed at Prime Social',
+  'âœ… Server filled shift at Midtown Tavern',
+  'ðŸ”¥ High demand tonight â€” 6 open shifts',
 ];
 
-// ─── Available Now helpers ────────────────────────────────────────────────────
+// â”€â”€â”€ Available Now helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function formatUntilTime(isoStr: string): string {
   try {
@@ -1067,7 +1068,7 @@ function hoursFromNow(h: number): Date {
   return new Date(Date.now() + h * 60 * 60 * 1000);
 }
 
-// ─── Available Now Card ───────────────────────────────────────────────────────
+// â”€â”€â”€ Available Now Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface AvailableNowCardProps {
   availableUntil: string | null; // ISO string or null
@@ -1131,7 +1132,7 @@ function AvailableNowCard({ availableUntil, onGoLive, onExtend, onGoOffline, loa
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
         <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary }} />
         <Text style={{ color: COLORS.primary, fontSize: 15, fontFamily: 'SpaceGrotesk-Bold', flex: 1 }}>
-          🟢 Available until {untilText}
+          ðŸŸ¢ Available until {untilText}
         </Text>
         {loading && <ActivityIndicator color={COLORS.primary} size="small" />}
       </View>
@@ -1151,7 +1152,7 @@ function AvailableNowCard({ availableUntil, onGoLive, onExtend, onGoOffline, loa
   );
 }
 
-// ─── Go Live Modal ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Go Live Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface GoLiveModalProps {
   visible: boolean;
@@ -1200,9 +1201,7 @@ function GoLiveModal({ visible, onSelect, onCustom, onCancel }: GoLiveModalProps
   );
 }
 
-// ─── Worker Dashboard ─────────────────────────────────────────────────────────
-
-import { ActivityIndicator } from 'react-native';
+// â”€â”€â”€ Worker Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function WorkerDashboard() {
   const { currentUser, workerProfile, refreshWorkerProfile, demoDataActive } = useRole();
@@ -1329,7 +1328,7 @@ function WorkerDashboard() {
       const list = Array.isArray((data as any)?.shifts) ? (data as any).shifts : Array.isArray(data) ? data : [];
       setShifts(list);
     } catch {
-      // silently fail — UI shows empty state
+      // silently fail â€” UI shows empty state
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -1421,7 +1420,7 @@ function WorkerDashboard() {
 
   const shiftCount = filteredShifts.length;
 
-  // recent_activity items are objects { text, time } — extract .text for the ticker
+  // recent_activity items are objects { text, time } â€” extract .text for the ticker
   const workerTickerItems = (marketStats.recent_activity && marketStats.recent_activity.length > 0)
     ? marketStats.recent_activity.map((item) => item.text ?? '')
     : WORKER_TICKER_ITEMS;
@@ -1501,7 +1500,7 @@ function WorkerDashboard() {
             alignItems: 'center',
             gap: 12,
           }}>
-            <Text style={{ fontSize: 22 }}>💰</Text>
+            <Text style={{ fontSize: 22 }}>ðŸ’°</Text>
             <View style={{ flex: 1 }}>
               <Text style={{ color: COLORS.text, fontSize: 14, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
                 Work 3 shifts this week
@@ -1514,7 +1513,7 @@ function WorkerDashboard() {
                   {earningsLowDisplay}
                 </Text>
                 <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>
-                  {'–'}
+                  {'â€“'}
                 </Text>
                 <Text style={{ color: COLORS.accent, fontSize: 13, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
                   {earningsHighDisplay}
@@ -1533,7 +1532,7 @@ function WorkerDashboard() {
           loading={availabilityLoading}
         />
 
-        {/* Rush Feed — above regular shifts */}
+        {/* Rush Feed â€” above regular shifts */}
         <RushFeedSection
           isAvailableNow={!!availableUntil && new Date(availableUntil) > new Date()}
           hasTemplate={hasTemplate}
@@ -1614,7 +1613,7 @@ function WorkerDashboard() {
           >
             {[...workerTickerItems, ...workerTickerItems].map((item, i) => (
               <Text key={i} style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular' }}>
-                {`${item}  ·  `}
+                {`${item}  Â·  `}
               </Text>
             ))}
           </ScrollView>
@@ -1636,7 +1635,7 @@ function WorkerDashboard() {
               No open shifts nearby
             </Text>
             <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center', fontFamily: 'SpaceGrotesk-Regular' }}>
-              Check back soon or toggle Available Now to get notified.
+              Check back soon or tap Go Live to get notified for rush shifts.
             </Text>
           </View>
         ) : (
@@ -1645,7 +1644,7 @@ function WorkerDashboard() {
             {emergencySection.length > 0 && (
               <>
                 <SectionHeader
-                  title="🚨 RUSH COVERAGE"
+                  title="ðŸš¨ RUSH COVERAGE"
                   count={emergencySection.length}
                   sectionColor={COLORS.danger}
                   sectionBg="rgba(255,68,68,0.12)"
@@ -1668,257 +1667,7 @@ function WorkerDashboard() {
             {boostedSection.length > 0 && (
               <>
                 <SectionHeader
-                  title="⚡ BOOSTED PAY"
-                  count={boostedSection.length}
-                  sectionColor="#FFD700"
-                  sectionBg="rgba(255,215,0,0.10)"
-                />
-                {boostedSection.map((shift, i) => (
-                  <ShiftCard
-                    key={shift.id}
-                    shift={shift}
-                    index={emergencySection.length + i}
-                    showAcceptButton
-                    onAccept={() => handleAcceptShift(shift.id)}
-                    acceptLoading={applyingId === shift.id}
-                    onPress={() => router.push(`/shift/${shift.id}`)}
-                  />
-                ))}
-              </>
-            )}
-
-            {/* Upcoming section */}
-            {upcomingSection.length > 0 && (
-              <>
-                <SectionHeader
-                  title="UPCOMING SHIFTS"
-                  count={upcomingSection.length}
-                  sectionColor={COLORS.primary}
-                  sectionBg={COLORS.primaryMuted}
-                />
-                {upcomingSection.map((shift, i) => (
-                  <ShiftCard
-                    key={shift.id}
-                    shift={shift}
-                    index={emergencySection.length + boostedSection.length + i}
-                    showAcceptButton
-                    onAccept={() => handleAcceptShift(shift.id)}
-                    acceptLoading={applyingId === shift.id}
-                    onPress={() => router.push(`/shift/${shift.id}`)}
-                  />
-                ))}
-              </>
-            )}
-          </>
-        )}
-      </ScrollView>
-    </View>
-  );
-}
-
-// ─── Admin Dashboard ──────────────────────────────────────────────────────────
-
-function AdminDashboard() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const [stats, setStats] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await apiGet<Record<string, number>>('/api/admin/stats');
-        setStats(data ?? {});
-      } catch {
-        // silently fail
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
-
-  const statItems = [
-    { label: 'Total Users', value: stats.total_users ?? 0, color: COLORS.primary },
-    { label: 'Total Workers', value: stats.total_workers ?? 0, color: '#60A5FA' },
-    { label: 'Businesses', value: stats.total_businesses ?? 0, color: COLORS.accent },
-    { label: 'Total Shifts', value: stats.total_shifts ?? 0, color: '#A78BFA' },
-    { label: 'Open Shifts', value: stats.open_shifts ?? 0, color: COLORS.primary },
-    { label: 'Filled Shifts', value: stats.filled_shifts ?? 0, color: COLORS.primaryDim },
-  ];
-
-  const platformHealth = [
-    { label: 'Active', value: stats.open_shifts ?? 0, dotColor: COLORS.primary },
-    { label: 'Pending', value: stats.pending_shifts ?? 0, dotColor: COLORS.accent },
-    { label: 'Issues', value: 0, dotColor: COLORS.danger },
-  ];
-
-  const adminTools = [
-    { label: 'Worker Verification Queue', iconName: 'verified-user' as const, color: COLORS.primary },
-    { label: 'Dispute Management', iconName: 'gavel' as const, color: COLORS.accent },
-    { label: 'No-Show Tracking', iconName: 'warning' as const, color: COLORS.danger },
-  ];
-
-  return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: COLORS.background }}
-      contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 20, paddingBottom: 180 }}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={{ marginBottom: 24 }}>
-        <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 2, marginBottom: 6 }}>
-          ⚡ ADMIN
-        </Text>
-        <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
-          Admin Dashboard
-        </Text>
-      </View>
-
-      {/* Stats grid */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 }}>
-        {statItems.map((item) => (
-          <View key={item.label} style={{ width: '47%', ...glass }}>
-            <Text style={{ color: item.color, fontSize: 34, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1 }}>
-              {loading ? '—' : item.value}
-            </Text>
-            <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginTop: 4 }}>
-              {item.label}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Platform Health */}
-      <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 12 }}>
-        Platform Health
-      </Text>
-      <View style={{ flexDirection: 'row', gap: 10, marginBottom: 28 }}>
-        {platformHealth.map((item) => (
-          <View key={item.label} style={{ flex: 1, ...glass, alignItems: 'center', paddingVertical: 14 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.dotColor, marginBottom: 8 }} />
-            <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-              {loading ? '—' : item.value}
-            </Text>
-            <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular', marginTop: 3 }}>
-              {item.label}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Quick actions */}
-      <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 12 }}>
-        Quick Actions
-      </Text>
-      <View style={{ gap: 10, marginBottom: 28 }}>
-        {[
-          { label: 'View All Workers', iconName: 'people' as const, color: COLORS.primary, route: '/(tabs)/workers' },
-          { label: 'View All Businesses', iconName: 'business' as const, color: COLORS.accent, route: '/(tabs)/businesses' },
-          { label: 'View All Shifts', iconName: 'trending-up' as const, color: '#60A5FA', route: '/(tabs)/shifts' },
-        ].map((action) => (
-          <AnimatedPressable
-            key={action.label}
-            onPress={() => router.push(action.route as never)}
-          >
-            <View style={{ ...glass, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
-                <MaterialIcons name={action.iconName} size={20} color={action.color} />
-              </View>
-              <Text style={{ color: COLORS.text, fontSize: 15, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
-                {action.label}
-              </Text>
-              <MaterialIcons name="chevron-right" size={20} color={COLORS.textSecondary} />
-            </View>
-          </AnimatedPressable>
-        ))}
-      </View>
-
-      {/* Admin Tools */}
-      <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', marginBottom: 12 }}>
-        Admin Tools
-      </Text>
-      <View style={{ gap: 10 }}>
-        {adminTools.map((tool) => (
-          <AnimatedPressable
-            key={tool.label}
-            onPress={() => {}}
-          >
-            <View style={{ ...glass, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.surfaceSecondary, alignItems: 'center', justifyContent: 'center' }}>
-                <MaterialIcons name={tool.iconName} size={20} color={tool.color} />
-              </View>
-              <Text style={{ color: COLORS.text, fontSize: 15, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', flex: 1 }}>
-                {tool.label}
-              </Text>
-              <MaterialIcons name="chevron-right" size={20} color={COLORS.textSecondary} />
-            </View>
-          </AnimatedPressable>
-        ))}
-      </View>
-    </ScrollView>
-  );
-}
-
-// ─── Root export ──────────────────────────────────────────────────────────────
-
-export default function HomeScreen() {
-  const { currentRole, isLoading } = useRole();
-
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontSize: 32 }}>⚡</Text>
-      </View>
-    );
-  }
-
-  if (!currentRole) return <LandingScreen />;
-  if (currentRole === 'manager') return <ManagerDashboard />;
-  if (currentRole === 'worker') return <WorkerDashboard />;
-  if (currentRole === 'admin') return <AdminDashboard />;
-  return <LandingScreen />;
-}
-
-            <View>
-              <Text style={{ color: COLORS.text, fontSize: 16, fontWeight: '600', fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 6 }}>
-                No open shifts nearby
-              </Text>
-              <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center', fontFamily: 'SpaceGrotesk-Regular' }}>
-                Check back soon or tap Go Live to get notified for rush shifts.
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <>
-            {/* Emergency section */}
-            {emergencySection.length > 0 && (
-              <>
-                <SectionHeader
-                  title="🚨 RUSH COVERAGE"
-                  count={emergencySection.length}
-                  sectionColor={COLORS.danger}
-                  sectionBg="rgba(255,68,68,0.12)"
-                />
-                {emergencySection.map((shift, i) => (
-                  <ShiftCard
-                    key={shift.id}
-                    shift={shift}
-                    index={i}
-                    showAcceptButton
-                    onAccept={() => handleAcceptShift(shift.id)}
-                    acceptLoading={applyingId === shift.id}
-                    onPress={() => router.push(`/shift/${shift.id}`)}
-                  />
-                ))}
-              </>
-            )}
-
-            {/* Boosted pay section */}
-            {boostedSection.length > 0 && (
-              <>
-                <SectionHeader
-                  title="⚡ BOOSTED PAY"
+                  title="âš¡ BOOSTED PAY"
                   count={boostedSection.length}
                   sectionColor="#FFD700"
                   sectionBg="rgba(255,215,0,0.10)"
@@ -2025,7 +1774,7 @@ export default function HomeScreen() {
   );
 }
 
-// ─── Admin Dashboard ──────────────────────────────────────────────────────────
+//â”€â”€â”€ Admin Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function AdminDashboard() {
   const router = useRouter();
@@ -2076,7 +1825,7 @@ function AdminDashboard() {
     >
       <View style={{ marginBottom: 24 }}>
         <Text style={{ color: COLORS.primary, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 2, marginBottom: 6 }}>
-          ⚡ ADMIN
+          âš¡ ADMIN
         </Text>
         <Text style={{ color: COLORS.text, fontSize: 28, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -0.5 }}>
           Admin Dashboard
@@ -2087,7 +1836,7 @@ function AdminDashboard() {
         {statItems.map((item) => (
           <View key={item.label} style={{ width: '47%', ...glass }}>
             <Text style={{ color: item.color, fontSize: 34, fontWeight: '800', fontFamily: 'SpaceGrotesk-Bold', letterSpacing: -1 }}>
-              {loading ? '—' : item.value}
+              {loading ? 'â€”' : item.value}
             </Text>
             <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular', marginTop: 4 }}>
               {item.label}
@@ -2104,7 +1853,7 @@ function AdminDashboard() {
           <View key={item.label} style={{ flex: 1, ...glass, alignItems: 'center', paddingVertical: 14 }}>
             <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.dotColor, marginBottom: 8 }} />
             <Text style={{ color: COLORS.text, fontSize: 20, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold' }}>
-              {loading ? '—' : item.value}
+              {loading ? 'â€”' : item.value}
             </Text>
             <Text style={{ color: COLORS.textSecondary, fontSize: 11, fontFamily: 'SpaceGrotesk-Regular', marginTop: 3 }}>
               {item.label}
@@ -2158,7 +1907,7 @@ function AdminDashboard() {
   );
 }
 
-// ─── Root export ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Root export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function HomeScreen() {
   const { currentRole, isLoading } = useRole();
@@ -2166,7 +1915,7 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontSize: 32 }}>⚡</Text>
+        <Text style={{ fontSize: 32 }}>âš¡</Text>
       </View>
     );
   }
