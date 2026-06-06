@@ -108,7 +108,7 @@ export async function fanOutRushShift(app: App, shiftId: string): Promise<number
 
     const minutesUntil = Math.round((shiftDateTime.getTime() - now.getTime()) / 60000);
     const relTime = minutesUntil < 60 ? `${minutesUntil}min` : `${Math.round(minutesUntil / 60)}h`;
-    const title = `🔥 Rush shift — $${shift.hourlyPay}/hr`;
+    const title = `🔥 Rush shift — $${Math.round(shift.hourlyPayCents / 100)}/hr`;
     const body = `${shift.roleNeeded} at ${shift.location}, starts in ${relTime}. Tap to claim.`;
     const data = { type: 'rush_shift', shift_id: shiftId };
 

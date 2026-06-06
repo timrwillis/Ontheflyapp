@@ -227,7 +227,7 @@ export const shifts = pgTable('shifts', {
   date: text('date').notNull(),
   startTime: text('start_time').notNull(),
   endTime: text('end_time').notNull(),
-  hourlyPay: numeric('hourly_pay').notNull(),
+  hourlyPayCents: integer('hourly_pay_cents').notNull(),
   location: text('location').notNull(),
   dressCode: text('dress_code'),
   experienceRequired: text('experience_required'),

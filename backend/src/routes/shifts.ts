@@ -12,7 +12,7 @@ interface ShiftInput {
   date: string;
   start_time: string;
   end_time?: string;
-  hourly_pay: string;
+  hourly_pay_cents: number;
   location?: string;
   dress_code?: string;
   experience_required?: string;
@@ -148,7 +148,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
             date: shift.date,
             start_time: shift.startTime,
             end_time: shift.endTime,
-            hourly_pay: shift.hourlyPay,
+            hourly_pay_cents: shift.hourlyPayCents,
             location: shift.location,
             dress_code: shift.dressCode,
             experience_required: shift.experienceRequired,
@@ -175,14 +175,14 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         tags: ['shifts'],
         body: {
           type: 'object',
-          required: ['role', 'date', 'start_time', 'hourly_pay', 'urgency'],
+          required: ['role', 'date', 'start_time', 'hourly_pay_cents', 'urgency'],
           properties: {
             role: { type: 'string' },
             workers_needed: { type: 'integer' },
             date: { type: 'string' },
             start_time: { type: 'string' },
             end_time: { type: 'string' },
-            hourly_pay: { type: 'string' },
+            hourly_pay_cents: { type: 'integer' },
             location: { type: 'string' },
             dress_code: { type: 'string' },
             experience_required: { type: 'string' },
@@ -293,7 +293,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         date: body.date,
         startTime: body.start_time,
         endTime: body.end_time || '',
-        hourlyPay: body.hourly_pay,
+        hourlyPayCents: body.hourly_pay_cents,
         location: body.location || '',
         dressCode: body.dress_code,
         experienceRequired: body.experience_required,
@@ -406,7 +406,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         date: shift.date,
         start_time: shift.startTime,
         end_time: shift.endTime,
-        hourly_pay: shift.hourlyPay,
+        hourly_pay_cents: shift.hourlyPayCents,
         location: shift.location,
         dress_code: shift.dressCode,
         experience_required: shift.experienceRequired,
@@ -508,7 +508,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
                 date: shift.date,
                 start_time: shift.startTime,
                 end_time: shift.endTime,
-                hourly_pay: shift.hourlyPay,
+                hourly_pay_cents: shift.hourlyPayCents,
                 location: shift.location,
                 urgency: shift.urgency,
                 status: shift.status,
@@ -588,7 +588,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         date: shift.date,
         start_time: shift.startTime,
         end_time: shift.endTime,
-        hourly_pay: shift.hourlyPay,
+        hourly_pay_cents: shift.hourlyPayCents,
         location: shift.location,
         dress_code: shift.dressCode,
         experience_required: shift.experienceRequired,
