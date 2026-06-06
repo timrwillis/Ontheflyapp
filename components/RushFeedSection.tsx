@@ -8,12 +8,14 @@ import {
   ActivityIndicator,
   Platform,
   Animated,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { getShiftStart, formatRelativeTime, formatAbsoluteTime } from '@/utils/shiftTime';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,6 +23,7 @@ export interface RushShift {
   id: string;
   role: string;
   hourly_pay?: number;
+  date?: string;
   start_time?: string;
   end_time?: string;
   location?: string;
@@ -41,33 +44,6 @@ interface RushFeedSectionProps {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatRelativeTime(startTimeStr?: string): string {
-  if (!startTimeStr) return '';
-  try {
-    const start = new Date(startTimeStr);
-    const now = new Date();
-    const diffMs = start.getTime() - now.getTime();
-    const diffMin = Math.round(diffMs / 60000);
-    if (diffMin < 0) return 'Started';
-    if (diffMin < 60) return `in ${diffMin}m`;
-    const h = Math.floor(diffMin / 60);
-    const m = diffMin % 60;
-    return m > 0 ? `in ${h}h ${m}m` : `in ${h}h`;
-  } catch {
-    return startTimeStr;
-  }
-}
-
-function formatAbsoluteTime(startTimeStr?: string): string {
-  if (!startTimeStr) return '';
-  try {
-    const d = new Date(startTimeStr);
-    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  } catch {
-    return startTimeStr;
-  }
-}
-
 function capitalize(s: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ') : '';
 }
@@ -85,8 +61,10 @@ function RushShiftCard({ shift, onClaim, claimingId }: RushShiftCardProps) {
   const pay = Number(shift.hourly_pay ?? 0);
   const venueName = shift.business?.name ?? shift.business_name ?? 'Venue';
   const area = shift.business?.city ?? shift.city ?? shift.location ?? '';
-  const rel = formatRelativeTime(shift.start_time);
-  const abs = formatAbsoluteTime(shift.start_time);
+  const start = getShiftStart(shift);
+  if (__DEV__) console.log(`[RushFeed] Card render: shift ${shift.id} start parsed: ${start !== null}`);
+  const rel = start ? formatRelativeTime(start) : null;
+  const abs = start ? formatAbsoluteTime(start) : null;
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -146,7 +124,7 @@ function RushShiftCard({ shift, onClaim, claimingId }: RushShiftCardProps) {
       </View>
 
       {/* Start time */}
-      {!!shift.start_time && (
+      {!!start && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 }}>
           <MaterialIcons name="schedule" size={14} color={COLORS.accent} />
           <Text style={{ color: COLORS.accent, fontSize: 13, fontFamily: 'SpaceGrotesk-SemiBold' }}>
@@ -195,16 +173,16 @@ interface ClaimResultModalProps {
 
 function ClaimResultModal({ visible, result, shift, errorMessage, onDismiss }: ClaimResultModalProps) {
   useEffect(() => {
-    if (result === 'success') {
-      const t = setTimeout(onDismiss, 4000);
-      return () => clearTimeout(t);
-    }
+    if (result !== 'success') return;
+    const t = setTimeout(onDismiss, 4000);
+    return () => clearTimeout(t);
   }, [result, onDismiss]);
 
   if (!visible || !result) return null;
 
   const venueName = shift?.business?.name ?? shift?.business_name ?? 'the venue';
-  const abs = formatAbsoluteTime(shift?.start_time);
+  const startDate = shift ? getShiftStart(shift) : null;
+  const abs = startDate ? formatAbsoluteTime(startDate) : null;
   const address = shift?.business?.address ?? shift?.address ?? '';
 
   return (
@@ -231,12 +209,9 @@ function ClaimResultModal({ visible, result, shift, errorMessage, onDismiss }: C
             </Text>
             {!!address && (
               <Pressable onPress={() => {
-                const mapsUrl = Platform.select({
-                  ios: `maps:0,0?q=${encodeURIComponent(address)}`,
-                  android: `geo:0,0?q=${encodeURIComponent(address)}`,
-                  default: `https://maps.google.com/?q=${encodeURIComponent(address)}`,
-                });
-                // Note: Linking is not imported here to keep deps minimal; address is shown as text
+                const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+                if (__DEV__) console.log(`[RushFeed] Address tap: opening maps for ${address}`);
+                Linking.openURL(url).catch(err => console.warn('[RushFeed] Failed to open maps:', err));
               }}>
                 <Text style={{ color: COLORS.accent, fontSize: 14, fontFamily: 'SpaceGrotesk-SemiBold', textAlign: 'center', marginBottom: 32, textDecorationLine: 'underline' }}>
                   📍 {address}
