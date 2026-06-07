@@ -15,7 +15,6 @@ export interface Shift {
   workersNeeded?: number;
   startTime?: string;
   endTime?: string;
-  hourlyPay?: number | string;
   /** Integer cents — primary pay field from backend (e.g. 3550 = $35.50) */
   hourly_pay_cents?: number;
   business_name?: string;
