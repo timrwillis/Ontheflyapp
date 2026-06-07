@@ -204,11 +204,12 @@ export default function AvailabilityTemplateScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await authenticatedGet<{ availability_template?: Record<string, TimeWindow[]> }>('/api/worker/availability-template');
-        if (data?.availability_template) {
+        const data = await authenticatedGet<{ availabilityTemplate?: Record<string, TimeWindow[]>; availability_template?: Record<string, TimeWindow[]> }>('/api/worker-profiles/me');
+        const tmpl = data?.availabilityTemplate ?? data?.availability_template;
+        if (tmpl) {
           const t = emptyTemplate();
           for (const day of DAYS) {
-            t[day] = (data.availability_template[day] ?? []).filter(
+            t[day] = (tmpl[day] ?? []).filter(
               (w) => typeof w.start === 'string' && typeof w.end === 'string'
             );
           }

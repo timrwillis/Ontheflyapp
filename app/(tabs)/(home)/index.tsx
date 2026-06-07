@@ -1255,9 +1255,9 @@ function WorkerDashboard() {
   useEffect(() => {
     const loadAvailability = async () => {
       try {
-        const data = await authenticatedGet<{ available_now_until?: string | null; availability_template?: Record<string, unknown> }>('/api/worker/availability-template');
-        setAvailableUntil(data?.available_now_until ?? null);
-        const tmpl = data?.availability_template ?? {};
+        const data = await authenticatedGet<{ availableNowUntil?: string | null; available_now_until?: string | null; availabilityTemplate?: Record<string, unknown>; availability_template?: Record<string, unknown> }>('/api/worker-profiles/me');
+        setAvailableUntil(data?.availableNowUntil ?? data?.available_now_until ?? null);
+        const tmpl = data?.availabilityTemplate ?? data?.availability_template ?? {};
         const hasTmpl = Object.values(tmpl).some((w: any) => Array.isArray(w) && w.length > 0);
         setHasTemplate(hasTmpl);
       } catch { /* ignore */ }
@@ -1269,8 +1269,8 @@ function WorkerDashboard() {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const data = await authenticatedGet<{ available_now_until?: string | null }>('/api/worker/availability-template');
-        const until = data?.available_now_until ?? null;
+        const data = await authenticatedGet<{ availableNowUntil?: string | null; available_now_until?: string | null }>('/api/worker-profiles/me');
+        const until = data?.availableNowUntil ?? data?.available_now_until ?? null;
         setAvailableUntil(until);
         if (until && new Date(until) <= new Date()) setAvailableUntil(null);
       } catch { /* ignore */ }
