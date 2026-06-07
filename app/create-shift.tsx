@@ -23,6 +23,7 @@ import { ROLES } from '@/constants/Roles';
 import { useRole } from '@/contexts/RoleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiPost, apiGet, authenticatedPost, authenticatedGet } from '@/utils/api';
+import { parseMoneyInput, isValidHourlyRate } from '@/utils/money';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { MaterialIcons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -332,7 +333,7 @@ export default function CreateShiftScreen() {
   const progressStep =
     (selectedRole ? 1 : 0) +
     (selectedUrgency ? 1 : 0) +
-    (Number(hourlyPay) > 0 ? 1 : 0) +
+    ((parseMoneyInput(hourlyPay) ?? 0) > 0 ? 1 : 0) +
     (startTime.trim().length > 0 ? 1 : 0);
 
   const toggleCert = (c: string) => {
@@ -348,8 +349,9 @@ export default function CreateShiftScreen() {
       Alert.alert('Missing Urgency', 'Please select an urgency level.');
       return;
     }
-    if (!hourlyPay || Number(hourlyPay) <= 0) {
-      Alert.alert('Missing Pay Rate', 'Please enter the hourly pay rate.');
+    const payCents = parseMoneyInput(hourlyPay);
+    if (payCents === null || !isValidHourlyRate(payCents)) {
+      Alert.alert('Invalid Pay Rate', 'Please enter a valid hourly rate ($1.00 – $500.00).');
       return;
     }
     if (!startTime.trim()) {
@@ -361,7 +363,7 @@ export default function CreateShiftScreen() {
     const payload = {
       role: selectedRole,
       urgency: selectedUrgency,
-      hourly_pay: Number(hourlyPay),
+      hourly_pay_cents: payCents,
       start_time: startTime,
       end_time: endTime,
       workers_needed: workersNeeded,

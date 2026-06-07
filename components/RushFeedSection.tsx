@@ -16,13 +16,15 @@ import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { getShiftStart, formatRelativeTime, formatAbsoluteTime } from '@/utils/shiftTime';
+import { formatHourlyRate } from '@/utils/money';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface RushShift {
   id: string;
   role: string;
-  hourly_pay?: number;
+  /** Integer cents — primary pay field from backend (e.g. 3550 = $35.50) */
+  hourly_pay_cents?: number;
   date?: string;
   start_time?: string;
   end_time?: string;
@@ -58,7 +60,7 @@ interface RushShiftCardProps {
 
 function RushShiftCard({ shift, onClaim, claimingId }: RushShiftCardProps) {
   const isClaiming = claimingId === shift.id;
-  const pay = Number(shift.hourly_pay ?? 0);
+  const payDisplay = formatHourlyRate(shift.hourly_pay_cents ?? 0);
   const venueName = shift.business?.name ?? shift.business_name ?? 'Venue';
   const area = shift.business?.city ?? shift.city ?? shift.location ?? '';
   const start = getShiftStart(shift);
@@ -94,7 +96,7 @@ function RushShiftCard({ shift, onClaim, claimingId }: RushShiftCardProps) {
       {/* Top row: pay + role badge */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <Text style={{ color: COLORS.text, fontSize: 32, fontFamily: 'SpaceGrotesk-Bold', fontWeight: '800', letterSpacing: -1 }}>
-          ${pay}/hr
+          {payDisplay}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <View style={{ backgroundColor: 'rgba(255,68,68,0.15)', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(255,68,68,0.3)' }}>

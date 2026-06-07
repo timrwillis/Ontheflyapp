@@ -12,16 +12,15 @@ echo Committing (skipped if nothing new)...
 git diff --cached --quiet && (
   echo Nothing new to commit - pushing existing commits...
 ) || (
-  git commit -m "feat(rush-shifts): v0.5 frontend — availability, available-now, rush feed, claim, manager rush flow
+  git commit -m "feat(money): Step 3 — integer cents throughout frontend
 
-- Worker availability template editor (weekly JSONB, multiple windows per day)
-- Worker 'Available now' toggle with quick-set window options (+2h, +4h, midnight, custom)
-- Rush feed with 30s polling, claim flow with race-loss handling (200/409/403)
-- Manager rush toggle on shift post, auto-detect from start_time
-- Post-success watching state shows pinged count and claim event (10s poll)
-- Manager no-show flag button on completed shifts
-- Push notification handler routes rush_shift type to claim flow
-- Availability Schedule button added to worker profile screen"
+- utils/money.ts: formatMoney, formatHourlyRate, parseMoneyInput, isValidHourlyRate
+- create-shift.tsx: sends hourly_pay_cents (integer) instead of hourly_pay (decimal)
+- ShiftCard.tsx: reads hourly_pay_cents, boosted-pay threshold 3500 cents
+- RushFeedSection.tsx: reads hourly_pay_cents, display via formatHourlyRate
+- app/shift/[id].tsx: reads hourly_pay_cents, boosted-pay 3000 cents
+- home/index.tsx: sort/filter/earnings all use hourly_pay_cents
+- DemoData.ts: all hourly_pay values converted to hourly_pay_cents (x100)"
 )
 echo.
 echo Pushing to prod...

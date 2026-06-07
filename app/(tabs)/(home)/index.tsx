@@ -1394,7 +1394,7 @@ function WorkerDashboard() {
       const aOrder = urgencyOrder[a.urgency ?? ''] ?? 10;
       const bOrder = urgencyOrder[b.urgency ?? ''] ?? 10;
       if (aOrder !== bOrder) return aOrder - bOrder;
-      return Number(b.hourly_pay ?? b.hourlyPay ?? 0) - Number(a.hourly_pay ?? a.hourlyPay ?? 0);
+      return (b.hourly_pay_cents ?? 0) - (a.hourly_pay_cents ?? 0);
     });
 
   // Section grouping
@@ -1403,16 +1403,17 @@ function WorkerDashboard() {
   );
   const boostedSection = filteredShifts.filter(
     (s) => !(s.urgency === 'emergency' || s.urgency === 'tonight') &&
-      Number(s.hourly_pay ?? s.hourlyPay ?? 0) >= 35
+      (s.hourly_pay_cents ?? 0) >= 3500
   );
   const upcomingSection = filteredShifts.filter(
     (s) => !(s.urgency === 'emergency' || s.urgency === 'tonight') &&
-      Number(s.hourly_pay ?? s.hourlyPay ?? 0) < 35
+      (s.hourly_pay_cents ?? 0) < 3500
   );
 
   // Earnings estimate from top 3 shifts
   const top3Shifts = [...filteredShifts].slice(0, 3);
-  const earningsLow = top3Shifts.reduce((sum, s) => sum + Number(s.hourly_pay ?? s.hourlyPay ?? 0) * 6, 0);
+  // hourly_pay_cents / 100 converts to dollars; * 6 estimates a 6-hour shift
+  const earningsLow = top3Shifts.reduce((sum, s) => sum + (s.hourly_pay_cents ?? 0) / 100 * 6, 0);
   const earningsHigh = Math.round(earningsLow * 1.2);
   const earningsLowDisplay = '$' + Math.round(earningsLow).toLocaleString();
   const earningsHighDisplay = '$' + earningsHigh.toLocaleString();

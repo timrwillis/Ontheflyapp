@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
 import { useRole } from '@/contexts/RoleContext';
 import { apiGet, apiPost, apiPut } from '@/utils/api';
+import { formatHourlyRate } from '@/utils/money';
 import { Shift } from '@/components/ShiftCard';
 import { RoleBadge } from '@/components/RoleBadge';
 import { UrgencyBadge } from '@/components/UrgencyBadge';
@@ -52,11 +53,7 @@ function formatDate(dateStr?: string): string {
   }
 }
 
-function formatPay(pay?: number | string): string {
-  const num = Number(pay);
-  if (isNaN(num)) return '$—/hr';
-  return `$${num.toFixed(0)}/hr`;
-}
+// formatPay removed — use formatHourlyRate(shift.hourly_pay_cents) from utils/money
 
 function getWorkerInitials(name?: string): string {
   if (!name) return 'W';
@@ -218,7 +215,7 @@ export default function ShiftDetailScreen() {
 
   // Derived display values
   const dateDisplay = formatDate(shift?.date);
-  const payDisplay = formatPay(shift?.hourly_pay ?? shift?.hourlyPay);
+  const payDisplay = formatHourlyRate(shift?.hourly_pay_cents ?? 0);
   const shiftStartTime = shift?.start_time ?? shift?.startTime;
   const shiftEndTime = shift?.end_time ?? shift?.endTime;
   const timeDisplay = shiftStartTime && shiftEndTime ? `${shiftStartTime} – ${shiftEndTime}` : shiftStartTime ?? '—';
@@ -226,8 +223,8 @@ export default function ShiftDetailScreen() {
   const isEmergency = shift?.urgency === 'emergency' || shift?.urgency === 'urgent';
   const workersConfirmed = shift?.workers_confirmed ?? 0;
   const workersNeeded = shift?.workers_needed ?? shift?.workersNeeded ?? 1;
-  const hourlyPay = Number(shift?.hourly_pay ?? shift?.hourlyPay) || 0;
-  const isBoostedPay = hourlyPay >= 30;
+  const hourlyPay = shift?.hourly_pay_cents ?? 0; // integer cents
+  const isBoostedPay = hourlyPay >= 3000; // cents — $30 = 3000
   const businessName = (shift?.business_name ?? shift?.business?.name) || 'Unknown Venue';
   const businessType = shift?.business_type ?? shift?.business?.type;
   const shiftRole = shift?.role ?? shift?.roleNeeded ?? 'Staff';

@@ -5,6 +5,7 @@ import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { RoleBadge } from '@/components/RoleBadge';
 import { UrgencyBadge } from '@/components/UrgencyBadge';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { formatHourlyRate } from '@/utils/money';
 
 export interface Shift {
   id: string;
@@ -15,6 +16,8 @@ export interface Shift {
   startTime?: string;
   endTime?: string;
   hourlyPay?: number | string;
+  /** Integer cents — primary pay field from backend (e.g. 3550 = $35.50) */
+  hourly_pay_cents?: number;
   business_name?: string;
   business_type?: string;
   business?: { name?: string; type?: string; city?: string; address?: string };
@@ -57,10 +60,9 @@ function formatDate(dateStr?: string): string {
   }
 }
 
-function formatPayNumber(pay?: number | string): string {
-  const num = Number(pay);
-  if (isNaN(num) || num === 0) return '$--';
-  return `$${num.toFixed(0)}/hr`;
+function formatPayNumber(cents?: number): string {
+  if (!cents || cents <= 0) return '$--/hr';
+  return formatHourlyRate(cents);
 }
 
 function getViewerCount(id: string): number {
@@ -103,7 +105,7 @@ function buildLiveSignals(shift: Shift): LiveSignal[] {
   const signals: LiveSignal[] = [];
   const urgency = shift.urgency ?? '';
   const isUrgent = urgency === 'emergency' || urgency === 'tonight';
-  const pay = Number(shift.hourly_pay ?? shift.hourlyPay ?? 0);
+  const pay = shift.hourly_pay_cents ?? 0;
   const workersNeeded = shift.workers_needed ?? shift.workersNeeded ?? 0;
   const businessName = (shift.business_name ?? shift.business?.name ?? '').toLowerCase();
   const notes = (shift.notes ?? '').toLowerCase();
@@ -142,8 +144,8 @@ function buildLiveSignals(shift: Shift): LiveSignal[] {
     }
   }
 
-  // Boosted Pay
-  if (pay >= 35) {
+  // Boosted Pay (pay is integer cents — 3500 = $35)
+  if (pay >= 3500) {
     signals.push({ label: 'Boosted Pay ⚡', color: '#FFD700', bgColor: 'rgba(255,215,0,0.12)' });
   }
 
@@ -259,9 +261,9 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
 
   const isEmergency = shift.urgency === 'emergency' || shift.urgency === 'tonight';
   const dateDisplay = formatDate(shift.date);
-  const pay = Number(shift.hourly_pay ?? shift.hourlyPay ?? 0);
-  const payDisplay = formatPayNumber(shift.hourly_pay ?? shift.hourlyPay);
-  const isHighPay = pay >= 35;
+  const pay = shift.hourly_pay_cents ?? 0;
+  const payDisplay = formatPayNumber(pay);
+  const isHighPay = pay >= 3500; // cents — $35 = 3500
   const payColor = isHighPay ? '#FFD700' : COLORS.accent;
   const timeDisplay = shift.start_time && shift.end_time
     ? `${shift.start_time} – ${shift.end_time}`
