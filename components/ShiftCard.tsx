@@ -24,7 +24,6 @@ export interface Shift {
   date?: string;
   start_time?: string;
   end_time?: string;
-  hourly_pay?: number | string;
   location?: string;
   urgency?: string;
   dress_code?: string;

@@ -573,7 +573,7 @@ describe("API Integration Tests", () => {
         date: "2026-05-10",
         start_time: "18:00",
         end_time: "22:00",
-        hourly_pay: "25.00",
+        hourly_pay_cents: 2500,
         location: "San Francisco",
         urgency: "tomorrow",
       }),
@@ -592,7 +592,7 @@ describe("API Integration Tests", () => {
         date: "2026-05-10",
         start_time: "18:00",
         end_time: "22:00",
-        hourly_pay: "25.00",
+        hourly_pay_cents: 2500,
         location: "San Francisco",
         urgency: "tomorrow",
       }),
@@ -608,7 +608,7 @@ describe("API Integration Tests", () => {
         role: "chef",
         start_time: "18:00",
         end_time: "22:00",
-        hourly_pay: "25.00",
+        hourly_pay_cents: 2500,
         location: "San Francisco",
         urgency: "tomorrow",
       }),
@@ -624,7 +624,7 @@ describe("API Integration Tests", () => {
         role: "chef",
         date: "2026-05-10",
         end_time: "22:00",
-        hourly_pay: "25.00",
+        hourly_pay_cents: 2500,
         location: "San Francisco",
         urgency: "tomorrow",
       }),
@@ -632,7 +632,7 @@ describe("API Integration Tests", () => {
     await expectStatus(res, 400);
   });
 
-  test("POST /api/shifts - Missing required hourly_pay field returns 400", async () => {
+  test("POST /api/shifts - Missing required hourly_pay_cents field returns 400", async () => {
     const res = await authenticatedApi("/api/shifts", authToken, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -657,7 +657,7 @@ describe("API Integration Tests", () => {
         date: "2026-05-10",
         start_time: "18:00",
         end_time: "22:00",
-        hourly_pay: "25.00",
+        hourly_pay_cents: 2500,
         location: "San Francisco",
       }),
     });
@@ -710,7 +710,7 @@ describe("API Integration Tests", () => {
         date: "2026-05-11",
         start_time: "19:00",
         end_time: "23:00",
-        hourly_pay: "20.00",
+        hourly_pay_cents: 2000,
         location: "Oakland",
         urgency: "this_week",
       }),
