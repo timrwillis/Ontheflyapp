@@ -232,7 +232,7 @@ export default function AvailabilityTemplateScreen() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await authenticatedPatch('/api/worker/availability-template', { availability_template: template });
+      await authenticatedPatch('/api/worker/availability-template', { template });
       showToast();
     } catch (err: any) {
       Alert.alert('Error', err?.message ?? 'Could not save availability. Please try again.');

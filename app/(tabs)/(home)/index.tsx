@@ -1282,7 +1282,7 @@ function WorkerDashboard() {
     setAvailabilityLoading(true);
     try {
       const until = untilDate ? untilDate.toISOString() : null;
-      await authenticatedPatch('/api/worker/available-now', { available_until: until });
+      await authenticatedPatch('/api/worker/available-now', { until });
       setAvailableUntil(until);
       console.log(until ? `[Availability] Go-live: until ${until}` : '[Availability] Go-offline: cleared');
     } catch (err: any) {
