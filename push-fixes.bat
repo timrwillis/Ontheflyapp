@@ -10,20 +10,9 @@ if errorlevel 1 (
 
 echo === Syncing main with prod ===
 git fetch origin
-git checkout main
-if errorlevel 1 (
-    echo ERROR: checkout main failed
-    exit /b 1
-)
-git reset --hard prod
-git push origin main --force-with-lease
+git push origin prod:main --force-with-lease
 if errorlevel 1 (
     echo ERROR: push to main failed
-    exit /b 1
-)
-git checkout prod
-if errorlevel 1 (
-    echo ERROR: checkout back to prod failed
     exit /b 1
 )
 
