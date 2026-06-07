@@ -633,7 +633,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
               date: { type: 'string' },
               startTime: { type: 'string' },
               endTime: { type: 'string' },
-              hourlyPay: { type: 'string' },
+              hourlyPayCents: { type: 'integer' },
               location: { type: 'string' },
               dressCode: { type: 'string' },
               experienceRequired: { type: 'string' },
