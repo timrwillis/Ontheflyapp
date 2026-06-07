@@ -296,22 +296,21 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
     : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 8 });
 
   return (
-    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+    <Animated.View style={{
+      opacity,
+      transform: [{ translateY }],
+      backgroundColor: cardBg,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: urgencyBorderColor,
+      borderLeftWidth: isEmergency ? 4 : 1,
+      borderLeftColor: isEmergency ? COLORS.danger : urgencyBorderColor,
+      marginBottom: 14,
+      overflow: 'hidden',
+      ...cardShadow,
+    }}>
       <AnimatedPressable onPress={onPress}>
-        <View
-          style={{
-            backgroundColor: cardBg,
-            borderRadius: 20,
-            borderWidth: 1,
-            borderColor: urgencyBorderColor,
-            borderLeftWidth: isEmergency ? 4 : 1,
-            borderLeftColor: isEmergency ? COLORS.danger : urgencyBorderColor,
-            padding: 18,
-            marginBottom: 14,
-            overflow: 'hidden',
-            ...cardShadow,
-          }}
-        >
+        <View style={{ padding: 18 }}>
           {/* Live signal badges row */}
           {liveSignals.length > 0 && (
             <ScrollView
@@ -429,43 +428,6 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
               <View />
             )}
 
-            {showAcceptButton && (
-              <AnimatedPressable
-                onPress={() => {
-                  onAccept?.();
-                }}
-                disabled={acceptLoading}
-              >
-                <View
-                  style={{
-                    backgroundColor: COLORS.primary,
-                    borderRadius: 14,
-                    paddingHorizontal: 24,
-                    paddingVertical: 16,
-                    minWidth: 120,
-                    minHeight: 44,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: acceptLoading ? 0.6 : 1,
-                    borderWidth: 1,
-                    borderColor: COLORS.primary,
-                    ...primaryGlow,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: '#000',
-                      fontSize: 13,
-                      fontWeight: '700',
-                      fontFamily: 'SpaceGrotesk-Bold',
-                    }}
-                  >
-                    {acceptLoading ? 'Applying...' : '⚡ Accept'}
-                  </Text>
-                </View>
-              </AnimatedPressable>
-            )}
-
             {!showAcceptButton && shift.status && (
               <StatusBadge status={shift.status} />
             )}
@@ -491,6 +453,50 @@ export function ShiftCard({ shift, onPress, showAcceptButton, onAccept, acceptLo
           )}
         </View>
       </AnimatedPressable>
+      {showAcceptButton && (
+        <AnimatedPressable
+          onPress={() => {
+            onAccept?.();
+          }}
+          disabled={acceptLoading}
+        >
+          <View
+            style={{
+              paddingHorizontal: 18,
+              paddingBottom: 16,
+              alignItems: 'flex-end',
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: COLORS.primary,
+                borderRadius: 14,
+                paddingHorizontal: 24,
+                paddingVertical: 16,
+                minWidth: 120,
+                minHeight: 44,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: acceptLoading ? 0.6 : 1,
+                borderWidth: 1,
+                borderColor: COLORS.primary,
+                ...primaryGlow,
+              }}
+            >
+              <Text
+                style={{
+                  color: '#000',
+                  fontSize: 13,
+                  fontWeight: '700',
+                  fontFamily: 'SpaceGrotesk-Bold',
+                }}
+              >
+                {acceptLoading ? 'Applying...' : '⚡ Accept'}
+              </Text>
+            </View>
+          </View>
+        </AnimatedPressable>
+      )}
     </Animated.View>
   );
 }
