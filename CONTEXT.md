@@ -14,7 +14,7 @@ Cowork (desktop app with folder access to C:\Users\timmy\Ontheflyapp).
 On the Fly: hospitality staffing marketplace for Kansas City.
 - Workers: bartenders, servers, cooks pick up shifts (always free)
 - Managers: restaurants, bars, catering post shifts ($99-299/mo subscription, paywall live but admin bypass active for testing)
-- Wedge feature: rush shifts (<4 hours notice) — what differentiates us from Instawork/Qwick
+- Wedge feature: rush shifts (<4 hours notice) — what differentiates us from Instawork/Qwick. **OPERATIONAL END-TO-END as of June 7, 2026.**
 
 Also: Boozeslingers, my mobile bartending business. Separate website on Wix.
 
@@ -24,37 +24,48 @@ Frontend: Expo 54 / React Native 0.81 / TypeScript / expo-router v6 / SpaceGrote
 Backend: Fastify 5 / Drizzle ORM / Neon Postgres / better-auth (with SecureStore for token persistence on phone)
 Frontend path: C:\Users\timmy\Ontheflyapp
 Backend live: https://ontheflyapp-production.up.railway.app
-GitHub: timrwillis/Ontheflyapp — push to BOTH prod and main always
+GitHub: timrwillis/Ontheflyapp — push to BOTH prod and main always (use push-fixes.bat)
 Expo account: @twil1430/on-the-fly
 Theme: bg #0A0A0A, primary #00FF87, SpaceGrotesk font family
 
-## CURRENT STATE (last verified [DATE])
+## CURRENT STATE (last verified June 7, 2026 evening)
 
-WORKING IN PRODUCTION:
+WORKING END-TO-END IN PRODUCTION:
 - Auth: sign-in, sign-up, SecureStore token persistence, route guard, admin user detection
 - Admin god mode: floating pill, role switching, paywall bypass, force-complete-onboarding, seed-demo-business
 - Onboarding flows: worker (roles, profile, availability, complete) and manager (profile, business, complete)
 - 12-role constants/Roles.ts as single source of truth, matched to Postgres enum
-- Rush shifts API: rush-feed, claim (atomic), no-show flag, availability-template, available-now, push fan-out
-- Smoke test: backend/scripts/smoke-test.ts, runs end-to-end against Railway, 33/35 expected (2 rate-limit failures are normal)
+- **Wedge feature (rush shifts) - VERIFIED working end-to-end on phone:**
+  - Manager posts rush shift → fan-out matches eligible workers
+  - Pingings/push notifications sent to matching workers
+  - Worker sees shift in rush feed
+  - Worker taps Claim → atomic UPDATE writes claimed_at, claimed_by_worker_id, status='filled'
+  - Manager sees shift in Filled tab
+- Money handling: integer cents end-to-end (hourly_pay_cents column, formatHourlyRate display helper)
+- Time presets in create-shift: ASAP, In 1 hr, Tonight 6pm/8pm/9pm all produce valid HH:MM
+- Defensive guard in rushFanOut.ts rejects bad time data with clear log instead of crashing
+- Smoke test: backend/scripts/smoke-test.ts, runs end-to-end against Railway, 33/35 expected (2 rate-limit failures are known/normal)
 - Date helpers: utils/shiftTime.ts handles backend's separate date + HH:MM time fields
+- Money helpers: utils/money.ts (formatMoney, formatHourlyRate, parseMoneyInput, isValidHourlyRate)
+- Worker availability state: reads from /api/worker-profiles/me, writes via PATCH endpoints with correct field names (until, template)
 
-IN PROGRESS (data layer cleanup sprint):
-- Step 1: ✅ deleted all test shift data
-- Step 2: ✅ backend hourly_pay → hourly_pay_cents migration
-- Step 3: 🔄 frontend money utility and display update
-- Step 4: ⏳ start_at / end_at TIMESTAMPTZ computed columns
-- Step 5: ⏳ time picker UX overhaul in create-shift
-- Step 6: ⏳ verification
-- Step 7: ⏳ resume the 5 frontend fixes that were deferred
+KNOWN BUGS TO FIX (post-wedge):
+- 🟡 AuthContext useSession() returns new sessionData reference on each poll, causing 400ms cascade of /api/worker-profiles/me calls. Wasteful, not user-facing. Fix: useMemo(() => user, [user.id]) in AuthContext.tsx.
+- 🟡 Manager dashboard polish:
+  - Open shift cards aren't tappable to view details
+  - No "Delete shift" button (with confirmation modal)
+  - Tab pills "Open / Pending / Filled / Completed" visually squished, need even spacing
+- 🟡 Garbled UTF-8 characters in some UI text
+- 🟡 iOS foreground push notifications silent — needs Notifications.setNotificationHandler
+- 🟡 Claim modal shows generic message instead of worker name (backend join needed)
+- 🟢 "Pinged 0 workers" UX message could explain why (no matching availability, etc.)
+- 🟢 expo-notifications doesn't work in Expo Go on SDK 53+ — need EAS dev build for full push testing
+- 🟢 Self-test friction: you can't simulate a second worker on the same device
 
-KNOWN BUGS TO FIX (post-sprint):
-- 🟡 Garbled characters in some UI text (encoding issue, UTF-8 vs Windows-1252)
-- 🟡 Worker availability save returns 400 (likely same root cause as schema mismatches)
-- 🟡 expo-notifications doesn't work in Expo Go on SDK 53+ — need EAS dev build for full push testing
-- 🟡 Verify hourly_pay_cents type coercion is correct end-to-end
-- 🟢 No-show button doesn't appear (date parsing — should be fixed after Fix 3)
-- 🟢 Claim modal shows generic "A worker claimed it" instead of name (backend join — Fix 5)
+DEFERRED FROM CLEANUP SPRINT:
+- Step 4: start_at / end_at TIMESTAMPTZ computed columns on shifts
+- Step 5: Full time picker UX overhaul (calendar dropdown for future date picking)
+- Step 7: Resume any remaining frontend fixes from the original 5-fix list
 
 ## WORKFLOW RULES
 
@@ -66,17 +77,16 @@ KNOWN BUGS TO FIX (post-sprint):
 - After running the SQL, verify with a SELECT query before committing the schema.ts change.
 
 ### Deploys and branches
-- Always push to BOTH `prod` AND `main` branches. They must stay in sync.
-- After every push, verify: `git log origin/main..origin/prod --oneline` and reverse — both must return empty.
-- If branches drift, fix immediately: `git checkout main; git reset --hard prod; git push origin main --force-with-lease`.
+- Always push to BOTH `prod` AND `main` branches. Use `push-fixes.bat` which handles this atomically with `--force-with-lease`.
+- After every push, push-fixes.bat verifies sync. If verify-sync.bat is needed separately, run it.
 - Before debugging "the fix didn't work," check the Railway dashboard first. If the latest deploy is older than the latest commit, the build is failing.
-- After every push, run `npm run smoke` from /backend (or directly via npx tsx scripts/smoke-test.ts). If it fails, the deploy is broken — fix before doing anything else.
+- After every push, run `npx tsx scripts/smoke-test.ts` from /backend (password via Read-Host -AsSecureString). If it fails, the deploy is broken — fix before doing anything else.
 
 ### Errors
 - NEVER accept a generic 400 or 500 error. Always wrap DB operations in try/catch and return the real `err.message` and `err.code`.
 - For 400 errors, the actual Fastify validation error is in Railway logs (not the response body).
-- Add structured logs at state transitions: auth, route guards, paywall checks, schema mismatches. Use prefixes like `[Auth]`, `[Guard]`, `[Admin]`, `[Money]`, `[Time]` so logs are searchable.
-- Don't strip these logs after fixes ship — keep them, gated by `if (__DEV__)`.
+- Add structured logs at state transitions: auth, route guards, paywall checks, schema mismatches. Use prefixes like `[Auth]`, `[Guard]`, `[Admin]`, `[Money]`, `[Time]`, `[Claim]`, `[Apply]`, `[RushFanOut]` so logs are searchable.
+- Don't strip these logs after fixes ship — keep them, gated by `if (__DEV__)` on the frontend or always-on for backend.
 
 ### Single source of truth
 - Any data that appears in two places must come from one constants file.
@@ -91,6 +101,12 @@ KNOWN BUGS TO FIX (post-sprint):
 - Frontend always uses formatMoney/formatHourlyRate from utils/money.ts for display.
 - NEVER use numeric/float for money. NEVER use `Number(input)` directly — parse via parseMoneyInput.
 
+### Time presets (current state, time picker overhaul pending)
+- Current presets in create-shift.tsx: Now, In 1 hr, Tonight 6PM, Tonight 8PM, Tonight 9PM
+- All presets compute real HH:MM via toHHMM() helper before sending — never raw strings like "Now" or "In 1 hr"
+- Backend defensive guard in rushFanOut.ts rejects non-HH:MM data with clear log
+- Step 5 of cleanup sprint will replace this with proper time picker UX (calendar dropdown + custom picker)
+
 ### Secrets
 - NEVER paste passwords, API keys, or tokens into Claude conversations, commit messages, or PowerShell command-line args.
 - Use `Read-Host -AsSecureString` in PowerShell, or read from `backend/.env` (which is in .gitignore — verify before committing).
@@ -99,15 +115,16 @@ KNOWN BUGS TO FIX (post-sprint):
 ### Prompts to Cowork and Claude Code
 - ONE feature per prompt. Bundling 5+ fixes into one prompt produces partial fixes and tool corruption.
 - Every prompt starts with: "Read CONTEXT.md in this folder."
-- Every prompt ends with: create push-fixes.bat (Cowork) or commit-and-push (Claude Code) to BOTH prod and main.
+- Every prompt ends with: ".\push-fixes.bat" — never separate prod and main pushes.
 - For diagnostic tasks, explicitly say: "Do NOT change code. Diagnose and report."
 - After every multi-file Cowork session, verify TypeScript: `npx tsc --noEmit` before pushing.
 - If a session takes longer than 60 minutes without producing commits, assume it's stuck — cancel and split smaller.
+- If Claude Code asks you to paste a password in chat, ALWAYS refuse and run it yourself in PowerShell with Read-Host -AsSecureString.
 
 ### Testing order
 - Smallest unit first.
   - 1. `npx tsc --noEmit` on changed files
-  - 2. `npm run smoke` on backend
+  - 2. `npm run smoke` on backend (or `npx tsx scripts/smoke-test.ts`)
   - 3. Phone test via Expo Go tunnel mode
   - 4. APK build (weekly, for external testers)
 - Build a fresh APK weekly: `eas build --platform android --profile preview`.
@@ -117,21 +134,26 @@ KNOWN BUGS TO FIX (post-sprint):
 
 - app/auth-screen.tsx — landing, signin, signup states
 - app/_layout.tsx — root layout, admin pill mount, push notification handler
-- app/(tabs)/(home)/index.tsx — WorkerDashboard, ManagerDashboard, LandingScreen (1700+ lines — large but healthy after refactor)
-- app/(tabs)/shifts/index.tsx — shift list with no-show button
-- app/create-shift.tsx — manager shift posting (in active development, time picker overhaul pending)
+- app/(tabs)/(home)/index.tsx — WorkerDashboard, ManagerDashboard, LandingScreen
+- app/(tabs)/shifts/index.tsx — shift list with status tabs
+- app/create-shift.tsx — manager shift posting with time preset buttons
 - app/availability-template.tsx — worker availability editor
+- app/shift/[id].tsx — shift detail screen
 - components/RushFeedSection.tsx — rush shift display + claim flow
+- components/ShiftCard.tsx — shift card with sibling Accept button (Pressable structure fixed)
 - components/AdminPill.tsx — floating role switcher for admins
 - contexts/AuthContext.tsx — signInWithEmail, signUpWithEmail, isAdmin, isInitializing
 - contexts/RoleContext.tsx — currentRole, realRole, adminOverrideRole
 - lib/auth.ts — better-auth client + SecureStore persistence
 - utils/api.ts — authenticatedApiCall and helpers
 - utils/shiftTime.ts — getShiftStart, getShiftEnd, formatRelativeTime, formatAbsoluteTime
-- utils/money.ts — formatMoney, formatHourlyRate, parseMoneyInput, isValidHourlyRate (TBD in Step 3)
+- utils/money.ts — formatMoney, formatHourlyRate, parseMoneyInput, isValidHourlyRate
 - constants/Colors.ts — bg #0A0A0A, primary #00FF87
 - constants/Roles.ts — single source of truth for 12 roles
 - constants/AdminMode.ts — ADMIN_EMAILS, ADMIN_MODE_FLAG, isAdminUser
-- backend/src/routes/ — shifts, workers, applications, users, waitlist, marketplace, admin
+- backend/src/routes/shifts.ts — POST /api/shifts, /:id/claim (sets status=filled), /:id/apply (sets status=pending)
+- backend/src/routes/workers.ts — PATCH /api/worker/available-now (reads body.until), /availability-template (reads body.template)
 - backend/src/db/schema.ts — Drizzle schema, must match Postgres exactly
+- backend/src/services/rushFanOut.ts — fan-out logic with defensive HH:MM guard
 - backend/scripts/smoke-test.ts — end-to-end test suite
+- push-fixes.bat / verify-sync.bat — bulletproof git workflow
