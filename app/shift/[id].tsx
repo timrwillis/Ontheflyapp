@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
 import { useRole } from '@/contexts/RoleContext';
 import { apiGet, apiPost, apiPut, authenticatedDelete } from '@/utils/api';
+import { isAdminUser } from '@/constants/AdminMode';
 import { formatHourlyRate } from '@/utils/money';
 import { Shift } from '@/components/ShiftCard';
 import { RoleBadge } from '@/components/RoleBadge';
@@ -238,8 +239,15 @@ export default function ShiftDetailScreen() {
     );
   };
 
-  const isShiftOwner = currentRole === 'manager' && (shift as any)?.business_user_id === currentUser?.id;
-  const canDelete = isShiftOwner || currentRole === 'admin';
+  const canDelete =
+    (currentUser?.id === (shift as any)?.business_user_id) ||
+    isAdminUser({ email: currentUser?.email });
+  if (__DEV__) console.log('[ShiftDetail] canDelete check', {
+    currentUserId: currentUser?.id,
+    shiftOwnerId: (shift as any)?.business_user_id,
+    isAdmin: isAdminUser({ email: currentUser?.email }),
+    canDelete,
+  });
 
   // Derived display values
   const dateDisplay = formatDate(shift?.date);

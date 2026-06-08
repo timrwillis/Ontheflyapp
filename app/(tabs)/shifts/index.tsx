@@ -49,25 +49,25 @@ interface Application {
 
 function SegmentedControl({ options, selected, onSelect }: { options: string[]; selected: string; onSelect: (v: string) => void }) {
   return (
-    <View style={{ flexDirection: 'row', backgroundColor: COLORS.surfaceSecondary, borderRadius: 12, padding: 4, marginBottom: 20 }}>
+    <View style={{ flexDirection: 'row', justifyContent: 'space-around', backgroundColor: COLORS.surfaceSecondary, borderRadius: 12, padding: 4, marginBottom: 20 }}>
       {options.map((opt) => {
         const isActive = selected === opt;
         return (
-          <AnimatedPressable key={opt} onPress={() => onSelect(opt)} style={{ flex: 1, minWidth: 0 }}>
+          <AnimatedPressable key={opt} onPress={() => onSelect(opt)} style={{ flex: 1 }}>
             <View style={{
               backgroundColor: isActive ? 'rgba(0,255,133,0.08)' : 'transparent',
               borderRadius: 9,
               paddingVertical: 8,
-              paddingHorizontal: 4,
+              paddingHorizontal: 8,
               alignItems: 'center',
               borderWidth: isActive ? 1 : 0,
               borderColor: isActive ? COLORS.border : 'transparent',
               borderBottomWidth: isActive ? 2 : 0,
               borderBottomColor: isActive ? COLORS.primary : 'transparent',
             }}>
-              <Text numberOfLines={1} style={{
+              <Text style={{
                 color: isActive ? COLORS.text : COLORS.textSecondary,
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: isActive ? '600' : '400',
                 fontFamily: isActive ? 'SpaceGrotesk-SemiBold' : 'SpaceGrotesk-Regular',
               }}>
