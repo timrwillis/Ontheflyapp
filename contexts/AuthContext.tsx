@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { Platform } from "react-native";
 import * as Linking from "expo-linking";
 import { authClient, setBearerToken, clearAuthTokens, getBearerToken } from "@/lib/auth";
@@ -83,7 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [localUser, setLocalUser] = useState<User | null>(null);
 
   // user = local state (fast/synchronous) ?? useSession fallback (for social auth etc.)
-  const user = localUser ?? (sessionData?.user as User | null) ?? null;
+  // Memoized on user.id so polling-driven new object references don't propagate downstream
+  const rawUser = localUser ?? (sessionData?.user as User | null) ?? null;
+  const user = useMemo(() => rawUser, [rawUser?.id]);
   const loading = isPending;
 
   // isAdmin — computed whenever user changes
@@ -152,10 +154,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, [isPending, sessionData]);
 
-  // Keep localUser in sync with useSession() reactive updates
+  // Keep localUser in sync with useSession() reactive updates.
+  // Uses functional updater to skip setState when user.id is unchanged —
+  // prevents polling-driven new object references from cascading into consumers.
   useEffect(() => {
     if (sessionData?.user) {
-      setLocalUser(sessionData.user as User);
+      const newUser = sessionData.user as User;
+      setLocalUser(prev => {
+        if (prev?.id === newUser.id) return prev;
+        return newUser;
+      });
     }
     if (sessionData?.session?.token) {
       setBearerToken(sessionData.session.token).then(() => {
