@@ -53,20 +53,21 @@ function SegmentedControl({ options, selected, onSelect }: { options: string[]; 
       {options.map((opt) => {
         const isActive = selected === opt;
         return (
-          <AnimatedPressable key={opt} onPress={() => onSelect(opt)} style={{ flex: 1 }}>
+          <AnimatedPressable key={opt} onPress={() => onSelect(opt)} style={{ flex: 1, minWidth: 0 }}>
             <View style={{
               backgroundColor: isActive ? 'rgba(0,255,133,0.08)' : 'transparent',
               borderRadius: 9,
               paddingVertical: 8,
+              paddingHorizontal: 4,
               alignItems: 'center',
               borderWidth: isActive ? 1 : 0,
               borderColor: isActive ? COLORS.border : 'transparent',
               borderBottomWidth: isActive ? 2 : 0,
               borderBottomColor: isActive ? COLORS.primary : 'transparent',
             }}>
-              <Text style={{
+              <Text numberOfLines={1} style={{
                 color: isActive ? COLORS.text : COLORS.textSecondary,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: isActive ? '600' : '400',
                 fontFamily: isActive ? 'SpaceGrotesk-SemiBold' : 'SpaceGrotesk-Regular',
               }}>
@@ -331,7 +332,7 @@ export default function ShiftsScreen() {
                 <ShiftCard
                   shift={shift}
                   index={i}
-                  onPress={currentRole === 'manager' ? () => openSheetForShift(shift) : () => router.push(`/shift/${shift.id}`)}
+                  onPress={() => router.push(`/shift/${shift.id}`)}
                 />
                 {eligible && (
                   <AnimatedPressable

@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
 import { useRole } from '@/contexts/RoleContext';
-import { apiGet, apiPost, apiPut } from '@/utils/api';
+import { apiGet, apiPost, apiPut, authenticatedDelete } from '@/utils/api';
 import { formatHourlyRate } from '@/utils/money';
 import { Shift } from '@/components/ShiftCard';
 import { RoleBadge } from '@/components/RoleBadge';
@@ -213,6 +213,34 @@ export default function ShiftDetailScreen() {
     }
   };
 
+  const handleDelete = () => {
+    const isClaimed = shift?.status === 'filled';
+    Alert.alert(
+      'Delete Shift?',
+      isClaimed
+        ? 'Warning: this shift was claimed by a worker. Deleting it will remove all records. This cannot be undone.'
+        : 'This will permanently delete the shift and all applications. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await authenticatedDelete(`/api/shifts/${id}`);
+              router.back();
+            } catch (err: any) {
+              Alert.alert('Error', err?.message ?? 'Could not delete this shift. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const isShiftOwner = currentRole === 'manager' && (shift as any)?.business_user_id === currentUser?.id;
+  const canDelete = isShiftOwner || currentRole === 'admin';
+
   // Derived display values
   const dateDisplay = formatDate(shift?.date);
   const payDisplay = formatHourlyRate(shift?.hourly_pay_cents ?? 0);
@@ -388,6 +416,27 @@ export default function ShiftDetailScreen() {
                 disabled={applying}
                 label={applyButtonLabel}
               />
+            ) : null}
+
+            {/* Manager: Delete shift */}
+            {canDelete ? (
+              <AnimatedPressable onPress={handleDelete}>
+                <View style={{
+                  backgroundColor: COLORS.dangerMuted,
+                  borderRadius: 16,
+                  height: 56,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'row',
+                  gap: 8,
+                  marginBottom: 16,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,68,68,0.25)',
+                }}>
+                  <MaterialIcons name="delete-outline" size={20} color={COLORS.danger} />
+                  <Text style={{ color: COLORS.danger, fontSize: 15, fontFamily: 'SpaceGrotesk-SemiBold' }}>Delete Shift</Text>
+                </View>
+              </AnimatedPressable>
             ) : null}
 
             {/* Manager: Applications */}

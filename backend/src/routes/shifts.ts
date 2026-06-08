@@ -579,6 +579,7 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         role_needed: shift.roleNeeded,
         business_name: biz?.name || '',
         business_type: biz?.type || '',
+        business_user_id: biz?.userId ?? null,
         business: biz ? {
           name: biz.name,
           type: biz.type,
@@ -993,6 +994,71 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
       } catch (err) {
         app.logger.error({ err, shiftId, userId }, '[NoShow] Unexpected error');
         return reply.status(500 as any).send({ error: 'Failed to mark no-show' });
+      }
+    },
+  );
+
+  // ── DELETE /api/shifts/:id ────────────────────────────────────────────────
+  fastify.delete(
+    '/api/shifts/:id',
+    {
+      schema: {
+        description: 'Delete a shift (owning manager or admin). Cascades applications and assignments.',
+        tags: ['shifts'],
+        params: { type: 'object', required: ['id'], properties: { id: { type: 'string' } } },
+        response: {
+          204: { type: 'null' },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+          403: { type: 'object', properties: { error: { type: 'string' } } },
+          404: { type: 'object', properties: { error: { type: 'string' } } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id: shiftId } = request.params as { id: string };
+
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) headers.append(key, Array.isArray(value) ? value[0] : value);
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) return reply.status(401).send({ error: 'Unauthorized' });
+
+      const userId = session.user.id;
+
+      try {
+        const shift = await app.db.query.shifts.findFirst({
+          where: eq(schema.shifts.id, shiftId),
+        });
+        if (!shift) {
+          app.logger.info({ shiftId, userId }, '[Delete] Shift not found');
+          return reply.status(404).send({ error: 'Shift not found' });
+        }
+
+        const dbUser = await app.db.query.users.findFirst({
+          where: eq(schema.users.id, userId),
+        });
+        const admin = isAdminUser({ email: dbUser?.email, isAdmin: dbUser?.isAdmin });
+
+        if (!admin) {
+          const business = await app.db.query.businesses.findFirst({
+            where: eq(schema.businesses.id, shift.businessId),
+          });
+          if (!business || business.userId !== userId) {
+            app.logger.info({ shiftId, userId }, '[Delete] Forbidden — user does not own this shift');
+            return reply.status(403).send({ error: 'You do not have permission to delete this shift' });
+          }
+        }
+
+        await app.db.delete(schema.shifts).where(eq(schema.shifts.id, shiftId));
+
+        app.logger.info({ shiftId, userId }, '[Delete] Shift deleted');
+        console.log(`[Delete] shift=${shiftId} deleted by user=${userId}`);
+        return reply.status(204).send();
+      } catch (err) {
+        app.logger.error({ err, shiftId, userId }, '[Delete] Unexpected error');
+        return reply.status(500 as any).send({ error: 'Failed to delete shift' });
       }
     },
   );
