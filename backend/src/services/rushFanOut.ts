@@ -59,6 +59,11 @@ export async function fanOutRushShift(app: App, shiftId: string): Promise<number
       return 0;
     }
 
+    if (!/^\d{2}:\d{2}$/.test(shift.startTime)) {
+      app.logger.info(`[RushFanOut] Shift ${shiftId} has invalid startTime "${shift.startTime}" — expected HH:MM, aborting fan-out`);
+      return 0;
+    }
+
     const shiftDateTime = new Date(`${shift.date}T${shift.startTime}:00`);
     const now = new Date();
 

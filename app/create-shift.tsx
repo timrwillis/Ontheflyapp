@@ -42,6 +42,12 @@ function RoleIcon({ lib, icon, color }: { lib: string; icon: string; color: stri
   return <MaterialCommunityIcons name={icon as any} size={24} color={color} />;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function toHHMM(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 const URGENCY_OPTIONS: { label: string; icon: string; sublabel: string; value: string }[] = [
@@ -199,6 +205,7 @@ export default function CreateShiftScreen() {
   const [selectedUrgency, setSelectedUrgency] = useState<string>('');
   const [hourlyPay, setHourlyPay] = useState<string>('');
   const [startTime, setStartTime] = useState<string>('');
+  const [selectedTimePreset, setSelectedTimePreset] = useState<string>('');
 
   // Workers stepper
   const [workersNeeded, setWorkersNeeded] = useState(1);
@@ -288,28 +295,16 @@ export default function CreateShiftScreen() {
     ]).start();
   }, [showAdvanced, advancedHeight, advancedOpacity]);
 
-  // Auto-detect rush from start time
+  // Auto-detect rush from start time (requires HH:MM format)
   useEffect(() => {
-    if (!startTime.trim()) return;
-    const lower = startTime.toLowerCase();
+    if (!startTime.trim() || !/^\d{2}:\d{2}$/.test(startTime)) return;
+    const [h, m] = startTime.split(':').map(Number);
     const now = new Date();
-    let detected = false;
-    if (lower.includes('now') || lower.includes('asap')) {
-      detected = true;
-    } else if (lower.includes('in 1 hr') || lower.includes('1 hour')) {
-      detected = true;
-    } else if (lower.includes('tonight')) {
-      // "Tonight 6PM" / "Tonight 9PM" — check if within 4h
-      const match = lower.match(/(\d+)\s*(am|pm)/);
-      if (match) {
-        let h = parseInt(match[1]);
-        if (match[2] === 'pm' && h !== 12) h += 12;
-        const target = new Date();
-        target.setHours(h, 0, 0, 0);
-        detected = (target.getTime() - now.getTime()) <= 4 * 60 * 60 * 1000;
-      }
-    }
-    setIsRush(detected);
+    const shiftToday = new Date(now);
+    shiftToday.setHours(h, m, 0, 0);
+    if (shiftToday.getTime() <= now.getTime()) return;
+    const diffHours = (shiftToday.getTime() - now.getTime()) / (1000 * 60 * 60);
+    setIsRush(diffHours <= 4);
   }, [startTime]);
 
   // Poll for claim when watching modal is open
@@ -378,7 +373,7 @@ export default function CreateShiftScreen() {
       is_rush: isRush,
     };
 
-    console.log(`[PostShift] is_rush=${isRush}`);
+    console.log(`[PostShift] start_time="${startTime}" is_rush=${isRush}`);
 
     try {
       const response = await authenticatedPost<{ id?: string; pinged_worker_count?: number; shift?: { id?: string }; start_time?: string }>('/api/shifts', payload);
@@ -631,11 +626,32 @@ export default function CreateShiftScreen() {
             <SectionLabel text="STEP 4 — WHEN DOES IT START?" />
             <View style={styles.timePresets}>
               {TIME_PRESETS.map((t) => {
-                const isActive = startTime === t.value;
+                const isActive = selectedTimePreset === t.value;
                 return (
                   <AnimatedPressable
                     key={t.value}
-                    onPress={() => setStartTime(t.value)}
+                    onPress={() => {
+                      const now = new Date();
+                      let time: string;
+                      switch (t.value) {
+                        case 'Now':
+                          time = toHHMM(now);
+                          break;
+                        case 'In 1 hr':
+                          time = toHHMM(new Date(now.getTime() + 60 * 60 * 1000));
+                          break;
+                        case 'Tonight 6PM':
+                          time = '18:00';
+                          break;
+                        case 'Tonight 9PM':
+                          time = '21:00';
+                          break;
+                        default:
+                          time = toHHMM(now);
+                      }
+                      setSelectedTimePreset(t.value);
+                      setStartTime(time);
+                    }}
                     style={[
                       styles.timePresetBtn,
                       isActive ? styles.timePresetActive : styles.timePresetInactive,
@@ -655,8 +671,8 @@ export default function CreateShiftScreen() {
             </View>
             <TextInput
               value={startTime}
-              onChangeText={setStartTime}
-              placeholder="Or type a custom time..."
+              onChangeText={(text) => { setStartTime(text); setSelectedTimePreset(''); }}
+              placeholder="Or type a custom time like 20:30..."
               placeholderTextColor={COLORS.textTertiary}
               style={styles.textInput}
             />
