@@ -77,12 +77,59 @@ export async function fanOutRushShift(app: App, shiftId: string): Promise<number
       where: inArray(schema.workerProfiles.id, workerProfileIds),
     });
 
+    app.logger.info(
+      `[RushFanOut][Eligibility] shift=${shiftId} roleNeeded=${shift.roleNeeded} | ` +
+      `shiftDate=${shift.date} startTime=${shift.startTime} | ` +
+      `shiftDateTime=${shiftDateTime.toISOString()} dayKey=${DAY_KEYS[shiftDateTime.getDay()]} | ` +
+      `roleMatchCount=${workerProfileIds.length} profilesFetched=${workers.length}`
+    );
+
     let availableNowCount = 0;
     let templateOnlyCount = 0;
     const eligibleUserIds: string[] = [];
 
     for (const worker of workers) {
+      const template = (worker.availabilityTemplate ?? {}) as AvailabilityTemplate;
+      const dayKey = DAY_KEYS[shiftDateTime.getDay()];
+      const dayWindows = template[dayKey] ?? [];
+
+      const isAvailableNow =
+        worker.availableNowUntil != null &&
+        worker.availableNowUntil > now &&
+        worker.availableNowUntil >= shiftDateTime;
+
+      let availableNowReason: string;
+      if (worker.availableNowUntil == null) {
+        availableNowReason = 'no availableNowUntil set';
+      } else if (!(worker.availableNowUntil > now)) {
+        availableNowReason = `expired (until=${worker.availableNowUntil.toISOString()} now=${now.toISOString()})`;
+      } else if (!(worker.availableNowUntil >= shiftDateTime)) {
+        availableNowReason = `doesnt cover shift start (until=${worker.availableNowUntil.toISOString()} shiftStart=${shiftDateTime.toISOString()})`;
+      } else {
+        availableNowReason = 'pass';
+      }
+
+      const isInTemplate = dayWindows.length > 0 && isTimeInWindow(dayWindows, shift.startTime);
+      let templateReason: string;
+      if (dayWindows.length === 0) {
+        templateReason = `no windows for day=${dayKey}`;
+      } else if (!isInTemplate) {
+        templateReason = `startTime=${shift.startTime} not in windows=${JSON.stringify(dayWindows)}`;
+      } else {
+        templateReason = `pass windows=${JSON.stringify(dayWindows)}`;
+      }
+
       const { eligible, via } = workerIsEligibleForShift(worker, shiftDateTime, shift.startTime, now);
+
+      app.logger.info(
+        `[RushFanOut][Eligibility] worker=${worker.id} | ` +
+        `availableNowUntil=${worker.availableNowUntil?.toISOString() ?? 'null'} | ` +
+        `available_now=${isAvailableNow} (${availableNowReason}) | ` +
+        `template[${dayKey}]=${JSON.stringify(dayWindows)} | ` +
+        `template_check=${isInTemplate} (${templateReason}) | ` +
+        `eligible=${eligible} via=${via}`
+      );
+
       if (eligible) {
         eligibleUserIds.push(worker.userId);
         if (via === 'available_now') availableNowCount++;
