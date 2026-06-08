@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { eq, inArray, isNull, and } from 'drizzle-orm';
+import { eq, inArray, isNull, and, sql } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
 import type { App } from '../index.js';
 import { isAdminUser } from '../lib/admin.js';
@@ -883,17 +883,44 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
           return reply.status(403).send({ error: 'You are not available for this shift window' });
         }
 
-        // Atomic claim — race-condition safe; status=filled set in the same statement
-        const [claimed] = await app.db
-          .update(schema.shifts)
-          .set({ claimedAt: new Date(), claimedByWorkerId: workerProfile.id, status: 'filled' as const })
-          .where(and(
-            eq(schema.shifts.id, shiftId),
-            isNull(schema.shifts.claimedAt),
-            eq(schema.shifts.isRush, true),
-            eq(schema.shifts.status, 'open'),
-          ))
-          .returning();
+        // Transaction: atomic UPDATE shifts + INSERT assignment + INSERT application
+        // If any step fails the whole block rolls back.
+        const now = new Date();
+        const claimed = await app.db.transaction(async (tx) => {
+          const [row] = await tx
+            .update(schema.shifts)
+            .set({
+              claimedAt: now,
+              claimedByWorkerId: workerProfile.id,
+              status: 'filled' as const,
+              workersConfirmed: sql<number>`${schema.shifts.workersConfirmed} + 1`,
+            })
+            .where(and(
+              eq(schema.shifts.id, shiftId),
+              isNull(schema.shifts.claimedAt),
+              eq(schema.shifts.isRush, true),
+              eq(schema.shifts.status, 'open'),
+            ))
+            .returning();
+
+          if (!row) return undefined; // race loss — another worker claimed first
+
+          await tx.insert(schema.shiftAssignments).values({
+            id: `asgn-${Date.now()}`,
+            shiftId,
+            workerId: workerProfile.id,
+          });
+
+          await tx.insert(schema.shiftApplications).values({
+            id: `appl-${Date.now()}`,
+            shiftId,
+            workerId: workerProfile.id,
+            status: 'confirmed' as const,
+            confirmedAt: now,
+          });
+
+          return row;
+        });
 
         if (!claimed) {
           app.logger.info({ workerId: workerProfile.id, shiftId }, '[Claim] Race-loss for worker');
@@ -901,8 +928,11 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
           return reply.status(409).send({ error: 'Already claimed by another worker' });
         }
 
-        app.logger.info({ workerId: workerProfile.id, shiftId }, '[Claim] shift status open→filled');
-        console.log(`[Claim] shift=${shiftId} worker=${workerProfile.id} status=open→filled`);
+        app.logger.info(
+          { shiftId, workerId: workerProfile.id, workersConfirmed: claimed.workersConfirmed },
+          '[Claim] shift=open→filled workers_confirmed updated',
+        );
+        console.log(`[Claim] shift=${shiftId} worker=${workerProfile.id} → filled, workers_confirmed=${claimed.workersConfirmed}`);
 
         // Notify the posting manager (fire and forget)
         const business = await app.db.query.businesses.findFirst({
