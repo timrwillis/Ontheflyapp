@@ -816,7 +816,8 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         }
       }
 
-      app.logger.info({ applicationId: applicationData.id }, 'Application created');
+      app.logger.info({ shiftId: id, workerId: worker.id, applicationId: applicationData.id }, '[Apply] shift status open→pending');
+      console.log(`[Apply] shift=${id} worker=${worker.id} status=open→pending`);
       return reply.status(201).send(applicationData);
     }
   );
@@ -881,14 +882,15 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
           return reply.status(403).send({ error: 'You are not available for this shift window' });
         }
 
-        // Atomic claim — race-condition safe
+        // Atomic claim — race-condition safe; status=filled set in the same statement
         const [claimed] = await app.db
           .update(schema.shifts)
-          .set({ claimedAt: new Date(), claimedByWorkerId: workerProfile.id })
+          .set({ claimedAt: new Date(), claimedByWorkerId: workerProfile.id, status: 'filled' as const })
           .where(and(
             eq(schema.shifts.id, shiftId),
             isNull(schema.shifts.claimedAt),
             eq(schema.shifts.isRush, true),
+            eq(schema.shifts.status, 'open'),
           ))
           .returning();
 
@@ -898,8 +900,8 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
           return reply.status(409).send({ error: 'Already claimed by another worker' });
         }
 
-        app.logger.info({ workerId: workerProfile.id, shiftId }, '[Claim] Worker claimed shift');
-        console.log(`[Claim] Worker ${workerProfile.id} claimed shift ${shiftId}`);
+        app.logger.info({ workerId: workerProfile.id, shiftId }, '[Claim] shift status open→filled');
+        console.log(`[Claim] shift=${shiftId} worker=${workerProfile.id} status=open→filled`);
 
         // Notify the posting manager (fire and forget)
         const business = await app.db.query.businesses.findFirst({
