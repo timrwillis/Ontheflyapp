@@ -1371,14 +1371,22 @@ function WorkerDashboard() {
   };
 
   const handleAcceptShift = async (shiftId: string) => {
-    if (!currentUser?.id) return;
+    const userId = currentUser?.id ?? user?.id;
+    if (!userId) {
+      Alert.alert(
+        'Not signed in',
+        'You need to be signed in to apply for shifts. Please reload the app and try again.'
+      );
+      return;
+    }
     setApplyingId(shiftId);
     try {
-      await authenticatedPost(`/api/shifts/${shiftId}/apply`, { user_id: currentUser.id });
+      await authenticatedPost(`/api/shifts/${shiftId}/apply`, { user_id: userId });
       Alert.alert('Applied!', 'Your application has been submitted. The manager will confirm shortly.');
       loadShifts();
-    } catch {
-      Alert.alert('Error', 'Could not apply to this shift. Please try again.');
+    } catch (err: any) {
+      const detail = err?.message ?? 'Please try again.';
+      Alert.alert('Could not apply', detail);
     } finally {
       setApplyingId(null);
     }
