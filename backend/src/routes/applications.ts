@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
 import type { App } from '../index.js';
 import { sendExpoPushNotification } from '../utils/pushNotification.js';
@@ -112,18 +112,35 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
       }
 
       const confirmedAt = new Date();
-      await app.db
-        .update(schema.shiftApplications)
-        .set({
-          status: 'confirmed' as const,
-          confirmedAt,
-        })
-        .where(eq(schema.shiftApplications.id, id));
+      const [updatedShift] = await app.db.transaction(async (tx) => {
+        await tx
+          .update(schema.shiftApplications)
+          .set({ status: 'confirmed' as const, confirmedAt })
+          .where(eq(schema.shiftApplications.id, id));
 
-      await app.db
-        .update(schema.shifts)
-        .set({ status: 'filled' as const })
-        .where(eq(schema.shifts.id, application.shiftId));
+        const result = await tx
+          .update(schema.shifts)
+          .set({
+            status: 'filled' as const,
+            workersConfirmed: sql<number>`${schema.shifts.workersConfirmed} + 1`,
+          })
+          .where(eq(schema.shifts.id, application.shiftId))
+          .returning();
+
+        await tx.insert(schema.shiftAssignments).values({
+          id: `asgn-${Date.now()}`,
+          shiftId: application.shiftId,
+          workerId: application.workerId,
+        });
+
+        return result;
+      });
+
+      app.logger.info(
+        { id, shiftId: application.shiftId, workerId: application.workerId, workersConfirmed: updatedShift?.workersConfirmed },
+        '[Confirm] application confirmed, assignment created',
+      );
+      console.log(`[Confirm] application=${id} shift=${application.shiftId} worker=${application.workerId} → filled, workers_confirmed=${updatedShift?.workersConfirmed}, assignment created`);
 
       const worker = await app.db.query.workerProfiles.findFirst({
         where: eq(schema.workerProfiles.userId, application.workerId),
@@ -328,7 +345,9 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
         }
       }
 
-      app.logger.info({ id }, 'Application rejected');
+      const newShiftStatus = hasActiveApps ? 'pending' : 'open';
+      app.logger.info({ id, shiftId: application.shiftId, newShiftStatus }, '[Reject] application rejected');
+      console.log(`[Reject] application=${id} shift=${application.shiftId} → rejected; shift status reset to ${newShiftStatus}`);
       return {
         success: true,
         application: {
