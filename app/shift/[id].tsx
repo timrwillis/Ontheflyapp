@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/Colors';
 import { useRole } from '@/contexts/RoleContext';
-import { apiGet, apiPost, apiPut, authenticatedDelete } from '@/utils/api';
+import { apiGet, apiPost, apiPatch, authenticatedDelete } from '@/utils/api';
 import { isAdminUser } from '@/constants/AdminMode';
 import { formatHourlyRate } from '@/utils/money';
 import { Shift } from '@/components/ShiftCard';
@@ -201,10 +201,10 @@ export default function ShiftDetailScreen() {
   const handleConfirm = async (appId: string) => {
     setActionLoading(appId);
     try {
-      await apiPut(`/api/applications/${appId}`, { status: 'confirmed' });
+      await apiPatch(`/api/applications/${appId}/confirm`, {});
       loadData();
-    } catch (err) {
-      Alert.alert('Error', 'Could not confirm this application.');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Could not confirm this application.');
     } finally {
       setActionLoading(null);
     }
@@ -213,10 +213,10 @@ export default function ShiftDetailScreen() {
   const handleReject = async (appId: string) => {
     setActionLoading(appId);
     try {
-      await apiPut(`/api/applications/${appId}`, { status: 'rejected' });
+      await apiPatch(`/api/applications/${appId}/reject`, {});
       loadData();
-    } catch (err) {
-      Alert.alert('Error', 'Could not reject this application.');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Could not reject this application.');
     } finally {
       setActionLoading(null);
     }
