@@ -14,7 +14,8 @@ Cowork (desktop app with folder access to C:\Users\timmy\Ontheflyapp).
 On the Fly: hospitality staffing marketplace for Kansas City.
 - Workers: bartenders, servers, cooks pick up shifts (always free)
 - Managers: restaurants, bars, catering post shifts ($99-299/mo subscription, paywall live but admin bypass active for testing)
-- Wedge feature: rush shifts (<4 hours notice) — what differentiates us from Instawork/Qwick. **OPERATIONAL END-TO-END with full data integrity as of June 8, 2026.**
+- Wedge feature: rush shifts (<4 hours notice) — what differentiates us from Instawork/Qwick. **OPERATIONAL END-TO-END with full data integrity as of June 9, 2026.**
+- Regular shifts (apply + manager confirm flow) also **OPERATIONAL END-TO-END** as of same date.
 
 Also: Boozeslingers, my mobile bartending business. Separate website on Wix.
 
@@ -28,24 +29,40 @@ GitHub: timrwillis/Ontheflyapp — push to BOTH prod and main always (use push-f
 Expo account: @twil1430/on-the-fly
 Theme: bg #0A0A0A, primary #00FF87, SpaceGrotesk font family
 
-## CURRENT STATE (last verified June 8, 2026 early morning)
+## CURRENT STATE (last verified June 9, 2026 early morning)
 
 VERIFIED WORKING END-TO-END ON PHONE:
 - Auth: sign-in, sign-up, SecureStore token persistence, route guard, admin detection
 - Admin god mode: floating pill, role switching, paywall bypass, force-complete-onboarding, seed-demo-business
 - Onboarding flows: worker (roles, profile, availability, complete) and manager (profile, business, complete)
 - **Rush shift wedge — complete end-to-end with data integrity:**
-  - Manager posts rush shift via ASAP/preset buttons → real HH:MM saved (no "Now"/"In 1 hr" placeholder strings)
-  - Backend fan-out matches eligible workers (role + active availability via available_now OR template[dayKey])
-  - Push notifications sent (in-app; Expo Go limitations on actual push delivery)
-  - Worker sees shift in rush feed
-  - Worker taps Claim → atomic transaction writes shifts (claimed_at, claimed_by_worker_id, status='filled', workers_confirmed +1) + shift_assignments row + shift_applications row
+  - Manager posts rush shift via ASAP/preset buttons → real HH:MM saved
+  - Backend fan-out matches eligible workers
+  - Worker sees shift in rush feed → taps Claim → atomic transaction writes shifts + shift_assignments + shift_applications
   - Worker sees claimed shift in Upcoming tab
   - Manager sees shift in Filled tab with correct N/M filled count
   - Manager sees worker name + reliability score on detail screen
   - Manager can tap Delete with confirmation Alert; deletion cascades to related rows
+- **Regular shift flow — complete end-to-end with data integrity:**
+  - Manager posts non-rush shift via new calendar + time picker (any future date selectable)
+  - Worker sees shift in rush feed area (currently shown regardless of rush flag — UX TBD)
+  - Worker taps Accept → POST /api/shifts/:id/apply → status='pending' application created
+  - Worker error path now surfaces actual error message (no more silent failures)
+  - Manager views shift detail → sees pending application with worker name + reliability score
+  - Manager taps Confirm → PATCH /api/applications/:id/confirm → atomic transaction:
+    - shift_applications.status='confirmed', confirmed_at=NOW()
+    - shifts.status='filled', workers_confirmed +1
+    - INSERT shift_assignments row
+    - All-or-nothing
+  - Manager taps Reject → PATCH /api/applications/:id/reject → status='rejected', shift reverts to 'open' if no other pending apps
+- **New create-shift UX (Step 5 of cleanup sprint):**
+  - Inline expanding calendar via react-native-calendars
+  - Today selected: rush chips visible (Now, +1hr, Tonight 6/8/9pm) + Custom time chip
+  - Past chips visually disabled
+  - Future date selected: chips hidden, native time picker shown
+  - End time defaults to start + 5h; manually adjustable; flag prevents auto-override after manual change
 - Money handling: integer cents end-to-end (hourly_pay_cents column, utils/money.ts helpers)
-- Time presets in create-shift: ASAP, In 1 hr, Tonight 6pm/8pm/9pm all produce valid HH:MM via toHHMM() helper
+- Time presets via toHHMM() helper produce valid HH:MM
 - Defensive guard in rushFanOut.ts rejects non-HH:MM data with clear log instead of crashing
 - Backend fetch helpers handle 204 No Content and empty bodies gracefully (utils/api.ts)
 - Worker availability state: reads from /api/worker-profiles/me, writes via PATCH with correct field names (until, template)
@@ -55,22 +72,29 @@ VERIFIED WORKING END-TO-END ON PHONE:
 - Smoke test: backend/scripts/smoke-test.ts, runs end-to-end against Railway, 33/35 expected (2 rate-limit failures are known/normal)
 
 KNOWN BUGS / DEFERRED:
-- 🟡 N+1 query in /api/shifts/my — performance fix needed at scale (fetches workerProfile per shift in a Promise.all loop instead of a single SQL JOIN)
+- 🟡 Post-confirm UX gap: when manager taps Confirm, the UI only updates the fill bar. No success screen with "Worker [name] confirmed, arriving at [time]" + Uber-style contact options. Captured in messaging-spec.md and worker-profile-spec.md
+- 🟡 N+1 query in /api/shifts/my — performance fix needed at scale (Promise.all per shift instead of single JOIN)
 - 🟡 Garbled UTF-8 characters in some UI text
-- 🟡 Worker profile photos not implemented — placeholder uses initials (TW). Add avatar_url to worker_profiles schema when implementing
+- 🟡 Worker profile photos not implemented — placeholder uses initials. Add avatar_url to worker_profiles schema when implementing
 - 🟡 expo-notifications doesn't work in Expo Go on SDK 53+ — need EAS dev build for actual push delivery testing
 - 🟢 "Pinged 0 workers" UX message could explain why (no matching availability, etc.) instead of bare message
 - 🟢 Self-test friction: posting and claiming on the same account skips business-owner check (none exists in fan-out — confirmed by diagnostic)
+- 🟢 Older filled shifts (pre-Confirm-fix) have inconsistent workers_confirmed=0, assignments=0. Test data only, can patch with UPDATE if cosmetically annoying.
+- 🟢 Tonight chips disable at exact clock minute (e.g. 6:00:00 PM disables Tonight 6PM); should probably allow 30 min grace
 
 DEFERRED FROM CLEANUP SPRINT:
 - Step 4: start_at / end_at TIMESTAMPTZ computed columns on shifts (deferred — current date+time text columns working acceptably)
-- Step 5: Full time picker UX overhaul with calendar dropdown for future dates — **NEXT UP**
+- Step 5: Calendar + time picker overhaul — **SHIPPED June 9**
 - Step 7: Any remaining frontend fixes from the original 5-fix list (most done; iOS foreground push notifications still pending)
 
+NEXT-SESSION FEATURE SPECS (see notes/ folder):
+- notes/worker-profile-spec.md — Uber-driver-style profile screen, phased build plan
+- notes/messaging-spec.md — DoorDash-style messaging between manager and worker post-confirm, includes "post-confirm screen" UX scope
+
 STRATEGIC WORKFLOW IMPROVEMENTS (multi-session investment, not blocking):
-- OpenAPI → TypeScript codegen so frontend types come from backend schema (would have caught 3 of today's bugs at compile time)
+- OpenAPI → TypeScript codegen so frontend types come from backend schema (would have caught multiple bugs at compile time)
 - Bulletproof fetch helpers refactor (in progress — utils/api.ts now handles 204 and empty bodies; broader response-shape handling could be tightened)
-- Events log table tracking every state change (shift created, claimed, deleted, etc.) for debuggability
+- Events log table tracking every state change (shift created, claimed, deleted, confirmed, etc.) for debuggability
 - End-to-end tests (Detox or similar) once customer count > 0
 
 ## WORKFLOW RULES
@@ -92,7 +116,7 @@ STRATEGIC WORKFLOW IMPROVEMENTS (multi-session investment, not blocking):
 ### Errors
 - NEVER accept a generic 400 or 500 error. Always wrap DB operations in try/catch and return the real `err.message` and `err.code`.
 - For 400 errors, the actual Fastify validation error is in Railway logs (not the response body).
-- Add structured logs at state transitions: use prefixes like [Auth], [Guard], [Admin], [Money], [Time], [Claim], [Apply], [RushFanOut], [Delete] so logs are searchable.
+- Add structured logs at state transitions: use prefixes like [Auth], [Guard], [Admin], [Money], [Time], [Claim], [Apply], [Confirm], [Reject], [RushFanOut], [Delete] so logs are searchable.
 - Backend fetch helpers (utils/api.ts apiCall) gracefully handle 204 and empty bodies — return null instead of trying to JSON.parse.
 
 ### Single source of truth
@@ -108,16 +132,20 @@ STRATEGIC WORKFLOW IMPROVEMENTS (multi-session investment, not blocking):
 - Frontend uses formatMoney/formatHourlyRate from utils/money.ts.
 - NEVER use numeric/float for money. NEVER use `Number(input)` directly — parse via parseMoneyInput.
 
-### Time presets (current state, time picker overhaul pending as Step 5)
-- Current presets in create-shift.tsx: Now, In 1 hr, Tonight 6PM, Tonight 8PM, Tonight 9PM
-- All presets compute real HH:MM via toHHMM() helper before sending — never raw strings like "Now" or "In 1 hr"
-- Backend defensive guard in rushFanOut.ts rejects non-HH:MM with clear log
-- Step 5 will add calendar dropdown for future date selection, custom time picker for non-preset times
+### Time picker (Step 5 — shipped)
+- Inline expanding calendar via react-native-calendars in create-shift.tsx
+- Today: rush chips (Now, +1 hr, Tonight 6/8/9PM) + Custom time chip
+- Future dates: native time picker via @react-native-community/datetimepicker
+- All times computed and stored as HH:MM via toHHMM() helper
+- End time default = start + 5h; endTimeManuallySet flag prevents auto-override after manual change
+- Date change resets startTime, endTime, selectedTimePreset, endTimeManuallySet
 
-### Claim and Apply transactions
+### Claim, Apply, Confirm transactions (all atomic via Drizzle transaction)
 - Rush claim (POST /api/shifts/:id/claim): atomic transaction updates shifts (status='filled', claimed_at, claimed_by_worker_id, workers_confirmed +1) + INSERT shift_assignments + INSERT shift_applications (status='confirmed'). All-or-nothing.
 - Regular apply (POST /api/shifts/:id/apply): INSERT shift_applications (status='pending') + UPDATE shift.status='pending'. NO assignment row until manager confirms.
-- Race condition handled: atomic UPDATE with `claimed_at IS NULL AND status='open'` check; UPDATE that matches 0 rows returns 409 Conflict without touching inserts.
+- Manager confirm (PATCH /api/applications/:id/confirm): atomic transaction updates shift_applications (status='confirmed', confirmed_at) + UPDATE shifts (status='filled', workers_confirmed +1) + INSERT shift_assignments. All-or-nothing.
+- Manager reject (PATCH /api/applications/:id/reject): UPDATE shift_applications (status='rejected'). If no other pending/confirmed apps remain: UPDATE shifts (status='open').
+- Race condition handled: atomic UPDATEs with WHERE clauses; UPDATEs that match 0 rows return 409 Conflict without touching inserts.
 
 ### Single sessions of Claude Code / Cowork
 - Stay in the SAME session while doing related work (preserves built-up context)
@@ -148,10 +176,10 @@ STRATEGIC WORKFLOW IMPROVEMENTS (multi-session investment, not blocking):
 - app/auth-screen.tsx — landing, signin, signup states
 - app/_layout.tsx — root layout, admin pill mount, push notification handler
 - app/(tabs)/(home)/index.tsx — WorkerDashboard, ManagerDashboard, LandingScreen
-- app/(tabs)/shifts/index.tsx — shift list with status tabs (worker upcoming + completed, manager open/pending/filled/completed). Reads /api/my-applications, /api/my-assignments, /api/shifts/my.
-- app/create-shift.tsx — manager shift posting with time preset buttons (Step 5 will add calendar)
+- app/(tabs)/shifts/index.tsx — shift list with status tabs. Reads /api/my-applications, /api/my-assignments, /api/shifts/my.
+- app/create-shift.tsx — manager shift posting with inline calendar + smart time UX (Step 5 shipped)
 - app/availability-template.tsx — worker availability editor
-- app/shift/[id].tsx — shift detail screen; shows Delete button for owning manager + admins; shows worker name + reliability on application list
+- app/shift/[id].tsx — shift detail screen; shows Delete button for owning manager + admins; shows worker name + reliability on application list; Confirm/Reject buttons fixed to use correct PATCH endpoints
 - components/RushFeedSection.tsx — rush shift display + claim flow
 - components/ShiftCard.tsx — shift card with sibling Accept button (no nested Pressable conflict)
 - components/AdminPill.tsx — floating role switcher for admins
@@ -165,9 +193,11 @@ STRATEGIC WORKFLOW IMPROVEMENTS (multi-session investment, not blocking):
 - constants/Roles.ts — single source of truth for 12 roles
 - constants/AdminMode.ts — ADMIN_EMAILS, ADMIN_MODE_FLAG, isAdminUser
 - backend/src/routes/shifts.ts — POST /api/shifts, /:id/claim (atomic transaction), /:id/apply, /:id (DELETE with ownership check), /:id/applications (returns nested worker object)
-- backend/src/routes/applications.ts — GET /api/my-applications, GET /api/my-assignments (returns nested shift object), apply flow
+- backend/src/routes/applications.ts — GET /api/my-applications, GET /api/my-assignments (returns nested shift object), apply flow, PATCH /:id/confirm (atomic transaction), PATCH /:id/reject
 - backend/src/routes/workers.ts — PATCH /api/worker/available-now (reads body.until), /availability-template (reads body.template)
 - backend/src/db/schema.ts — Drizzle schema, must match Postgres exactly
 - backend/src/services/rushFanOut.ts — fan-out logic with HH:MM defensive guard
 - backend/scripts/smoke-test.ts — end-to-end test suite
+- notes/worker-profile-spec.md — feature spec for worker profile (next-session work)
+- notes/messaging-spec.md — feature spec for in-app messaging + post-confirm UX (future work)
 - push-fixes.bat / verify-sync.bat — bulletproof git workflow
