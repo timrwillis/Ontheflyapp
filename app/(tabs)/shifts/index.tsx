@@ -118,7 +118,7 @@ export default function ShiftsScreen() {
         const assignList = Array.isArray(assignData) ? assignData : (assignData as any)?.assignments ?? [];
         const mapped: Shift[] = [
           ...appList.map((item: any) => ({ ...(item.shift ?? item), status: item.status ?? item.shift?.status, _type: 'application' } as Shift)),
-          ...assignList.map((item: any) => ({ ...(item.shift ?? item), status: item.status ?? item.shift?.status, _type: 'assignment', _assignment_id: item.id } as Shift)),
+          ...assignList.map((item: any) => ({ ...(item.shift ?? item), status: 'confirmed', _type: 'assignment', _assignment_id: item.id } as Shift)),
         ];
         setShifts(mapped);
       } else {
