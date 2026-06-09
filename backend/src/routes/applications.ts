@@ -421,4 +421,98 @@ export function registerApplicationRoutes(app: App, fastify: FastifyInstance) {
       return { applications: applicationsWithShifts };
     }
   );
+
+  fastify.get(
+    '/api/my-assignments',
+    {
+      schema: {
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              assignments: {
+                type: 'array',
+                items: { type: 'object', additionalProperties: true },
+              },
+            },
+          },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+          404: { type: 'object', properties: { error: { type: 'string' } } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) headers.append(key, Array.isArray(value) ? value[0] : value);
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) {
+        app.logger.warn({}, '[Assignments] Unauthorized: No session');
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const userId = session.user.id;
+      app.logger.info({ userId }, '[Assignments] Getting my assignments');
+
+      const worker = await app.db.query.workerProfiles.findFirst({
+        where: eq(schema.workerProfiles.userId, userId),
+      });
+
+      if (!worker) {
+        app.logger.warn({ userId }, '[Assignments] Worker profile not found');
+        return reply.status(404).send({ error: 'Worker profile not found' });
+      }
+
+      const assignments = await app.db
+        .select()
+        .from(schema.shiftAssignments)
+        .where(eq(schema.shiftAssignments.workerId, worker.id));
+
+      const assignmentsWithShifts = await Promise.all(
+        assignments.map(async (asgn) => {
+          const shift = await app.db.query.shifts.findFirst({
+            where: eq(schema.shifts.id, asgn.shiftId),
+          });
+          const business = shift
+            ? await app.db.query.businesses.findFirst({
+                where: eq(schema.businesses.id, shift.businessId),
+              })
+            : null;
+          return {
+            id: asgn.id,
+            shift_id: asgn.shiftId,
+            worker_id: asgn.workerId,
+            status: asgn.status,
+            assigned_at: asgn.assignedAt,
+            shift: shift
+              ? {
+                  id: shift.id,
+                  role: shift.roleNeeded,
+                  role_needed: shift.roleNeeded,
+                  date: shift.date,
+                  start_time: shift.startTime,
+                  end_time: shift.endTime,
+                  hourly_pay_cents: shift.hourlyPayCents,
+                  location: shift.location,
+                  urgency: shift.urgency,
+                  status: shift.status,
+                  workers_needed: shift.workersNeeded,
+                  workers_confirmed: shift.workersConfirmed,
+                  business_name: business?.name ?? '',
+                  business_type: business?.type ?? '',
+                  business: business
+                    ? { name: business.name, type: business.type, city: business.city, address: business.address }
+                    : null,
+                }
+              : null,
+          };
+        })
+      );
+
+      app.logger.info({ count: assignments.length }, '[Assignments] My assignments retrieved');
+      return { assignments: assignmentsWithShifts };
+    }
+  );
 }

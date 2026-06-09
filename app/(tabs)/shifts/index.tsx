@@ -111,8 +111,8 @@ export default function ShiftsScreen() {
     try {
       if (currentRole === 'worker') {
         const [appsData, assignData] = await Promise.all([
-          apiGet<{ applications?: { shift?: Shift; status?: string }[]; data?: { shift?: Shift; status?: string }[] } | { shift?: Shift; status?: string }[]>('/api/applications/my').catch(() => []),
-          apiGet<{ assignments?: { shift?: Shift; status?: string }[] } | { shift?: Shift; status?: string }[]>('/api/assignments/my').catch(() => []),
+          apiGet<{ applications?: { shift?: Shift; status?: string }[]; data?: { shift?: Shift; status?: string }[] } | { shift?: Shift; status?: string }[]>('/api/my-applications').catch(() => []),
+          apiGet<{ assignments?: { shift?: Shift; status?: string }[] } | { shift?: Shift; status?: string }[]>('/api/my-assignments').catch(() => []),
         ]);
         const appList = Array.isArray(appsData) ? appsData : (appsData as any)?.applications ?? (appsData as any)?.data ?? [];
         const assignList = Array.isArray(assignData) ? assignData : (assignData as any)?.assignments ?? [];

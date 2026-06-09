@@ -167,7 +167,7 @@ export default function ShiftDetailScreen() {
         currentRole === 'manager' ? apiGet<Application[]>(`/api/shifts/${id}/applications`) : Promise.resolve([]),
       ]);
       setShift(shiftData);
-      setApplications(Array.isArray(appsData) ? appsData : []);
+      setApplications(Array.isArray(appsData) ? appsData : (appsData as any)?.applications ?? []);
     } catch (err) {
     } finally {
       setLoading(false);
