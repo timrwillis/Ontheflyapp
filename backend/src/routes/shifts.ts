@@ -391,31 +391,48 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
         return a.date.localeCompare(b.date);
       });
 
-      const result = shifts.map((shift) => ({
-        id: shift.id,
-        role: shift.roleNeeded,
-        role_needed: shift.roleNeeded,
-        business_name: business?.name || '',
-        business_type: business?.type || '',
-        business: business ? {
-          name: business.name,
-          type: business.type,
-          city: business.city,
-          address: business.address,
-        } : null,
-        date: shift.date,
-        start_time: shift.startTime,
-        end_time: shift.endTime,
-        hourly_pay_cents: shift.hourlyPayCents,
-        location: shift.location,
-        dress_code: shift.dressCode,
-        experience_required: shift.experienceRequired,
-        certifications_required: shift.certificationsRequired || [],
-        notes: shift.notes,
-        urgency: shift.urgency,
-        status: shift.status,
-        workers_needed: shift.workersNeeded,
-        workers_confirmed: shift.workersConfirmed,
+      const result = await Promise.all(shifts.map(async (shift) => {
+        let claimer: { id: string; name: string; reliability_score: number | null } | null = null;
+        if (shift.claimedByWorkerId) {
+          const workerProfile = await app.db.query.workerProfiles.findFirst({
+            where: eq(schema.workerProfiles.id, shift.claimedByWorkerId),
+          });
+          if (workerProfile) {
+            claimer = {
+              id: workerProfile.id,
+              name: workerProfile.name,
+              reliability_score: workerProfile.reliabilityScore,
+            };
+          }
+        }
+        return {
+          id: shift.id,
+          role: shift.roleNeeded,
+          role_needed: shift.roleNeeded,
+          business_name: business?.name || '',
+          business_type: business?.type || '',
+          business: business ? {
+            name: business.name,
+            type: business.type,
+            city: business.city,
+            address: business.address,
+          } : null,
+          date: shift.date,
+          start_time: shift.startTime,
+          end_time: shift.endTime,
+          hourly_pay_cents: shift.hourlyPayCents,
+          location: shift.location,
+          dress_code: shift.dressCode,
+          experience_required: shift.experienceRequired,
+          certifications_required: shift.certificationsRequired || [],
+          notes: shift.notes,
+          urgency: shift.urgency,
+          status: shift.status,
+          workers_needed: shift.workersNeeded,
+          workers_confirmed: shift.workersConfirmed,
+          claimed_by_worker_id: shift.claimedByWorkerId,
+          claimer,
+        };
       }));
 
       app.logger.info({ count: result.length, businessId: managerProfile.businessId }, 'My shifts retrieved');

@@ -177,7 +177,7 @@ export default function ShiftsScreen() {
   };
 
   const handleNoShow = (shift: any) => {
-    const workerName = shift.claimed_worker?.name ?? shift.worker?.name ?? 'this worker';
+    const workerName = shift.claimer?.name ?? 'this worker';
     Alert.alert(
       'Mark No-Show?',
       `Mark ${workerName} as no-show? This is for data collection only — no automatic penalty applies in this version.`,

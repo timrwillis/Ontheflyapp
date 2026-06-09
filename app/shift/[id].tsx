@@ -18,11 +18,19 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 interface Application {
   id: string;
   user_id?: string;
-  worker_name?: string;
   worker_id?: string;
   status?: string;
-  reliability_score?: number;
+  applied_at?: string;
   roles?: string[];
+  worker?: {
+    id?: string;
+    name?: string;
+    reliability_score?: number;
+    city?: string;
+    is_available?: boolean;
+    is_verified?: boolean;
+    worker_roles?: { role: string; years_experience?: number; is_primary?: boolean }[];
+  };
 }
 
 const glass = {
@@ -465,7 +473,7 @@ export default function ShiftDetailScreen() {
                   </View>
                 ) : (
                   applications.map((app) => {
-                    const appInitials = getWorkerInitials(app.worker_name);
+                    const appInitials = getWorkerInitials(app.worker?.name);
                     const isConfirmed = app.status === 'confirmed';
                     const isRejected = app.status === 'rejected';
                     const isPending = !isConfirmed && !isRejected;
@@ -480,7 +488,7 @@ export default function ShiftDetailScreen() {
                           </View>
                           <View style={{ flex: 1 }}>
                             <Text style={{ color: COLORS.text, fontSize: 15, fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 2 }}>
-                              {app.worker_name ?? 'Worker'}
+                              {app.worker?.name ?? 'Worker'}
                             </Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: isConfirmed ? COLORS.primary : isRejected ? COLORS.danger : COLORS.accent }} />
@@ -489,8 +497,8 @@ export default function ShiftDetailScreen() {
                               </Text>
                             </View>
                           </View>
-                          {app.reliability_score !== undefined ? (
-                            <ReliabilityScore score={app.reliability_score} size={48} showLabel={false} />
+                          {app.worker?.reliability_score !== undefined ? (
+                            <ReliabilityScore score={app.worker.reliability_score} size={48} showLabel={false} />
                           ) : null}
                         </View>
 
