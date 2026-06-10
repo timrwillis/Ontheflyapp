@@ -11,6 +11,7 @@ import { Shift } from '@/components/ShiftCard';
 import { RoleBadge } from '@/components/RoleBadge';
 import { UrgencyBadge } from '@/components/UrgencyBadge';
 import { ReliabilityScore } from '@/components/ReliabilityScore';
+import { WorkerNameLink } from '@/components/WorkerNameLink';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { ShiftCardSkeleton } from '@/components/SkeletonLoader';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -487,9 +488,11 @@ export default function ShiftDetailScreen() {
                             <Text style={{ color: COLORS.primary, fontSize: 16, fontFamily: 'SpaceGrotesk-Bold' }}>{appInitials}</Text>
                           </View>
                           <View style={{ flex: 1 }}>
-                            <Text style={{ color: COLORS.text, fontSize: 15, fontFamily: 'SpaceGrotesk-SemiBold', marginBottom: 2 }}>
-                              {app.worker?.name ?? 'Worker'}
-                            </Text>
+                            <WorkerNameLink
+                              workerId={app.worker?.id ?? ''}
+                              name={app.worker?.name ?? 'Worker'}
+                              style={{ fontSize: 15, marginBottom: 2 }}
+                            />
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: isConfirmed ? COLORS.primary : isRejected ? COLORS.danger : COLORS.accent }} />
                               <Text style={{ color: COLORS.textSecondary, fontSize: 12, fontFamily: 'SpaceGrotesk-Regular' }}>

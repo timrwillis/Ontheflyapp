@@ -23,6 +23,7 @@ import { ShiftCardSkeleton, SkeletonLine } from '@/components/SkeletonLoader';
 import { RushFeedSection } from '@/components/RushFeedSection';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { DEMO_SHIFTS, DEMO_WORKERS } from '@/constants/DemoData';
+import { WorkerNameLink } from '@/components/WorkerNameLink';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Modal, TouchableWithoutFeedback } from 'react-native';
 
@@ -422,9 +423,7 @@ function WorkerMiniCard({ worker }: { worker: WorkerMini }) {
           }} />
         )}
       </View>
-      <Text style={{ color: COLORS.text, fontSize: 11, fontWeight: '700', fontFamily: 'SpaceGrotesk-Bold', textAlign: 'center' }} numberOfLines={1}>
-        {firstName}
-      </Text>
+      <WorkerNameLink workerId={worker.id} name={firstName} style={{ fontSize: 11, textAlign: 'center' }} />
       <Text style={{ color: COLORS.textSecondary, fontSize: 10, fontFamily: 'SpaceGrotesk-Regular', textAlign: 'center' }} numberOfLines={1}>
         {primaryRole}
       </Text>

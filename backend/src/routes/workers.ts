@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import * as schema from '../db/schema/schema.js';
 import type { App } from '../index.js';
 import { haversineDistanceMiles, getCityCoords } from '../utils/haversine.js';
@@ -414,6 +414,83 @@ export function registerWorkerRoutes(app: App, fastify: FastifyInstance) {
 
       app.logger.info({ id }, 'Worker profile retrieved');
       return toCamelCase(profile);
+    }
+  );
+
+  fastify.get(
+    '/api/worker-profiles/:id/public',
+    {
+      schema: {
+        description: 'Get public worker profile by ID (auth required, safe fields only)',
+        tags: ['workers'],
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'string' },
+          },
+        },
+        response: {
+          200: { type: 'object', additionalProperties: true },
+          401: { type: 'object', properties: { error: { type: 'string' } } },
+          404: { type: 'object', properties: { error: { type: 'string' } } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+
+      const headers = new Headers();
+      Object.entries(request.headers).forEach(([key, value]) => {
+        if (value) headers.append(key, Array.isArray(value) ? value[0] : value);
+      });
+
+      const session = await app.auth.api.getSession({ headers });
+      if (!session?.user?.id) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const userId = session.user.id;
+      app.logger.info({ id, userId }, '[WorkerProfile][Public] requested');
+
+      const profile = await app.db.query.workerProfiles.findFirst({
+        where: eq(schema.workerProfiles.id, id),
+      });
+
+      if (!profile) {
+        app.logger.warn({ id }, '[WorkerProfile][Public] not found');
+        return reply.status(404).send({ error: 'Worker profile not found' });
+      }
+
+      const roles = await app.db
+        .select()
+        .from(schema.workerRoles)
+        .where(eq(schema.workerRoles.workerId, id));
+
+      const shiftsResult = await app.db
+        .select({ count: sql<number>`cast(count(*) as int)` })
+        .from(schema.shifts)
+        .where(and(
+          eq(schema.shifts.claimedByWorkerId, id),
+          inArray(schema.shifts.status, ['filled', 'completed']),
+        ));
+      const totalShiftsCompleted = shiftsResult[0]?.count ?? 0;
+
+      return {
+        id: profile.id,
+        name: profile.name,
+        bio: profile.bio ?? null,
+        city: profile.city,
+        created_at: profile.createdAt?.toISOString() ?? null,
+        reliability_score: profile.reliabilityScore,
+        is_verified: profile.isVerified,
+        roles: roles.map((r) => ({
+          role: r.role,
+          years_experience: r.yearsExperience ?? 1,
+          is_primary: r.isPrimary,
+        })),
+        total_shifts_completed: totalShiftsCompleted,
+      };
     }
   );
 

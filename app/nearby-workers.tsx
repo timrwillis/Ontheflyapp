@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { COLORS } from '@/constants/Colors';
 import { apiGet, apiPost } from '@/utils/api';
 import { AnimatedPressable } from '@/components/AnimatedPressable';
+import { WorkerNameLink } from '@/components/WorkerNameLink';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -275,17 +276,7 @@ function WorkerCard({ worker, index }: { worker: NearbyWorker; index: number }) 
           {/* Name + role + rating */}
           <View style={{ flex: 1, gap: 4 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text
-                style={{
-                  color: COLORS.text,
-                  fontSize: 18,
-                  fontWeight: '700',
-                  fontFamily: 'SpaceGrotesk-Bold',
-                }}
-                numberOfLines={1}
-              >
-                {worker.name}
-              </Text>
+              <WorkerNameLink workerId={worker.id} name={worker.name} style={{ fontSize: 18 }} />
               {worker.isVerified && (
                 <MaterialIcons name="verified" size={16} color={COLORS.primary} />
               )}
