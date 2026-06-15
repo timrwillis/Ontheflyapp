@@ -503,7 +503,16 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
             .filter(shift => {
               if (!workerRoleSet.has(shift.roleNeeded as any)) return false;
               const shiftStart = new Date(`${shift.date}T${shift.startTime}:00`);
-              if (shiftStart <= now) return false;
+              const shiftEnd = new Date(`${shift.date}T${shift.endTime}:00`);
+              // Filter by shift END (not start) so workers can still claim shifts that just started.
+              // Handles overnight shifts where end_time numerically < start_time.
+              // Note: known timezone skew between stored strings and computed Date objects; see Step 4 deferred work.
+              const startMins = parseInt(shift.startTime.split(':')[0]) * 60 + parseInt(shift.startTime.split(':')[1]);
+              const endMins = parseInt(shift.endTime.split(':')[0]) * 60 + parseInt(shift.endTime.split(':')[1]);
+              if (endMins < startMins) {
+                shiftEnd.setDate(shiftEnd.getDate() + 1);
+              }
+              if (shiftEnd <= now) return false;
               const { eligible } = workerIsEligibleForShift(workerProfile, shiftStart, shift.startTime, now);
               return eligible;
             })
