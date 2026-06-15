@@ -72,6 +72,7 @@ VERIFIED WORKING END-TO-END ON PHONE:
 - Smoke test: backend/scripts/smoke-test.ts, runs end-to-end against Railway, 33/35 expected (2 rate-limit failures are known/normal)
 
 KNOWN BUGS / DEFERRED:
+- 🔴 TIMEZONE: Times stored as date + HH:MM text columns without timezone. JavaScript's new Date('YYYY-MM-DDTHH:MM:00') treats them as UTC, causing 5-hour skew for CDT users. Workaround in rush-feed filter; proper fix requires Step 4 (TIMESTAMPTZ columns). Affects: rush-feed expiration filter, any display that re-parses date+time, any logic comparing shift times to now().
 - 🟡 Post-confirm UX gap: when manager taps Confirm, the UI only updates the fill bar. No success screen with "Worker [name] confirmed, arriving at [time]" + Uber-style contact options. Captured in messaging-spec.md and worker-profile-spec.md
 - 🟡 N+1 query in /api/shifts/my — performance fix needed at scale (Promise.all per shift instead of single JOIN)
 - 🟡 Garbled UTF-8 characters in some UI text
