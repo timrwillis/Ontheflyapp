@@ -498,10 +498,22 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
             eq(schema.shifts.status, 'open'),
           ));
 
+        app.logger.info({ count: rushShifts.length, ids: rushShifts.map(s => s.id) }, '[RushFeed][Diag] initial DB query result');
+
         const matched = await Promise.all(
           rushShifts
             .filter(shift => {
-              if (!workerRoleSet.has(shift.roleNeeded as any)) return false;
+              const roleMatch = workerRoleSet.has(shift.roleNeeded as any);
+              if (!roleMatch) {
+                app.logger.info({
+                  shiftId: shift.id,
+                  reason: 'role-mismatch',
+                  shiftRole: shift.roleNeeded,
+                  workerRoles: Array.from(workerRoleSet),
+                }, '[RushFeed][Diag] reject');
+                return false;
+              }
+
               const shiftStart = new Date(`${shift.date}T${shift.startTime}:00`);
               const shiftEnd = new Date(`${shift.date}T${shift.endTime}:00`);
               // Filter by shift END (not start) so workers can still claim shifts that just started.
@@ -512,9 +524,30 @@ export function registerShiftRoutes(app: App, fastify: FastifyInstance) {
               if (endMins < startMins) {
                 shiftEnd.setDate(shiftEnd.getDate() + 1);
               }
-              if (shiftEnd <= now) return false;
-              const { eligible } = workerIsEligibleForShift(workerProfile, shiftStart, shift.startTime, now);
-              return eligible;
+
+              if (shiftEnd <= now) {
+                app.logger.info({
+                  shiftId: shift.id,
+                  reason: 'shift-ended',
+                  shiftStart: shiftStart.toISOString(),
+                  shiftEnd: shiftEnd.toISOString(),
+                  now: now.toISOString(),
+                }, '[RushFeed][Diag] reject');
+                return false;
+              }
+
+              const eligibilityResult = workerIsEligibleForShift(workerProfile, shiftStart, shift.startTime, now);
+              if (!eligibilityResult.eligible) {
+                app.logger.info({
+                  shiftId: shift.id,
+                  reason: 'not-eligible',
+                  detail: eligibilityResult,
+                }, '[RushFeed][Diag] reject');
+                return false;
+              }
+
+              app.logger.info({ shiftId: shift.id }, '[RushFeed][Diag] PASS all filters');
+              return true;
             })
             .sort((a, b) => {
               const ta = new Date(`${a.date}T${a.startTime}:00`).getTime();
